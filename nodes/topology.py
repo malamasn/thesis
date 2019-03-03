@@ -83,7 +83,16 @@ class Topology:
             if sum/counter - brushfire[x][y] < 3.5:
                 del nodes[i]
 
-        # Check if nodes are close and del some
-        ## NOT DONE YET
+        # Check if nodes are closer than 10 and delete them
+        for i in range(len(nodes)-1, -1, -1):
+            x1 = nodes[i][0]
+            y1 = nodes[i][1]
+
+            for j in range(i):
+                x2 = nodes[j][0]
+                y2 = nodes[j][1]
+                if math.hypot(x1-x2, y1-y2) < 10:
+                    del nodes[i]
+                    break
 
         return nodes
