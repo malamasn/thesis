@@ -10,11 +10,13 @@ class Topology:
     def gvd(self, ogm, brushfire):
         # Set obstacles and first pixels around them as non gvd pixels
         voronoi = np.zeros(ogm.shape)
+        rospy.loginfo("GVD initialized.")
         # Set free space as starting gvd and skeletonize it to get one pixel diagram
         voronoi[brushfire > 3] = 1
         voronoi = skeletonize(voronoi)
 
         ## DO I NEED THINNING HERE ?
+        rospy.loginfo("GVD done!")
         return voronoi
 
     # Find useful topological nodes from gvd
@@ -22,6 +24,7 @@ class Topology:
         nodes = []
         width = ogm.shape[0]
         height = ogm.shape[1]
+        rospy.loginfo("Initlizing topological process.")
 
         # Check all candidate nodes
         index = np.where((gvd[1:width-1][1:height-1]==1) \
@@ -54,6 +57,7 @@ class Topology:
                 if not notGood and diff:
                     nodes.append([x,y])
 
+        rospy.loginfo("Reevalueting nodes.")
         # Recheck nodes with 2 neighbors
         for i in range(len(nodes)):
             x = nodes[i][0]
@@ -91,4 +95,5 @@ class Topology:
                     del nodes[i]
                     break
 
+        rospy.loginfo("Nodes ready!")
         return nodes
