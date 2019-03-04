@@ -10,14 +10,14 @@ class Brushfire:
     def obstacleBrushfire(self, ogm):
         width = ogm.shape[0]
         height = ogm.shape[1]
-        # Free space == 0 and obstacles == 1
+        # Free space == 0 and obstacles == 1 at brushfire field
         brushfire = np.full(ogm.shape, 0)
-        brushfire[(ogm < 66) & (ogm != -1)] = 1
+        brushfire[(ogm >= 50) or (ogm != -1)] = 1
 
         # Queue obstacles' neighbors
         queue = deque()
-        for x in range(width):   # MAKE IT FASTER
-            for y in range(height):
+        for x in range(1, width-1):
+            for y in range(1, height-1):
                 # neighbor checks around ogm[x][y] for obstacles
                 neighbor = np.any(ogm[x-1:x+2][y-1:y+2] == 1)
                 if not ogm[x][y] and neighbor:
@@ -34,7 +34,7 @@ class Brushfire:
             for i in range(-1,2):
                 for j in range(-1,2):
                     # Boundary check
-                    if x+i < 0 or x+i > width or y+j < 0 or y+j > height or gvd[x+i][y+j] == 0:
+                    if x+i < 0 or x+i > width or y+j < 0 or y+j > height:
                         continue
                     if i == 0 and j == 0:
                         continue
