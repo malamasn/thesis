@@ -2,24 +2,19 @@
 import rospy
 import numpy as np
 import math
+from skimage.morphology import skeletonize
 
 # Class with topological functions
 class Topology:
     # Calculate GVD using brushfire
     def gvd(self, ogm, brushfire):
-        # Set obstacles and first pixel around them as non gvd pixels
-        voronoi = np.full(ogm.shape, -1)
-        voronoi[brushfire < 3] = 0
+        # Set obstacles and first pixels around them as non gvd pixels
+        voronoi = np.zeros(ogm.shape)
+        # Set free space as starting gvd and skeletonize it to get one pixel diagram
+        voronoi[brushfire > 3] = 1
+        voronoi = skeletonize(voronoi)
 
-        width = ogm.shape[0]
-        height = ogm.shape[1]
-
-        for i in range(width):
-            for j in range(height):
-                if voronoi[i][j] == 0:
-                    continue
-        # CHECK ALL -1 IF THEY CAN BE ADDED TO GVD ( = 1) OR NOT ( = 0)
-
+        ## DO I NEED THINNING HERE ?
         return voronoi
 
     # Find useful topological nodes from gvd
