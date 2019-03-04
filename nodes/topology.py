@@ -35,7 +35,7 @@ class Topology:
             x = index[0][i]
             y = index[1][i]
 
-            # Count neighbors at gvd inculding node
+            # Count neighbors at gvd inculding (x,y) node
             count_neighbors = np.sum(gvd[x-1:x+2][y-1:y+2])
 
             # Add 1-neighbor and 3-neighbor nodes to graph
@@ -49,7 +49,7 @@ class Topology:
                 min = brushfire[x][y]
                 for i in range(-10,10):
                     for j in range(-10,10):
-                        # Boundary check
+                        # Boundary and gvd check
                         if x+i < 0 or x+i > width or y+j < 0 or y+j > height or gvd[x+i][y+j] == 0:
                             continue
                         if brushfire[x+i][y+j] < min:
@@ -75,7 +75,8 @@ class Topology:
             count = 0
             for i in range(-10,10):
                 for j in range(-10,10):
-                    # Boundary check
+                    # Boundary and gvd check
+                    # Only pixels from gvd are calculated in the meanVoronoiNodeDoor
                     if x+i < 0 or x+i > width or y+j < 0 or y+j > height or gvd[x+i][y+j] == 0:
                         continue
                     sum += brushfire[x+i][y+j]
