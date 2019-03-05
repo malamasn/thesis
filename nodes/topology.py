@@ -27,7 +27,7 @@ class Topology:
         rospy.loginfo("Initlizing topological process.")
 
         # Check all candidate nodes
-        index = np.where((gvd[1:width-1][1:height-1]==1) \
+        index = np.where((gvd[1:width-1][1:height-1] == 1) \
                         & (brushfire[1:width-1][1:height-1] > 3))
         for i in range(len(index)):
             x = index[0][i]
