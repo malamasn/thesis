@@ -44,3 +44,8 @@ class Brushfire:
 
         rospy.loginfo("Brushfire done!")
         return brushfire
+
+    # Brushfire on the gvd starting from start node and return indeces of
+    # its neighbor nodes
+    def gvdNeighborBrushfire(self, start, nodes, gvd):
+        pass
