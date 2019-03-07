@@ -21,35 +21,43 @@ class Map_To_Topology:
         self.gvd = 0
         self.brush = 0
         self.nodes = []
-        self.brush_publisher = rospy.Publisher('/brushfire', OccupancyGrid, queue_size = 10)
+        # self.brush_publisher = rospy.Publisher('/brushfire', OccupancyGrid, queue_size = 10)
 
     def server_start(self):
         rospy.init_node('map_to_topology')
+        rospy.loginfo('map_to_topology node initialized.')
         ogm_topic = '/map'
         rospy.Subscriber(ogm_topic, OccupancyGrid, self.read_ogm)
-        rospy.loginfo("Wait 5 secs to initialize ogm.")
+        rospy.loginfo("Waiting 5 secs to read ogm.")
         time.sleep(5)
         rospy.loginfo("5 secs passed.")
+
         # Calculate brushfire field
         self.brush = self.brushfire.obstacleBrushfire(self.ogm)
+        # img = Image.fromarray(5*self.brush)
+        # img.show()
+        # img = img.convert('RGB')
+        # img.save('indoor_with_distance_brushfire.png')
 
-        # data = OccupancyGrid()
-        img = Image.fromarray(5*self.brush)
-        img.show()
-
-        # data.data = self.brush.flatten()
-        # data.info.weight = self.ogm_width
-        # data.info.height = self.ogm_height
-        # data.header = self.ogm_header
-        # self.brush_publisher.publish(data)
+        # Calculate gvd from brushfire and ogm
+        self.gvd = self.topology.gvd(self.ogm, self.brush)
+        # show and/or save gvd as image file
+        # img2 = Image.fromarray(255*self.gvd)
+        # img2.show()
+        # img2 = img2.convert('RGB')
+        # img2.save("indoor_with_distance_gvd.png")
 
         # Calculate topological nodes
-        self.gvd = self.topology.gvd(self.ogm, self.brush)
-        print()
-        img2 = Image.fromarray(255*self.gvd)
-        img2.show()
-        # self.nodes = self.topology.topologicalNodes(self.ogm, self.brush, self.gvd)
-        # print(self.nodes)
+        self.nodes = self.topology.topologicalNodes(self.ogm, self.brush, self.gvd)
+        # show and/or save nodes as image file
+        # temp = np.zeros(self.gvd.shape)
+        # for x,y in self.nodes:
+        #     temp[x][y] = 255
+        # img3 = Image.fromarray(temp)
+        # img3.show()
+        # img3 = img3.convert('RGB')
+        # img3.save("indoor_with_distance_nodes.png")
+
         return
 
 
