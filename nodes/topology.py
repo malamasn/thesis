@@ -29,21 +29,21 @@ class Topology:
         nodes = []
         width = ogm.shape[0]
         height = ogm.shape[1]
-        rospy.loginfo("Initlizing topological process.")
+        rospy.loginfo("Initializing topological process.")
 
         # Check all candidate nodes
-        index = np.where((gvd[1:width-1][1:height-1] == 1) \
-                        & (brushfire[1:width-1][1:height-1] > 3))
-        for i in range(len(index)):
+        index = np.where(gvd[1:width-1][1:height-1])
+
+        for i in range(len(index[0])):
             x = index[0][i]
             y = index[1][i]
 
             # Count neighbors at gvd inculding (x,y) node
-            count_neighbors = np.sum(gvd[x-1:x+2][y-1:y+2])
-
+            count_neighbors = np.sum(gvd[x-1:x+2, y-1:y+2])
+            # count_neighbors.append(np.sum(gvd[x-1:x+2, y-1:y+2]))
             # Add 1-neighbor and 3-neighbor nodes to graph
             if count_neighbors == 2 or count_neighbors == 4:
-                nodes.append([x,y])
+                nodes.append((x,y))
 
             # Add initial 2-neighbor nodes
             elif count_neighbors == 3:
@@ -60,9 +60,9 @@ class Topology:
                         if (brushfire[x+i][y+j] + 0.5) != min:
                             diff = True
                 if not notGood and diff:
-                    nodes.append([x,y])
-
+                    nodes.append((x,y))
         rospy.loginfo("Reevalueting nodes.")
+
         # Recheck nodes with 2 neighbors
         for i in range(len(nodes)):
             x = nodes[i][0]
@@ -92,10 +92,16 @@ class Topology:
         for i in range(len(nodes)-1, -1, -1):
             x1 = nodes[i][0]
             y1 = nodes[i][1]
+
             # MAYBE CHECK NODES WITH SAME NUMBER OF NEIGHBORS
+            # TESTS SHOWED NO!
+            # neighbors_1 = np.sum(gvd[x1-1:x1+2, y1-1:y1+2])
             for j in range(i):
                 x2 = nodes[j][0]
                 y2 = nodes[j][1]
+                # neighbors_2 = np.sum(gvd[x2-1:x2+2, y2-1:y2+2])
+                # if neighbors_1 != neighbors_2:
+                #     continue
                 if math.hypot(x1-x2, y1-y2) < 10:
                     del nodes[i]
                     break
