@@ -102,3 +102,19 @@ class Topology:
 
         rospy.loginfo("Nodes ready!")
         return nodes
+
+    # Clustering of nodes to rooms with labels
+    def findRooms(self, gvd, nodes):
+        # Find door nodes - nodes with 2 neighbors
+        doors = []
+        for pixel in nodes:
+            x, y = pixel
+            count_neighbors = np.sum(gvd[x-1:x+2][y-1:y+2])
+            if count_neighbors == 3:
+                doors.append(pixel)
+
+
+        for door in doors:
+            pass
+
+        return
