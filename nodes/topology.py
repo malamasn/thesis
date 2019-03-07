@@ -3,9 +3,13 @@ import rospy
 import numpy as np
 import math
 from skimage.morphology import skeletonize
+from brushfire import Brushfire
 
 # Class with topological functions
 class Topology:
+    def __init(self):
+        self.brushfire = Brushfire()
+
     # Calculate GVD using brushfire
     def gvd(self, ogm, brushfire):
         # Set obstacles and first pixels around them as non gvd pixels
@@ -14,6 +18,7 @@ class Topology:
         # Set free space as starting gvd and skeletonize it to get one pixel diagram
         voronoi[brushfire > 3] = 1
         voronoi = skeletonize(voronoi)
+        voronoi = voronoi.astype(np.uint8)
 
         ## DO I NEED THINNING HERE ?
         rospy.loginfo("GVD done!")
@@ -48,7 +53,7 @@ class Topology:
                 for i in range(-10,10):
                     for j in range(-10,10):
                         # Boundary and gvd check
-                        if x+i < 0 or x+i > width or y+j < 0 or y+j > height or gvd[x+i][y+j] == 0:
+                        if x+i < 0 or x+i > width-1 or y+j < 0 or y+j > height-1 or gvd[x+i][y+j] == 0:
                             continue
                         if brushfire[x+i][y+j] < min:
                             notGood = True
@@ -76,7 +81,7 @@ class Topology:
                 for j in range(-10,10):
                     # Boundary and gvd check
                     # Only pixels from gvd are calculated in the meanVoronoiNodeDoor
-                    if x+i < 0 or x+i > width or y+j < 0 or y+j > height or gvd[x+i][y+j] == 0:
+                    if x+i < 0 or x+i > width-1 or y+j < 0 or y+j > height-1 or gvd[x+i][y+j] == 0:
                         continue
                     sum += brushfire[x+i][y+j]
                     counter += 1
@@ -87,7 +92,7 @@ class Topology:
         for i in range(len(nodes)-1, -1, -1):
             x1 = nodes[i][0]
             y1 = nodes[i][1]
-
+            # MAYBE CHECK NODES WITH SAME NUMBER OF NEIGHBORS
             for j in range(i):
                 x2 = nodes[j][0]
                 y2 = nodes[j][1]
