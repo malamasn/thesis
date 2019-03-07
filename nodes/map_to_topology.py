@@ -26,18 +26,17 @@ class Map_To_Topology:
     def server_start(self):
         rospy.init_node('map_to_topology')
         ogm_topic = '/map'
-        print(type(self.ogm))   # DEBUG
         rospy.Subscriber(ogm_topic, OccupancyGrid, self.read_ogm)
+        rospy.loginfo("Wait 5 secs to initialize ogm.")
         time.sleep(5)
-        print(type(self.ogm))   # DEBUG
+        rospy.loginfo("5 secs passed.")
         # Calculate brushfire field
         self.brush = self.brushfire.obstacleBrushfire(self.ogm)
-        print('min', np.min(self.brush)) # DEBUG:
-        print('max', np.max(self.brush)) # DEBUG:
-        data = OccupancyGrid()
-        img = Image.fromarray(self.brush)
+
+        # data = OccupancyGrid()
+        img = Image.fromarray(5*self.brush)
         img.show()
-        return
+
         # data.data = self.brush.flatten()
         # data.info.weight = self.ogm_width
         # data.info.height = self.ogm_height
@@ -46,8 +45,12 @@ class Map_To_Topology:
 
         # Calculate topological nodes
         self.gvd = self.topology.gvd(self.ogm, self.brush)
-        self.nodes = self.topology.topologicalNodes(self.ogm, self.brush, self.gvd)
-
+        print()
+        img2 = Image.fromarray(255*self.gvd)
+        img2.show()
+        # self.nodes = self.topology.topologicalNodes(self.ogm, self.brush, self.gvd)
+        # print(self.nodes)
+        return
 
 
 
