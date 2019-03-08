@@ -2,9 +2,13 @@
 import rospy
 import numpy as np
 import time
+
+from geometry_msgs.msg import Point
+from visualization_msgs.msg import Marker
+from nav_msgs.msg import OccupancyGrid
+
 from brushfire import Brushfire
 from topology import Topology
-from nav_msgs.msg import OccupancyGrid
 from PIL import Image
 
 
@@ -22,6 +26,7 @@ class Map_To_Topology:
         self.brush = 0
         self.nodes = []
         # self.brush_publisher = rospy.Publisher('/brushfire', OccupancyGrid, queue_size = 10)
+        self.node_publisher = rospy.Publisher('/nodes', Marker, queue_size = 100)
 
     def server_start(self):
         rospy.init_node('map_to_topology')
@@ -37,7 +42,7 @@ class Map_To_Topology:
         # img = Image.fromarray(5*self.brush)
         # img.show()
         # img = img.convert('RGB')
-        # img.save('indoor_with_distance_brushfire.png')
+        # img.save('indoors_nothing_brushfire_2.png')
 
         # Calculate gvd from brushfire and ogm
         self.gvd = self.topology.gvd(self.ogm, self.brush)
@@ -45,7 +50,7 @@ class Map_To_Topology:
         # img2 = Image.fromarray(255*self.gvd)
         # img2.show()
         # img2 = img2.convert('RGB')
-        # img2.save("indoor_with_distance_gvd.png")
+        # img2.save("indoors_nothing_gvd_2.png")
 
         # Calculate topological nodes
         self.nodes = self.topology.topologicalNodes(self.ogm, self.brush, self.gvd)
@@ -56,7 +61,36 @@ class Map_To_Topology:
         # img3 = Image.fromarray(temp)
         # img3.show()
         # img3 = img3.convert('RGB')
-        # img3.save("indoor_with_distance_nodes.png")
+        # img3.save("indoors_nothing_nodes_2.png")
+
+        # Create list of nodes as Point() values
+        rospy.loginfo("Start collecting markers")
+        points = []
+        for point in self.nodes:
+            p = Point()
+            p.x = point[0] * 0.05
+            p.y = point[1] * 0.05
+            p.z = 0
+            points.append(p)
+        rospy.loginfo("Markers ready!")
+
+        # Create Marker for nodes
+        marker = Marker()
+        marker.header.frame_id = "/map"
+        marker.type = marker.POINTS
+        marker.action = marker.ADD
+
+        marker.points = points
+        marker.pose.orientation.w = 1.0
+
+        marker.scale.x = 0.2
+        marker.scale.y = 0.2
+        marker.scale.z = 0.2
+        marker.color.a = 1.0
+        marker.color.r = 1.0
+
+        rospy.loginfo("Printing markers!")
+        self.node_publisher.publish(marker)
 
         return
 
