@@ -2,7 +2,7 @@
 import rospy
 import numpy as np
 import math
-from skimage.morphology import skeletonize
+from skimage.morphology import skeletonize, binary_closing, thin
 from brushfire import Brushfire
 
 # Class with topological functions
@@ -19,6 +19,10 @@ class Topology:
         voronoi[brushfire > 3] = 1
         voronoi = skeletonize(voronoi)
         voronoi = voronoi.astype(np.uint8)
+        voronoi = binary_closing(voronoi)
+        voronoi = voronoi.astype(np.uint8)
+        voronoi = thin(voronoi)
+        voronoi = voronoi.astype(np.uint8)
 
         ## DO I NEED THINNING HERE ?
         rospy.loginfo("GVD done!")
@@ -32,60 +36,63 @@ class Topology:
         rospy.loginfo("Initializing topological process.")
 
         # Check all candidate nodes
-        index = np.where(gvd[1:width-1][1:height-1])
+        index = np.where(gvd[1:width-1,1:height-1] > 0)
 
         for i in range(len(index[0])):
-            x = index[0][i]
-            y = index[1][i]
+            # Needs +1 to adjust x,y at entire gvd size
+            # first row & col hidden at index assignment
+            x = index[0][i] + 1
+            y = index[1][i] + 1
 
             # Count neighbors at gvd inculding (x,y) node
             count_neighbors = np.sum(gvd[x-1:x+2, y-1:y+2])
-            # count_neighbors.append(np.sum(gvd[x-1:x+2, y-1:y+2]))
-            # Add 1-neighbor and 3-neighbor nodes to graph
-            if count_neighbors == 2 or count_neighbors == 4:
+
+            # Add points with 1 or 3 neighbors
+            if count_neighbors >= 4 or count_neighbors == 2:
                 nodes.append((x,y))
 
-            # Add initial 2-neighbor nodes
+            # For 2-neighbor points check with more detail
             elif count_neighbors == 3:
                 notGood = False
                 diff = False
-                min = brushfire[x][y]
+                min = brushfire[x,y]
                 for i in range(-10,10):
                     for j in range(-10,10):
                         # Boundary and gvd check
-                        if x+i < 0 or x+i > width-1 or y+j < 0 or y+j > height-1 or gvd[x+i][y+j] == 0:
+                        if x+i < 0 or x+i > width-1 or y+j < 0 or y+j > height-1 or gvd[x+i,y+j] == 0:
                             continue
-                        if brushfire[x+i][y+j] < min:
+                        if brushfire[x+i,y+j] < min:
                             notGood = True
                         if (brushfire[x+i][y+j] + 0.5) != min:
                             diff = True
                 if not notGood and diff:
                     nodes.append((x,y))
+
         rospy.loginfo("Reevalueting nodes.")
 
-        # Recheck nodes with 2 neighbors
-        for i in range(len(nodes)):
+        # Recheck nodes with 1 and 2 neighbors
+        for i in range(len(nodes)-1, -1, -1):
             x = nodes[i][0]
             y = nodes[i][1]
 
             # Count neighbors at gvd inculding node
-            count_neighbors = np.sum(gvd[x-1:x+2][y-1:y+2])
+            count_neighbors = np.sum(gvd[x-1:x+2, y-1:y+2])
 
-            if count_neighbors != 3:
+            if count_neighbors >= 4:
                 continue
 
-            # Find mean of 20x20 neighbor area
+            # Find mean of gvd points in 20x20 neighbor area
             sum = 0
             count = 0
-            for i in range(-10,10):
-                for j in range(-10,10):
+            for ii in range(-10,10):
+                for jj in range(-10,10):
                     # Boundary and gvd check
                     # Only pixels from gvd are calculated in the meanVoronoiNodeDoor
-                    if x+i < 0 or x+i > width-1 or y+j < 0 or y+j > height-1 or gvd[x+i][y+j] == 0:
+                    if x+ii < 0 or x+ii > width-1 or y+jj < 0 or y+jj > height-1 or gvd[x+ii][y+jj] == 0:
                         continue
-                    sum += brushfire[x+i][y+j]
-                    counter += 1
-            if sum/counter - brushfire[x][y] < 3.5:
+                    sum += brushfire[x+ii][y+jj]
+                    count += 1
+            if sum/count - brushfire[x][y] < 1.5:
                 del nodes[i]
 
         # Check if nodes are closer than 10 and delete them
@@ -93,18 +100,21 @@ class Topology:
             x1 = nodes[i][0]
             y1 = nodes[i][1]
 
-            # MAYBE CHECK NODES WITH SAME NUMBER OF NEIGHBORS
-            # TESTS SHOWED NO!
-            # neighbors_1 = np.sum(gvd[x1-1:x1+2, y1-1:y1+2])
+
             for j in range(i):
                 x2 = nodes[j][0]
                 y2 = nodes[j][1]
-                # neighbors_2 = np.sum(gvd[x2-1:x2+2, y2-1:y2+2])
-                # if neighbors_1 != neighbors_2:
-                #     continue
                 if math.hypot(x1-x2, y1-y2) < 10:
                     del nodes[i]
                     break
+        # # Uncomment to return only 2-neighbor nodes (doorNode candidates)
+        # for i in range(len(nodes)-1, -1, -1):
+        #     x = nodes[i][0]
+        #     y = nodes[i][1]
+        #     count_neighbors = np.sum(gvd[x-1:x+2, y-1:y+2])
+        #     if count_neighbors != 3:
+        #         del nodes[i]
+
 
         rospy.loginfo("Nodes ready!")
         return nodes
