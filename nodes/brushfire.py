@@ -53,19 +53,15 @@ class Brushfire:
     def gvdNeighborBrushfire(self, start, nodes, gvd):
         width = gvd.shape[0]
         height = gvd.shape[1]
-        brushfire = gvd.copy()
-        # Count number of neighbors of start
-        x, y = start
-        count_neighbors = np.sum(gvd[x-1:x+2][y-1:y+2])
 
-        # Find neighbors' indeces
+        brushfire = gvd.copy()
         neighbor_nodes = []
-        current = start
+        current = []
+        current.append(start)
         next = []
 
-        found = 0
         brush_value = 1
-        while found < count_neighbors:
+        while current != []:
             brush_value += 1
             for pixel in current:
                 x,y = pixel
@@ -77,14 +73,13 @@ class Brushfire:
                         if i == 0 and j == 0:
                             continue
                         # Check if it has been visited
-                        if brushfire[x+i][y+j] == 1:
+                        if brushfire[x+i,y+j] == 1:
                             if (x+i,y+j) in nodes:
                                 neighbor_nodes.append((x+i,y+j))
-                                found += 1
                             else:
                                 next.append((x+i,y+j))
-                                brushfire[x+i][y+j] = brush_value
+                            brushfire[x+i,y+j] = brush_value
             current = next
             next = []
 
-        return
+        return neighbor_nodes
