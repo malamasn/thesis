@@ -27,6 +27,7 @@ class Map_To_Topology:
         self.nodes = []
         # self.brush_publisher = rospy.Publisher('/brushfire', OccupancyGrid, queue_size = 10)
         self.node_publisher = rospy.Publisher('/nodes', Marker, queue_size = 100)
+        self.door_node_publisher = rospy.Publisher('/nodes/candidateDoors', Marker, queue_size = 100)
 
     def server_start(self):
         rospy.init_node('map_to_topology')
@@ -39,10 +40,10 @@ class Map_To_Topology:
 
         # Calculate brushfire field
         self.brush = self.brushfire.obstacleBrushfire(self.ogm)
-        # img = Image.fromarray(5*self.brush)
+        # img = Image.fromarray(self.brush)
         # img.show()
         # img = img.convert('RGB')
-        # img.save('indoors_nothing_brushfire_2.png')
+        # img.save('indoors_with_rooms_brushfire.png')
 
         # Calculate gvd from brushfire and ogm
         self.gvd = self.topology.gvd(self.ogm, self.brush)
@@ -50,7 +51,7 @@ class Map_To_Topology:
         # img2 = Image.fromarray(255*self.gvd)
         # img2.show()
         # img2 = img2.convert('RGB')
-        # img2.save("indoors_nothing_gvd_2.png")
+        # img2.save("indoors_with_rooms_gvd.png")
 
         # Calculate topological nodes
         self.nodes = self.topology.topologicalNodes(self.ogm, self.brush, self.gvd)
@@ -59,9 +60,9 @@ class Map_To_Topology:
         # for x,y in self.nodes:
         #     temp[x][y] = 255
         # img3 = Image.fromarray(temp)
-        # img3.show()
+        # # img3.show()
         # img3 = img3.convert('RGB')
-        # img3.save("indoors_nothing_nodes_2.png")
+        # img3.save("indoors_with_rooms_nodes.png")
 
         # Create list of nodes as Point() values
         rospy.loginfo("Start collecting markers")
@@ -91,6 +92,46 @@ class Map_To_Topology:
 
         rospy.loginfo("Printing markers!")
         self.node_publisher.publish(marker)
+
+
+
+        # Create list of candidate nodes
+        candidateDoors = []
+        for point in self.nodes:
+            x = point[0]
+            y = point[1]
+            count_neighbors = np.sum(self.gvd[x-1:x+2, y-1:y+2])
+            if count_neighbors == 3:
+                candidateDoors.append((x,y))
+
+        # Send candidateDoors to rviz as Point() values with different color
+        rospy.loginfo("Start collecting markers")
+        points = []
+        for point in candidateDoors:
+            p = Point()
+            p.x = point[0] * 0.05
+            p.y = point[1] * 0.05
+            p.z = 0
+            points.append(p)
+        rospy.loginfo("Candidate door nodes ready!")
+
+        # Create Marker for nodes
+        marker = Marker()
+        marker.header.frame_id = "/map"
+        marker.type = marker.POINTS
+        marker.action = marker.ADD
+
+        marker.points = points
+        marker.pose.orientation.w = 1.0
+
+        marker.scale.x = 0.2
+        marker.scale.y = 0.2
+        marker.scale.z = 0.2
+        marker.color.a = 1.0
+        marker.color.g = 1.0
+
+        rospy.loginfo("Printing markers!")
+        self.door_node_publisher.publish(marker)
 
         return
 
