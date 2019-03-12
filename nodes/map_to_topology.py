@@ -25,6 +25,7 @@ class Map_To_Topology:
         self.gvd = 0
         self.brush = 0
         self.nodes = []
+        self.nodes_with_ids = []
         # self.brush_publisher = rospy.Publisher('/brushfire', OccupancyGrid, queue_size = 10)
         self.node_publisher = rospy.Publisher('/nodes', Marker, queue_size = 100)
         self.candidate_door_node_pub = rospy.Publisher('/nodes/candidateDoors', Marker, queue_size = 100)
@@ -64,6 +65,11 @@ class Map_To_Topology:
         # # img3.show()
         # img3 = img3.convert('RGB')
         # img3.save("indoors_with_rooms_nodes.png")
+
+        # Give every node an ID number
+        # self.nodes_with_ids[0] has the (x,y) and self.nodes_with_ids[1] the ID
+        for i in range(len(self.nodes)):
+            self.nodes_with_ids.append((self.nodes[i], i))
 
         # Create list of nodes as Point() values
         rospy.loginfo("Start collecting markers")
