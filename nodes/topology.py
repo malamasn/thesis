@@ -175,59 +175,6 @@ class Topology:
             if not (east and south or south and west or west and north or north and east):
                 doorNodes.append((x,y))
 
-
-            # Start a brushfire on gvd to find neighbors in 10x10 pixel window
-            # gvd_brushfire = gvd.copy()
-            # neighbor_nodes = []
-            # current = []
-            # current.append(node)
-            # next = []
-            # # Check in 10 pixel range
-            # i = 0
-            # brush_value = 1
-            #
-            # while current != [] and i < 15:
-            #     brush_value += 1
-            #     for pixel in current:
-            #         x,y = pixel
-            #         stopped = True
-            #         for i in range(-1,2):
-            #             for j in range(-1,2):
-            #                 # Boundary check
-            #                 if x+i < 0 or x+i > width-1 or y+j < 0 or y+j > height-1:
-            #                     continue
-            #                 if i == 0 and j == 0:
-            #                     continue
-            #                 # Check if it has been visited
-            #                 if gvd_brushfire[x+i,y+j] == 1:
-            #                     stopped = False
-            #                     if (x+i,y+j) in nodes:
-            #                         # neighbor_nodes.append((x+i,y+j))
-            #                         pass
-            #                     else:
-            #                         next.append((x+i,y+j))
-            #                     gvd_brushfire[x+i,y+j] = brush_value
-            #         if stopped:
-            #             break
-            #     current = next
-            #     next = []
-            #     i += 1
-            #     # # # if len(current) + found !
-            # if stopped:
-            #     continue
-            # else:
-            #     # if len(neighbor_nodes) == 0:
-            #     doorNodes.append(node)
-            #     # else:
-                #     min = node
-                #     min_brush = brushfire[node]
-                #     for other_node in neighbor_nodes:
-                #         nodes.remove(other_node)
-                #         if brushfire[other_node] < min:
-                #             min_brush = brushfire[other_node]
-                #             min = other_node
-                #     doorNodes.append(min)
-
         return doorNodes
 
     # # Clustering of nodes to rooms with labels
