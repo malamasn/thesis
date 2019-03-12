@@ -134,21 +134,10 @@ class Topology:
                 continue
 
             # Check for obstacles in the 4 main directions
-            north = False
-            west = False
-            south = False
-            east = False
-
-            for i in range(1,26):
-
-                if brushfire[x+i,y] == 1:
-                    east = True
-                if brushfire[x,y+i] == 1:
-                    north = True
-                if brushfire[x-i,y] == 1:
-                    west = True
-                if brushfire[x,y-i] == 1:
-                    south = True
+            north = np.any(brushfire[x,y+1:y+21] == 1)
+            west = np.any(brushfire[x-20:x,y] == 1)
+            south = np.any(brushfire[x,y-20:y] == 1)
+            east = np.any(brushfire[x+1:x+21,y] == 1)
 
             # If not 2 sequential obstacles found, it is a door
             if not (east and south or south and west or west and north or north and east):
@@ -160,7 +149,7 @@ class Topology:
             south = False
             east = False
 
-            for i in range(1,26):
+            for i in range(1,21):
 
                 if brushfire[x+i,y+i] == 1:
                     east = True
