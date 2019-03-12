@@ -104,7 +104,7 @@ class Topology:
             for j in range(i):
                 x2 = nodes[j][0]
                 y2 = nodes[j][1]
-                if math.hypot(x1-x2, y1-y2) < 10:
+                if math.hypot(x1-x2, y1-y2) < 25:
                     del nodes[i]
                     break
         # # Uncomment to return only 2-neighbor nodes (doorNode candidates)
@@ -119,18 +119,129 @@ class Topology:
         rospy.loginfo("Nodes ready!")
         return nodes
 
-    # Clustering of nodes to rooms with labels
-    def findRooms(self, gvd, nodes):
-        # Find door nodes - nodes with 2 neighbors
-        doors = []
-        for pixel in nodes:
-            x, y = pixel
-            count_neighbors = np.sum(gvd[x-1:x+2][y-1:y+2])
-            if count_neighbors == 3:
-                doors.append(pixel)
+    def findDoorNodes(self, nodes, allNodes, gvd, brushfire):
+        doorNodes = []
+        width = gvd.shape[0]
+        height = gvd.shape[1]
+
+        # Check every node
+        while nodes != []:
+            node = nodes.pop()
+            x = node[0]
+            y = node[1]
+            # Nodes far from obstacles usually are not obstacles
+            if brushfire[node] > 25:    # MAYBE 30 ?
+                continue
+
+            # Check for obstacles in the 4 main directions
+            north = False
+            west = False
+            south = False
+            east = False
+
+            for i in range(1,26):
+
+                if brushfire[x+i,y] == 1:
+                    east = True
+                if brushfire[x,y+i] == 1:
+                    north = True
+                if brushfire[x-i,y] == 1:
+                    west = True
+                if brushfire[x,y-i] == 1:
+                    south = True
+
+            # If not 2 sequential obstacles found, it is a door
+            if not (east and south or south and west or west and north or north and east):
+                doorNodes.append((x,y))
+
+            # Check for obstacles in the 4 diagonal directions
+            north = False
+            west = False
+            south = False
+            east = False
+
+            for i in range(1,26):
+
+                if brushfire[x+i,y+i] == 1:
+                    east = True
+                if brushfire[x-i,y+i] == 1:
+                    north = True
+                if brushfire[x-i,y-i] == 1:
+                    west = True
+                if brushfire[x+i,y-i] == 1:
+                    south = True
+
+            # If not 2 sequential obstacles found, it is a door
+            if not (east and south or south and west or west and north or north and east):
+                doorNodes.append((x,y))
 
 
-        for door in doors:
-            pass
+            # Start a brushfire on gvd to find neighbors in 10x10 pixel window
+            # gvd_brushfire = gvd.copy()
+            # neighbor_nodes = []
+            # current = []
+            # current.append(node)
+            # next = []
+            # # Check in 10 pixel range
+            # i = 0
+            # brush_value = 1
+            #
+            # while current != [] and i < 15:
+            #     brush_value += 1
+            #     for pixel in current:
+            #         x,y = pixel
+            #         stopped = True
+            #         for i in range(-1,2):
+            #             for j in range(-1,2):
+            #                 # Boundary check
+            #                 if x+i < 0 or x+i > width-1 or y+j < 0 or y+j > height-1:
+            #                     continue
+            #                 if i == 0 and j == 0:
+            #                     continue
+            #                 # Check if it has been visited
+            #                 if gvd_brushfire[x+i,y+j] == 1:
+            #                     stopped = False
+            #                     if (x+i,y+j) in nodes:
+            #                         # neighbor_nodes.append((x+i,y+j))
+            #                         pass
+            #                     else:
+            #                         next.append((x+i,y+j))
+            #                     gvd_brushfire[x+i,y+j] = brush_value
+            #         if stopped:
+            #             break
+            #     current = next
+            #     next = []
+            #     i += 1
+            #     # # # if len(current) + found !
+            # if stopped:
+            #     continue
+            # else:
+            #     # if len(neighbor_nodes) == 0:
+            #     doorNodes.append(node)
+            #     # else:
+                #     min = node
+                #     min_brush = brushfire[node]
+                #     for other_node in neighbor_nodes:
+                #         nodes.remove(other_node)
+                #         if brushfire[other_node] < min:
+                #             min_brush = brushfire[other_node]
+                #             min = other_node
+                #     doorNodes.append(min)
 
-        return
+        return doorNodes
+
+    # # Clustering of nodes to rooms with labels
+    # def findRooms(self, gvd, nodes):
+    #     # Find door nodes - nodes with 2 neighbors
+    #     doors = []
+    #     for pixel in nodes:
+    #         x, y = pixel
+    #         count_neighbors = np.sum(gvd[x-1:x+2][y-1:y+2])
+    #         if count_neighbors == 3:
+    #             doors.append(pixel)
+    #
+    #
+    #     for door in doors:
+    #         pass
+    #
+    #     return
