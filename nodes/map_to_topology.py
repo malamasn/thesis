@@ -17,6 +17,7 @@ class Map_To_Topology:
     def __init__(self):
         self.brushfire = Brushfire()
         self.topology = Topology()
+        self.resolution = 0
         self.ogm = 0
         self.ogm_raw = 0
         self.ogm_width = 0
@@ -76,8 +77,8 @@ class Map_To_Topology:
         points = []
         for point in self.nodes:
             p = Point()
-            p.x = point[0] * 0.05
-            p.y = point[1] * 0.05
+            p.x = point[0] * self.resolution
+            p.y = point[1] * self.resolution
             p.z = 0
             points.append(p)
         rospy.loginfo("Markers ready!")
@@ -115,8 +116,8 @@ class Map_To_Topology:
         points = []
         for point in candidateDoors:
             p = Point()
-            p.x = point[0] * 0.05
-            p.y = point[1] * 0.05
+            p.x = point[0] * self.resolution
+            p.y = point[1] * self.resolution
             p.z = 0
             points.append(p)
         rospy.loginfo("Printing candidate door nodes!")
@@ -149,8 +150,8 @@ class Map_To_Topology:
         points = []
         for point in door_nodes:
             p = Point()
-            p.x = point[0] * 0.05
-            p.y = point[1] * 0.05
+            p.x = point[0] * self.resolution
+            p.y = point[1] * self.resolution
             p.z = 0
             points.append(p)
         rospy.loginfo("Printing candidate door nodes!")
