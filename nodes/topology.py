@@ -166,18 +166,141 @@ class Topology:
 
         return doorNodes
 
-    # # Clustering of nodes to rooms with labels
-    # def findRooms(self, gvd, nodes):
-    #     # Find door nodes - nodes with 2 neighbors
-    #     doors = []
-    #     for pixel in nodes:
-    #         x, y = pixel
-    #         count_neighbors = np.sum(gvd[x-1:x+2][y-1:y+2])
-    #         if count_neighbors == 3:
-    #             doors.append(pixel)
-    #
-    #
-    #     for door in doors:
-    #         pass
-    #
-    #     return
+    # Clustering of nodes to rooms with labels
+    def findRooms(self, gvd, doors, nodes_with_ids):
+        roomID = -1
+        visited = []
+        roomType = []
+        roomDoor = []
+        rooms = []
+        areaDoors = []
+
+        for door in doors:
+            room_1 = []
+            room_2 = []
+            # Add door to visited nodes
+            visited.append(door)
+            # Find door's first nearest neighbors nn
+            nn = self.brushfire.gvdNeighborBrushfire(door, nodes_with_ids[0], gvd)
+            # Check if nodes have been visited and ignore them
+            for i in range(len(nn)-1,-1,-1):
+                if nn[i] in visited:
+                    del nn[i]
+                else:
+                    visited.append(nn[i])
+            if len(nn) == 3:
+                room_1.append(nn[0])
+                if np.linalg.norm(nn[0]-nn[1]) < max(np.linalg.norm(nn[0]-door),\
+                                                np.linalg.norm(nn[1]-door)):
+                    room_1.append(nn[1])
+                    room_2.append(nn[2])
+                elif np.linalg.norm(nn[0]-nn[2]) < max(np.linalg.norm(nn[0]-door),\
+                                                np.linalg.norm(nn[2]-door)):
+                    room_1.append(nn[2])
+                    room_2.append(nn[1])
+                else:
+                    room_2.append(nn[1])
+                    room_2.append(nn[2])
+            elif len(nn) == 2:
+                if np.linalg.norm(nn[0]-nn[1]) < max(np.linalg.norm(nn[0]-door),\
+                                                np.linalg.norm(nn[1]-door)):
+                    room_1.append(nn[0])
+                    room_1.append(nn[1])
+                else:
+                    room_1.append(nn[0])
+                    room_2.append(nn[1])
+            elif len(nn) == 1:
+                room_1.append(nn[0])
+            elif len(nn) == 0:
+                continue
+            else:
+                rospy.loginfo("ERROR! Length of door's nearest neighbors is", len(nn))
+
+            if room_1 != []:
+                roomID += 1
+                ## Find room nodes
+                current = room_1[:]
+                next = []
+                foundDoor = False
+                all_doors = []
+                all_doors.append(door)
+                while current != []:
+
+                    for node in current:
+                        if node in doors:
+                            foundDoor = True
+                        # Find neighbors of each node
+                        nn = self.brushfire.gvdNeighborBrushfire(node, nodes_with_ids[0], gvd)
+                        for i in nn:
+                            if i in doors:
+                                foundDoor = True
+                                all_doors.append(i)
+                                continue
+                            if i not in visited:
+                                visited.append(i)
+                                next.append(i)
+                                room_1.append(i)
+                    current = next
+                    next = []
+
+                if foundDoor:
+                    roomType.append(1)    # Area
+                    temp = []
+                    for i in all_doors:
+                        index = doors.index(i)
+                        temp.append(index)
+                    areaDoors.append(temp)
+                else:
+                    roomType.append(0)    # Room
+                    index = doors.index(door)
+                    roomDoor.append(index)
+                rooms.append(room_1)
+
+
+
+
+            if room_2 != []:
+                roomID += 1
+                ## Find room nodes
+                current = room_2[:]
+                next = []
+                foundDoor = False
+                all_doors = []
+                all_doors.append(door)
+                while current != []:
+
+                    for node in current:
+                        if node in doors:
+                            foundDoor = True
+                        # Find neighbors of each node
+                        nn = self.brushfire.gvdNeighborBrushfire(node, nodes_with_ids[0], gvd)
+                        for i in nn:
+                            if i in doors:
+                                foundDoor = True
+                                all_doors.append(i)
+                                continue
+                            if i not in visited:
+                                visited.append(i)
+                                next.append(i)
+                                room_2.append(i)
+                    current = next
+                    next = []
+
+                if foundDoor:
+                    roomType.append(1)    # Area
+                    temp = []
+                    for i in all_doors:
+                        index = doors.index(i)
+                        temp.append(index)
+                    areaDoors.append(temp)
+                else:
+                    roomType.append(0)    # Room
+                    index = doors.index(door)
+                    roomDoor.append(index)
+                rooms.append(room_2)
+
+
+
+
+
+        return rooms, roomDoor, roomType, areaDoors
