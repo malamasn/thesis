@@ -81,5 +81,66 @@ class Brushfire:
                             brushfire[x+i,y+j] = brush_value
             current = next
             next = []
+        if start in neighbor_nodes:
+            neighbor_nodes.remove(start)
 
         return neighbor_nodes
+
+    # Brushfire on the gvd starting from start node and return indeces of
+    # its neighbor nodes grouped by start's first neighbors
+    def gvdNeighborSplitBrushfire(self, start, nodes, gvd):
+        width = gvd.shape[0]
+        height = gvd.shape[1]
+
+        brushfire = gvd.copy()
+        all_neighbors = []
+        current = [start]
+
+        # Collect start's neighbors at first
+        first = []
+        x = current[0][0]
+        y = current[0][1]
+        for i in range(-1,2):
+            for j in range(-1,2):
+                # Boundary check
+                if x+i < 0 or x+i > width-1 or y+j < 0 or y+j > height-1:
+                    continue
+                if i == 0 and j == 0:
+                    brushfire[x+i,y+j] = 2    # To be ignored in next iterations
+                    continue
+                # Check if it has been visited only on gvd
+                if brushfire[x+i,y+j] == 1:
+                    first.append((x+i,y+j))
+                    brushfire[x+i,y+j] = 3
+
+        while first != []:
+            current = []
+            current.append(first.pop())
+            neighbors = []
+            brush_value = 3
+            next = []
+
+            while current != []:
+                brush_value += 1
+                for pixel in current:
+                    x,y = pixel
+                    for i in range(-1,2):
+                        for j in range(-1,2):
+                            # Boundary check
+                            if x+i < 0 or x+i > width-1 or y+j < 0 or y+j > height-1:
+                                continue
+                            if i == 0 and j == 0:
+                                continue
+                            # Check if it has been visited only on gvd
+                            if brushfire[x+i,y+j] == 1:
+                                if (x+i,y+j) in nodes:
+                                    neighbors.append((x+i,y+j))
+                                else:
+                                    next.append((x+i,y+j))
+                                brushfire[x+i,y+j] = brush_value
+                current = next
+                next = []
+
+            all_neighbors.append(neighbors)
+
+        return all_neighbors
