@@ -195,13 +195,14 @@ class Topology:
             print('visited', visited)
             for i in range(2):
                 current_room = []
+                next = []
                 # Find closest neighbor to door and add to next
                 print('len',len(nn[i]), nn[i])
                 # if len(nn[i]) == 0:
                 #     continue
                 if len(nn[i]) == 1:
                     current_room.append(nn[i][0])
-                    next_1 = nn[i][1:]
+                    next = nn[i][1:]
                 elif len(nn[i]) > 1:
                     # find closest to door
                     nn_array = np.array(nn[i])
@@ -211,14 +212,13 @@ class Topology:
                     first = tuple(nn_array[closest])
                     current_room.append(first)
                     nn[i].remove(first)
-                    # Add rest door neighbors to next_1
-                    next_1 = nn[i]
+                    # Add rest door neighbors to next
+                    next = nn[i]
 
                 print('current_room', current_room)   # DEBUG:
                 if current_room != []:
                     # Find room nodes
                     current = current_room[:]
-                    next = next_1[:]
                     foundDoor = False
                     all_doors = []
                     all_doors.append(door)
