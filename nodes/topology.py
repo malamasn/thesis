@@ -167,7 +167,7 @@ class Topology:
         return doorNodes
 
     # Clustering of nodes to rooms with labels
-    def findRooms(self, gvd, doors, nodes_with_ids):
+    def findRooms(self, gvd, doors, nodes_with_ids, brushfire_instance):
         roomID = -1
         visited = []
         roomType = []
@@ -175,66 +175,110 @@ class Topology:
         rooms = []
         areaDoors = []
 
+        rospy.loginfo("Starting room segmentation!")
+
         for door in doors:
             room_1 = []
             room_2 = []
             # Add door to visited nodes
+            # print('door', door) # DEBUG:
             visited.append(door)
             # Find door's first nearest neighbors nn
-            nn = self.brushfire.gvdNeighborBrushfire(door, nodes_with_ids[0], gvd)
-            # Check if nodes have been visited and ignore them
-            for i in range(len(nn)-1,-1,-1):
-                if nn[i] in visited:
-                    del nn[i]
-                else:
-                    visited.append(nn[i])
-            if len(nn) == 3:
-                room_1.append(nn[0])
-                if np.linalg.norm(nn[0]-nn[1]) < max(np.linalg.norm(nn[0]-door),\
-                                                np.linalg.norm(nn[1]-door)):
-                    room_1.append(nn[1])
-                    room_2.append(nn[2])
-                elif np.linalg.norm(nn[0]-nn[2]) < max(np.linalg.norm(nn[0]-door),\
-                                                np.linalg.norm(nn[2]-door)):
-                    room_1.append(nn[2])
-                    room_2.append(nn[1])
-                else:
-                    room_2.append(nn[1])
-                    room_2.append(nn[2])
-            elif len(nn) == 2:
-                if np.linalg.norm(nn[0]-nn[1]) < max(np.linalg.norm(nn[0]-door),\
-                                                np.linalg.norm(nn[1]-door)):
-                    room_1.append(nn[0])
-                    room_1.append(nn[1])
-                else:
-                    room_1.append(nn[0])
-                    room_2.append(nn[1])
-            elif len(nn) == 1:
-                room_1.append(nn[0])
-            elif len(nn) == 0:
-                continue
-            else:
-                rospy.loginfo("ERROR! Length of door's nearest neighbors is", len(nn))
+            nn = brushfire_instance.gvdNeighborSplitBrushfire(door, nodes_with_ids[0], gvd)
+            # print('nn start', nn) # DEBUG:
 
+            # Check if nodes have been visited and ignore them
+            for j in range(1,-1,-1):
+                for i in range(len(nn[j])-1,-1,-1):
+                    if nn[j][i] in visited:
+                        del nn[j][i]
+                    else:
+                        visited.append(nn[j][i])
+            # print('nn after visited test', nn) # DEBUG:
+            # print('visited', visited)
+
+            # Find closest neighbor to door and add to next
+            if len(nn[0]) == 1:
+                room_1.append(nn[0][0])
+                next_1 = []
+            elif len(nn[0]) > 1:
+                # find closest to door
+                nn_array = np.array(nn[0])
+                door_array = np.array(door)
+                closest = np.linalg.norm(nn_array-door_array, axis=1).argmin()
+                first = tuple(nn_array[closest])
+                room_1.append(first)
+                nn[0].remove(first)
+                # Add rest door neighbors to next_1
+                next_1 = nn[0]
+
+            if len(nn[1]) == 1:
+                room_2.append(nn[1][0])
+                next_2 = []
+            elif len(nn[1]) > 1:
+                # find closest to door
+                nn_array = np.array(nn[1])
+                door_array = np.array(door)
+                closest = np.linalg.norm(nn_array-door_array, axis=1).argmin()
+                first = tuple(nn_array[closest])
+                room_2.append(first)
+                nn[1].remove(first)
+                # Add rest door neighbors to next_2
+                next_2 = nn[1]
+            # print('nn after first append', nn)
+            # Check if nodes have been visited and ignore them
+            # for i in range(len(nn)-1,-1,-1):
+            #     if nn[i] in visited:
+            #         del nn[i]
+            #     else:
+            #         visited.append(nn[i])
+            # nn_array = np.array(nn)
+            # door_array = np.array(door)
+            # print('visited',visited)
+            # if len(nn) >= 3:
+            #     closest = abs(np.sum(nn_array**2-door_array**2, axis=1)).argmin()
+            #     room_1.append(nn[closest])
+            #     nn_array = np.delete(nn_array, closest, 0)
+            #     closest = abs(np.sum(nn_array**2-door_array**2, axis=1)).argmin()
+            #     room_2.append(nn[closest])
+            # elif len(nn) == 2:
+            #     # if np.linalg.norm(nn[0]-nn[1]) < max(np.linalg.norm(nn[0]-door),\
+            #     #                                 np.linalg.norm(nn[1]-door)):
+            #         room_1.append(nn[0])
+            #         room_1.append(nn[1])
+            #     else:
+            #         room_1.append(nn[0])
+            #         room_2.append(nn[1])
+            # elif len(nn) == 1:
+            #     room_1.append(nn[0])
+            # elif len(nn) == 0:
+            #     continue
+            # else:
+            #     rospy.loginfo("ERROR! Length of door's nearest neighbors is")
+            #     print(len(nn))
+            # print('room_1', room_1)
+            # print('room_2', room_2)
             if room_1 != []:
                 roomID += 1
-                ## Find room nodes
+                # Find room nodes
                 current = room_1[:]
-                next = []
+
+                next = next_1
                 foundDoor = False
                 all_doors = []
                 all_doors.append(door)
                 while current != []:
 
                     for node in current:
-                        if node in doors:
+                        if node in doors and node != door:
                             foundDoor = True
                         # Find neighbors of each node
-                        nn = self.brushfire.gvdNeighborBrushfire(node, nodes_with_ids[0], gvd)
+                        nn = brushfire_instance.gvdNeighborBrushfire(node, nodes_with_ids[0], gvd)
                         for i in nn:
-                            if i in doors:
+                            if i in doors and i != door:
                                 foundDoor = True
-                                all_doors.append(i)
+                                if i not in all_doors:
+                                    all_doors.append(i)
                                 continue
                             if i not in visited:
                                 visited.append(i)
@@ -247,12 +291,12 @@ class Topology:
                     roomType.append(1)    # Area
                     temp = []
                     for i in all_doors:
-                        index = doors.index(i)
+                        index = nodes_with_ids[0].index(i)
                         temp.append(index)
                     areaDoors.append(temp)
                 else:
                     roomType.append(0)    # Room
-                    index = doors.index(door)
+                    index = nodes_with_ids[0].index(door)
                     roomDoor.append(index)
                 rooms.append(room_1)
 
@@ -261,23 +305,25 @@ class Topology:
 
             if room_2 != []:
                 roomID += 1
-                ## Find room nodes
+                # Find room nodes
                 current = room_2[:]
-                next = []
+                # Add rest door neighbors to next
+                next = next_2
                 foundDoor = False
                 all_doors = []
                 all_doors.append(door)
                 while current != []:
 
                     for node in current:
-                        if node in doors:
+                        if node in doors and node != door:
                             foundDoor = True
                         # Find neighbors of each node
-                        nn = self.brushfire.gvdNeighborBrushfire(node, nodes_with_ids[0], gvd)
+                        nn = brushfire_instance.gvdNeighborBrushfire(node, nodes_with_ids[0], gvd)
                         for i in nn:
-                            if i in doors:
+                            if i in doors and i != door:
                                 foundDoor = True
-                                all_doors.append(i)
+                                if i not in all_doors:
+                                    all_doors.append(i)
                                 continue
                             if i not in visited:
                                 visited.append(i)
@@ -290,17 +336,17 @@ class Topology:
                     roomType.append(1)    # Area
                     temp = []
                     for i in all_doors:
-                        index = doors.index(i)
+                        index = nodes_with_ids[0].index(i)
                         temp.append(index)
                     areaDoors.append(temp)
                 else:
                     roomType.append(0)    # Room
-                    index = doors.index(door)
+                    index = nodes_with_ids[0].index(door)
                     roomDoor.append(index)
                 rooms.append(room_2)
 
 
 
 
-
+        rospy.loginfo("Room segmentation finished!")
         return rooms, roomDoor, roomType, areaDoors
