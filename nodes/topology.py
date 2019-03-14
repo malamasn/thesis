@@ -226,6 +226,10 @@ class Topology:
                         for node in current:
                             if node in doors and node != door:
                                 foundDoor = True
+                                node_nn = brushfire_instance.gvdNeighborBrushfire(node, nodes_with_ids[0], gvd)
+                                # for i in node_nn:
+                                #     if i is in the current_room I have to add it to next!
+                                continue
                             # Find neighbors of each node
                             node_nn = brushfire_instance.gvdNeighborBrushfire(node, nodes_with_ids[0], gvd)
                             # For each neighbor
