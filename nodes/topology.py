@@ -178,11 +178,9 @@ class Topology:
 
         for door in doors:
             # Add door to visited nodes
-            print('door', door) # DEBUG:
             visited.append(door)
             # Find door's first nearest neighbors nn
             nn = brushfire_instance.gvdNeighborSplitBrushfire(door, nodes_with_ids[0], gvd)
-            print('nn start', nn) # DEBUG:
 
             # Check if nodes have been visited and ignore them
             for j in range(1,-1,-1):
@@ -190,21 +188,17 @@ class Topology:
                     if nn[j][i] in visited:
                         del nn[j][i]
 
-            print('nn after visited test', nn) # DEBUG:
-            print('visited', visited)
             for i in range(2):
                 current_room = []
                 next = []
-
                 if len(nn[i]) == 0:
                     continue
+                
                 # Start from first neighbor
                 current_room.append(nn[i][0])
-                visited.append(nn[i][0])
                 # Add rest to next
                 next = nn[i][1:]
-                # print('current_room', current_room)   # DEBUG:
-                # print('next', next)   # DEBUG:
+
                 if current_room != []:
                     # Find room nodes
                     current = current_room[:]
@@ -229,22 +223,24 @@ class Topology:
                                             next.append(i)
                                             current_room.append(i)
                                             break
-                                continue
-                            # Find neighbors of each node
-                            node_nn = brushfire_instance.gvdNeighborBrushfire(node, nodes_with_ids[0], gvd)
-                            # For each neighbor
-                            for i in node_nn:
-                                # If is another door
-                                if i in doors and i != door:
-                                    foundDoor = True
-                                    if i not in all_doors:
-                                        all_doors.append(i)
-                                    continue
-                                # If it has not been visited
-                                if i not in visited and i not in doors:
-                                    visited.append(i)
-                                    next.append(i)
-                                    current_room.append(i)
+                            else:
+                                # Find neighbors of each node
+                                visited.append(node)
+                                node_nn = brushfire_instance.gvdNeighborBrushfire(\
+                                                node, nodes_with_ids[0], gvd)
+                                # For each neighbor
+                                for i in node_nn:
+                                    # If is another door
+                                    if i in doors and i != door:
+                                        foundDoor = True
+                                        if i not in all_doors:
+                                            all_doors.append(i)
+                                        continue
+                                    # If it has not been visited
+                                    if i not in visited and i not in doors:
+                                        visited.append(i)
+                                        next.append(i)
+                                        current_room.append(i)
                         current = next
                         next = []
 
@@ -260,7 +256,6 @@ class Topology:
                         index = nodes_with_ids[0].index(door)
                         roomDoor.append(index)
                     rooms.append(current_room)
-                # print('rooms', rooms)
 
         rospy.loginfo("Room segmentation finished!")
         return rooms, roomDoor, roomType, areaDoors
