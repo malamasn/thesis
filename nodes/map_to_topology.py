@@ -17,7 +17,7 @@ class Map_To_Topology:
     def __init__(self):
         self.brushfire = Brushfire()
         self.topology = Topology()
-        self.resolution = 0
+        self.resolution = 0.05
         self.ogm = 0
         self.ogm_raw = 0
         self.ogm_width = 0
@@ -31,6 +31,7 @@ class Map_To_Topology:
         self.node_publisher = rospy.Publisher('/nodes', Marker, queue_size = 100)
         self.candidate_door_node_pub = rospy.Publisher('/nodes/candidateDoors', Marker, queue_size = 100)
         self.door_node_pub = rospy.Publisher('/nodes/doors', Marker, queue_size = 100)
+        self.room_node_pub = rospy.Publisher('/nodes/rooms', Marker, queue_size = 100)
 
     def server_start(self):
         rospy.init_node('map_to_topology')
@@ -69,8 +70,7 @@ class Map_To_Topology:
 
         # Give every node an ID number
         # self.nodes_with_ids[0] has the (x,y) and self.nodes_with_ids[1] the ID
-        for i in range(len(self.nodes)):
-            self.nodes_with_ids.append((self.nodes[i], i))
+        self.nodes_with_ids = [self.nodes, range(len(self.nodes))]
 
         # Create list of nodes as Point() values
         rospy.loginfo("Start collecting markers")
@@ -174,6 +174,41 @@ class Map_To_Topology:
         rospy.loginfo("Printing door nodes!")
         self.door_node_pub.publish(marker)
 
+
+        rooms, roomDoor, roomType, areaDoors = self.topology.findRooms(\
+                self.gvd, door_nodes, self.nodes_with_ids, self.brushfire)
+        # print('rooms',rooms,'roomDoor', roomDoor,'roomType', roomType,'areaDoors', areaDoors)
+        while not rospy.is_shutdown():
+            for room in rooms:
+                # print('room', room)
+                points = []
+                for point in room:
+                    p = Point()
+                    p.x = point[0] * self.resolution
+                    p.y = point[1] * self.resolution
+                    p.z = 0
+                    points.append(p)
+                rospy.loginfo("Printing room!")
+                # print(p)
+                # Create Marker for nodes
+                marker = Marker()
+                marker.header.frame_id = "/map"
+                marker.type = marker.POINTS
+                marker.action = marker.ADD
+
+                marker.points = points
+                marker.pose.orientation.w = 1.0
+
+                marker.scale.x = 0.2
+                marker.scale.y = 0.2
+                marker.scale.z = 0.2
+                marker.color.a = 1.0
+                marker.color.b = 1.0
+                marker.color.r = 1.0
+
+                # rospy.loginfo("Printing door nodes!")
+                self.room_node_pub.publish(marker)
+                time.sleep(3)
         return
 
 
