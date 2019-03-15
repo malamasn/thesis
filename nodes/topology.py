@@ -189,33 +189,22 @@ class Topology:
                 for i in range(len(nn[j])-1,-1,-1):
                     if nn[j][i] in visited:
                         del nn[j][i]
-                    else:
-                        visited.append(nn[j][i])
+
             print('nn after visited test', nn) # DEBUG:
             print('visited', visited)
             for i in range(2):
                 current_room = []
                 next = []
-                # Find closest neighbor to door and add to next
-                print('len',len(nn[i]), nn[i])
-                # if len(nn[i]) == 0:
-                #     continue
-                if len(nn[i]) == 1:
-                    current_room.append(nn[i][0])
-                    next = nn[i][1:]
-                elif len(nn[i]) > 1:
-                    # find closest to door
-                    nn_array = np.array(nn[i])
-                    door_array = np.array(door)
-                    closest = np.linalg.norm(nn_array-door_array, axis=1).argmin()
-                    # closest = 0
-                    first = tuple(nn_array[closest])
-                    current_room.append(first)
-                    nn[i].remove(first)
-                    # Add rest door neighbors to next
-                    next = nn[i]
 
-                print('current_room', current_room)   # DEBUG:
+                if len(nn[i]) == 0:
+                    continue
+                # Start from first neighbor
+                current_room.append(nn[i][0])
+                visited.append(nn[i][0])
+                # Add rest to next
+                next = nn[i][1:]
+                # print('current_room', current_room)   # DEBUG:
+                # print('next', next)   # DEBUG:
                 if current_room != []:
                     # Find room nodes
                     current = current_room[:]
@@ -271,7 +260,7 @@ class Topology:
                         index = nodes_with_ids[0].index(door)
                         roomDoor.append(index)
                     rooms.append(current_room)
-                print('rooms', rooms)
+                # print('rooms', rooms)
 
         rospy.loginfo("Room segmentation finished!")
         return rooms, roomDoor, roomType, areaDoors
