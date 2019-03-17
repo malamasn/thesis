@@ -316,7 +316,31 @@ Visualization Manager:
       Marker Topic: /nodes
       Name: Nodes
       Namespaces:
-        "": true
+        {}
+      Queue Size: 100
+      Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /nodes/candidateDoors
+      Name: CandidateDoorNodes
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /nodes/doors
+      Name: Door Nodes
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /nodes/rooms
+      Name: Rooms
+      Namespaces:
+        {}
       Queue Size: 100
       Value: true
   Enabled: true
@@ -344,25 +368,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 41.2373505
+      Distance: 61.009655
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.0599999987
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 50.1231842
-        Y: 49.6811218
-        Z: 0.179510027
+        X: 14.9458017
+        Y: 17.2844448
+        Z: 6.85454321
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.0500000007
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
-      Pitch: 1.36979651
+      Pitch: 1.55479634
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 1.56039774
+      Yaw: 1.56539774
     Saved: ~
 Window Geometry:
   Displays:
