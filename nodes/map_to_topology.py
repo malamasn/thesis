@@ -184,8 +184,8 @@ class Map_To_Topology:
                 points = []
                 for point in room:
                     p = Point()
-                    p.x = point[0] * self.resolution
-                    p.y = point[1] * self.resolution
+                    p.x = self.nodes[point][0] * self.resolution
+                    p.y = self.nodes[point][1] * self.resolution
                     p.z = 0
                     points.append(p)
                 rospy.loginfo("Printing room!")

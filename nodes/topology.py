@@ -274,6 +274,11 @@ class Topology:
                         roomType.append(0)    # Room
                         index = nodes_with_ids[0].index(door)
                         roomDoor.append(index)
-                    rooms.append(current_room)
+                        
+                    temp = []
+                    for i in current_room:
+                        index = nodes_with_ids[0].index(i)
+                        temp.append(index)
+                    rooms.append(temp)
         rospy.loginfo("Room segmentation finished!")
         return rooms, roomDoor, roomType, areaDoors
