@@ -107,11 +107,9 @@ class Topology:
                 _x = int(mean[0])
                 _y = int(mean[1])
                 if not gvd[_x,_y]:
-                    for k in range(-1,2):
-                        for l in range(-1,2):
-                            if gvd[_x+k,_y+l] and (not k or not l):
-                                _x , _y = _x+k, _y+l
-                                break
+                    temp.sort()
+                    index = len(temp)/2
+                    _x, _y = temp[index]
                 if not gvd[_x,_y]:
                     print('Estimated door not in gvd, (x,y):', _x,_y)
                 if (_x, _y) not in final_nodes:
@@ -274,7 +272,7 @@ class Topology:
                         roomType.append(0)    # Room
                         index = nodes_with_ids[0].index(door)
                         roomDoor.append(index)
-                        
+
                     temp = []
                     for i in current_room:
                         index = nodes_with_ids[0].index(i)
