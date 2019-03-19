@@ -134,6 +134,7 @@ class Topology:
         rospy.loginfo("Nodes ready!")
         return nodes
 
+    # Discard nodes that don't represent a door
     def findDoorNodes(self, nodes, allNodes, gvd, brushfire):
         doorNodes = []
         width = gvd.shape[0]
@@ -151,6 +152,7 @@ class Topology:
 
     # Clustering of nodes to rooms with labels
     def findRooms(self, gvd, doors, nodes_with_ids, brushfire_instance):
+        roomID = -1
         visited = []
         roomType = []
         roomDoor = []
@@ -234,11 +236,13 @@ class Topology:
                         for i in all_doors:
                             index = nodes_with_ids[0].index(i)
                             temp.append(index)
-                        areaDoors.append(temp)
+                        roomID += 1
+                        areaDoors.append((temp, roomID))
                     else:
                         roomType.append(0)    # Room
                         index = nodes_with_ids[0].index(door)
-                        roomDoor.append(index)
+                        roomID += 1
+                        roomDoor.append((index, roomID))
 
                     temp = []
                     for i in current_room:
