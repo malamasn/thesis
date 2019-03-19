@@ -145,41 +145,8 @@ class Topology:
             x = node[0]
             y = node[1]
             # Nodes far from obstacles usually are not obstacles
-            if brushfire[node] > 25:    # MAYBE 30 ?
-                continue
-
-            # Check for obstacles in the 4 main directions
-            north = np.any(brushfire[x,y+1:y+21] == 1)
-            west = np.any(brushfire[x-20:x,y] == 1)
-            south = np.any(brushfire[x,y-20:y] == 1)
-            east = np.any(brushfire[x+1:x+21,y] == 1)
-
-            # If not 2 sequential obstacles found, it is a door
-            if not (east and south or south and west or west and north or north and east):
-                doorNodes.append((x,y))
-                continue
-
-            # Check for obstacles in the 4 diagonal directions
-            north = False
-            west = False
-            south = False
-            east = False
-
-            for i in range(1,21):
-
-                if brushfire[x+i,y+i] == 1:
-                    east = True
-                if brushfire[x-i,y+i] == 1:
-                    north = True
-                if brushfire[x-i,y-i] == 1:
-                    west = True
-                if brushfire[x+i,y-i] == 1:
-                    south = True
-
-            # If not 2 sequential obstacles found, it is a door
-            if not (east and south or south and west or west and north or north and east):
-                doorNodes.append((x,y))
-
+            if brushfire[node] <= 25:   # MAYBE 30 ?
+                doorNodes.append(node)
         return doorNodes
 
     # Clustering of nodes to rooms with labels
@@ -239,7 +206,7 @@ class Topology:
                                             visited.append(i)
                                             next.append(i)
                                             current_room.append(i)
-                                            # break
+                                            break
                             else:
                                 # Find neighbors of each node
                                 visited.append(node)
