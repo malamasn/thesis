@@ -38,19 +38,19 @@ class Topology:
         # Check all candidate nodes
         index = np.where(gvd[1:width-1,1:height-1] > 0)
 
-        for i in range(len(index[0])):
+        for l in range(len(index[0])):
             # Needs +1 to adjust x,y at entire gvd size
             # first row & col hidden at index assignment
-            x = index[0][i] + 1
-            y = index[1][i] + 1
+            x = index[0][l] + 1
+            y = index[1][l] + 1
 
             # Count neighbors at gvd inculding (x,y) node
             count_neighbors = np.sum(gvd[x-1:x+2, y-1:y+2])
 
             # Add points with 1 or 3 neighbors
             if count_neighbors >= 4 or count_neighbors == 2:
-                nodes.append((x,y))
-
+                # nodes.append((x,y))
+                pass
             # For 2-neighbor points check with more detail
             elif count_neighbors == 3:
                 notGood = False
@@ -63,9 +63,7 @@ class Topology:
                             continue
                         if brushfire[x+i,y+j] < min:
                             notGood = True
-                        # if (brushfire[x+i][y+j] + 0.5) != min:
-                        #     diff = True
-                if not notGood: # and diff:
+                if not notGood:
                     nodes.append((x,y))
 
         rospy.loginfo("Reevalueting nodes.")
@@ -89,29 +87,31 @@ class Topology:
                 temp = [(x,y)]
                 visited.append((x,y))
                 # Nodes in a tight area with almost same brush will be a door
-                for j in range(len(nodes)):
-                    xx = nodes[j][0]
-                    yy = nodes[j][1]
-                    if (xx,yy) in visited:
-                        continue
-                    c_nn = np.sum(gvd[xx-1:xx+2, yy-1:yy+2])
-                    if c_nn == 3 and np.abs(brushfire[x,y] - brushfire[xx,yy]) <= 1\
-                        and (np.abs(x-xx) < 2 or np.abs(y-yy) < 2):
-                        temp.append((xx,yy))
-                        visited.append((xx,yy))
-                # Doors will have plenty of points
-                if len(temp) <= 10:
-                    continue
-                # Add mean of line as door node
-                mean = np.mean(temp, axis=0)
-                _x = int(mean[0])
-                _y = int(mean[1])
+                # Represented as a line. Keep only medium point of line
+                current = [(x,y)]
+                next = []
+                while current != []:
+                    for (xx, yy) in current:
+                        for k in range(-1,2):
+                            for l in range(-1,2):
+                                xx_k = xx + k
+                                yy_l = yy + l
+                                if (xx_k, yy_l) not in nodes or (xx_k, yy_l) in visited:
+                                    continue
+                                c_nn = np.sum(gvd[xx_k-1:xx_k+2, yy_l-1:yy_l+2])
+                                if c_nn == 3 and np.abs(brushfire[xx,yy] - brushfire[xx_k,yy_l]) <= 1:
+                                    temp.append((xx_k, yy_l))
+                                    visited.append((xx_k, yy_l))
+                                    next.append((xx_k, yy_l))
+                    current = next
+                    next = []
+
+                # Add medium of line as door node
+                temp.sort()
+                index = len(temp)/2
+                _x, _y = temp[index]
                 if not gvd[_x,_y]:
-                    temp.sort()
-                    index = len(temp)/2
-                    _x, _y = temp[index]
-                if not gvd[_x,_y]:
-                    print('Estimated door not in gvd, (x,y):', _x,_y)
+                    rospy.loginfo('ERROR! Estimated door not in gvd, (x,y):', _x,_y)
                 if (_x, _y) not in final_nodes:
                     final_nodes.append((_x,_y))
                     doors.append((_x,_y))
@@ -198,16 +198,16 @@ class Topology:
                                 node_nn = brushfire_instance.gvdNeighborBrushfire(\
                                             node, nodes_with_ids[0], gvd)
                                 # Check door's neighbors to find nodes of current_room
-                                for i in node_nn:
-                                    if i in doors or i in visited:
+                                for n in node_nn:
+                                    if n in doors or n in visited:
                                         continue
-                                    i_nn =  brushfire_instance.gvdNeighborBrushfire(\
-                                                i, nodes_with_ids[0], gvd)
-                                    for k in i_nn:
+                                    n_nn =  brushfire_instance.gvdNeighborBrushfire(\
+                                                n, nodes_with_ids[0], gvd)
+                                    for k in n_nn:
                                         if k in current_room:
-                                            visited.append(i)
-                                            next.append(i)
-                                            current_room.append(i)
+                                            visited.append(n)
+                                            next.append(n)
+                                            current_room.append(n)
                                             break
                             else:
                                 # Find neighbors of each node
@@ -215,26 +215,26 @@ class Topology:
                                 node_nn = brushfire_instance.gvdNeighborBrushfire(\
                                                 node, nodes_with_ids[0], gvd)
                                 # For each neighbor
-                                for i in node_nn:
+                                for n in node_nn:
                                     # If is another door
-                                    if i in doors and i != door:
+                                    if n in doors and n != door:
                                         foundDoor = True
-                                        if i not in all_doors:
+                                        if n not in all_doors:
                                             all_doors.append(i)
                                         continue
                                     # If it has not been visited
-                                    if i not in visited and i not in doors:
-                                        visited.append(i)
-                                        next.append(i)
-                                        current_room.append(i)
+                                    if n not in visited and n not in doors:
+                                        visited.append(n)
+                                        next.append(n)
+                                        current_room.append(n)
                         current = next
                         next = []
 
                     if foundDoor:
                         roomType.append(1)    # Area
                         temp = []
-                        for i in all_doors:
-                            index = nodes_with_ids[0].index(i)
+                        for n in all_doors:
+                            index = nodes_with_ids[0].index(n)
                             temp.append(index)
                         roomID += 1
                         areaDoors.append((temp, roomID))
@@ -245,8 +245,8 @@ class Topology:
                         roomDoor.append((index, roomID))
 
                     temp = []
-                    for i in current_room:
-                        index = nodes_with_ids[0].index(i)
+                    for n in current_room:
+                        index = nodes_with_ids[0].index(n)
                         temp.append(index)
                     rooms.append(temp)
         rospy.loginfo("Room segmentation finished!")
