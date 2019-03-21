@@ -144,3 +144,79 @@ class Brushfire:
             all_neighbors.append(neighbors)
 
         return all_neighbors
+
+    # Brushfire from start point to find 2 closest (one at each side) obstacles
+    def closestObstacleBrushfire(self, start, ogm):
+        brushfire = np.zeros(ogm.shape, np.dtype('int8'))
+        brushfire[ogm > 49] = 1
+        brushfire[ogm == -1] = -1
+
+        obstacles = []
+        final_obstacles = []
+
+        current = [start]
+        next = []
+        brush_value = 2
+        brushfire[start] = brush_value
+        found = False
+        last = False
+        # Brushfire until it hits an obstacle
+        # Then do one more iteration and continue
+        while current != []:
+            brush_value += 1
+            if found:
+                last = True
+            for x,y in current:
+                for k in range(-1,2):
+                    for l in range(-1,2):
+                        xx = x + k
+                        yy = y + l
+                        if brushfire[xx,yy] == 0:
+                            brushfire[xx,yy] = brush_value
+                            next.append((xx,yy))
+                        elif brushfire[xx,yy] == 1:
+                            obstacles.append((xx,yy))
+                            found = True
+            # Keep every value only once
+            current = list(set(next))
+            next = []
+            if last:
+                break
+        obstacles = list(set(obstacles))
+
+        neighbor_obstacles = []
+        visited = []
+        # Cluster obstacle points to neighborhoods
+        while len(visited) < len(obstacles):
+            for i in obstacles:
+                if i not in visited:
+                    first = i
+                    break
+
+            temp_neighbor_obstacles = [first]
+            current = [first]
+            next = []
+            while current != []:
+                for x,y in current:
+                    for i in range(-3,4):
+                        for j in range(-3,4):
+                            xx = x + i
+                            yy = y + j
+                            if (xx,yy) in obstacles and (xx,yy) not in visited:
+                                temp_neighbor_obstacles.append((xx,yy))
+                                visited.append((xx,yy))
+                                next.append((xx,yy))
+                current = next
+                next = []
+            neighbor_obstacles.append(temp_neighbor_obstacles)
+
+        # Calculate distances for each cluster and return closest to start
+        for i in range(len(neighbor_obstacles)):
+            obstacle_array = np.array(neighbor_obstacles[i])
+            start_array = np.array(start)
+            distances = np.linalg.norm(obstacle_array-start_array, axis=1)
+            index = distances.argmin()
+            min = neighbor_obstacles[i][index]
+            final_obstacles.append(min)
+
+        return final_obstacles
