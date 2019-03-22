@@ -193,16 +193,21 @@ class Topology:
 
         perc_copy = np.array(perc)
         perc_copy.sort()
-        # print('perc_copy sort', perc_copy)
         diff = np.diff(perc_copy)
-        # print('diff', diff)
         max_index = diff.argmax()
-        # print('max_index', max_index)
         threshold = perc_copy[max_index]
-        # print('threshold', threshold)
-        # print('len nodes', len(nodes), 'len perc', len(perc))
+        max_values = [np.max(diff)]
+        while threshold > 0.20:
+            max = 0
+            current_index = -1
+            for i in range(len(diff)):
+                if diff[i] > max and diff[i] not in max_values:
+                    max = diff[i]
+                    current_index = i
+            max_values.append(max)
+            threshold = perc_copy[current_index]
+        
         for i in range(len(perc)):
-            print(i)
             if perc[i] > threshold:
                 doorNodes.append(candidateDoors[i])
         return doorNodes
