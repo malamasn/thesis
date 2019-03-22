@@ -139,10 +139,11 @@ class Topology:
         doorNodes = []
         width = gvd.shape[0]
         height = gvd.shape[1]
-
+        perc = []
+        candidateDoors = []
         # Check every node
-        while nodes != []:
-            node = nodes.pop()
+        for node in nodes:
+            # node = nodes.pop()
             x = node[0]
             y = node[1]
 
@@ -151,6 +152,8 @@ class Topology:
             # Doors have always just 2 obstacle points
             if len(ob) != 2:
                 continue
+            else:
+                candidateDoors.append(node)
 
             # Find obstacle points' line
             obs_x = [ob[0][0], ob[1][0]]
@@ -161,17 +164,17 @@ class Topology:
                 min_y = np.min(obs_y)
                 max_y = np.max(obs_y)
                 mean_x = int(np.mean(obs_x))
-                index = np.where(ogm[mean_x-3:mean_x+4, min_y-50:max_y+51] > 49)
+                index = np.where(ogm[mean_x-2:mean_x+3, min_y-50:max_y+51] > 49)
                 line_points = len(index[0])
-                all_points =  (max_y+51-min_y+50) * (4+3)
+                all_points =  (max_y+51-min_y+50) * (2+3)
             elif np.abs(obs_y[0] - obs_y[1]) <= 3: # a -> 0
                 # print('a->0')   # DEBUG:
                 min_x = np.min(obs_x)
                 max_x = np.max(obs_x)
                 mean_y = int(np.mean(obs_y))
-                index = np.where(ogm[min_x-50:max_x+51, mean_y-3:mean_y+4] > 49)
+                index = np.where(ogm[min_x-50:max_x+51, mean_y-2:mean_y+3] > 49)
                 line_points = len(index[0])
-                all_points =  (max_x+51-min_x+50) * (4+3)
+                all_points =  (max_x+51-min_x+50) * (2+3)
             else:
                 # print('normal line')    # DEBUG:
                 line_coeffs = np.polyfit(obs_x, obs_y, 1)
@@ -181,14 +184,27 @@ class Topology:
                 max_x = np.max(obs_x)
                 for xx in range(min_x-50, max_x+50):
                     yy = int(xx * line_coeffs[0] + line_coeffs[1])
-                    index = np.where(ogm[xx, yy-3:yy+4] > 49)
+                    index = np.where(ogm[xx, yy-2:yy+3] > 49)
                     line_points += len(index[0])
-                    all_points += (4+3)
+                    all_points += (2+3)
 
-            perc = line_points / all_points
-            # print("obstacles", ob, 'line', line_points, 'all', all_points, 'perc', perc)
-            if perc >= 0.15:  # FIND RIGHT THRESHOLD
-                doorNodes.append((x,y))
+            perc.append(line_points / all_points)
+            # print("obstacles", ob, 'line', line_points, 'all', all_points, 'perc', line_points / all_points)
+
+        perc_copy = np.array(perc)
+        perc_copy.sort()
+        # print('perc_copy sort', perc_copy)
+        diff = np.diff(perc_copy)
+        # print('diff', diff)
+        max_index = diff.argmax()
+        # print('max_index', max_index)
+        threshold = perc_copy[max_index]
+        # print('threshold', threshold)
+        # print('len nodes', len(nodes), 'len perc', len(perc))
+        for i in range(len(perc)):
+            print(i)
+            if perc[i] > threshold:
+                doorNodes.append(candidateDoors[i])
         return doorNodes
 
     # Clustering of nodes to rooms with labels
