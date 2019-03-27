@@ -145,7 +145,7 @@ class Brushfire:
 
         return all_neighbors
 
-    # Brushfire from start point to find 2 closest (one at each side) obstacles
+    # Brushfire from start point to find closest (one at each obstacle) points
     def closestObstacleBrushfire(self, start, ogm):
         brushfire = np.zeros(ogm.shape, np.dtype('int8'))
         brushfire[ogm > 49] = 1
@@ -162,7 +162,7 @@ class Brushfire:
         last = False
         # Brushfire until it hits an obstacle
         # Then do one more iteration and continue
-        while current != []:
+        while current != [] and not last:
             brush_value += 1
             if found:
                 last = True
@@ -180,8 +180,6 @@ class Brushfire:
             # Keep every value only once
             current = list(set(next))
             next = []
-            if last:
-                break
         obstacles = list(set(obstacles))
 
         neighbor_obstacles = []
