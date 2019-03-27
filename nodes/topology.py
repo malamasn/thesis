@@ -141,6 +141,7 @@ class Topology:
         height = gvd.shape[1]
         perc = []
         candidateDoors = []
+        rospy.loginfo("Starting finding door nodes!")
         # Check every node
         for node in nodes:
             # node = nodes.pop()
@@ -207,13 +208,15 @@ class Topology:
             max_values.append(max)
             threshold = perc_copy[current_index]
 
+        rospy.loginfo("Comparing nodes with threshold.")
         for i in range(len(perc)):
             if perc[i] > threshold:
                 doorNodes.append(candidateDoors[i])
+        rospy.loginfo("Door nodes found!")
         return doorNodes
 
     # Clustering of nodes to rooms with labels
-    def findRooms(self, gvd, doors, nodes_with_ids, brushfire_instance):
+    def findRooms(self, gvd, doors, nodes_with_ids, brushfire, brushfire_instance):
         visited = []
 
         rooms = []
@@ -301,10 +304,41 @@ class Topology:
                     roomDoors.append(all_doors)
                     roomNodes.append(current_room)
 
+        rospy.loginfo("Adding room points!")
+        visited = []
+
+        # Add room pixels (all exact points)
+        # TO DO!!!
+
+
+        # Add doorways as areas
         for door in doors:
             roomDoors.append([])
             roomType.append(3)      # Doorway
             roomNodes.append([door])
+
+            # Find doorway's pixels
+            brush_value = brushfire[door]
+            print('door', door, brush_value)
+            temp = []
+            current = [door]
+            next = []
+            while current != []:
+                for node in current:
+                    if node not in visited:
+                        temp.append(node)
+                        visited.append(node)
+                    for i in range(-1,2):
+                        for j in range(-1,2):
+                            xx = node[0] + i
+                            yy = node[1] + j
+                            if brushfire[xx,yy] < 2 or (xx,yy) in visited or (xx,yy) in next:
+                                continue
+                            if ((xx-door[0])**2 + (yy-door[1])**2)**(1/2) < brushfire[door]:
+                                next.append((xx,yy))
+                current = next
+                next = []
+            rooms.append(temp)
 
 
         rospy.loginfo("Room segmentation finished!")
