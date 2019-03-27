@@ -120,7 +120,7 @@ class Map_To_Topology:
             p.y = point[1] * self.resolution
             p.z = 0
             points.append(p)
-        rospy.loginfo("Printing candidate door nodes!")
+        rospy.loginfo("Markers ready!")
 
         # Create Marker for nodes
         marker = Marker()
@@ -137,14 +137,15 @@ class Map_To_Topology:
         marker.color.a = 1.0
         marker.color.g = 1.0
 
-        rospy.loginfo("Printing markers!")
+        rospy.loginfo("Printing candidate door nodes!")
+
         self.candidate_door_node_pub.publish(marker)
         # print(candidateDoors)
         # for i in candidateDoors:
         #     print(self.brush[i])
         # Calculate door nodes
         door_nodes = self.topology.findDoorNodes(candidateDoors,\
-                        self.nodes, self.gvd, self.brush)
+                        self.nodes, self.ogm, self.gvd, self.brush, self.brushfire)
         # print(door_nodes)
         # Send door nodes to rviz with different color
         points = []
@@ -154,7 +155,7 @@ class Map_To_Topology:
             p.y = point[1] * self.resolution
             p.z = 0
             points.append(p)
-        rospy.loginfo("Printing candidate door nodes!")
+        rospy.loginfo("Markers ready!")
 
         # Create Marker for nodes
         marker = Marker()
@@ -175,17 +176,17 @@ class Map_To_Topology:
         self.door_node_pub.publish(marker)
 
 
-        rooms, roomDoor, roomType, areaDoors = self.topology.findRooms(\
+        rooms, roomDoors, roomType, roomNodes = self.topology.findRooms(\
                 self.gvd, door_nodes, self.nodes_with_ids, self.brushfire)
-        # print('rooms',rooms,'roomDoor', roomDoor,'roomType', roomType,'areaDoors', areaDoors)
+        print('rooms',rooms,'roomDoors', roomDoors,'roomType', roomType,'roomNodes', roomNodes)
         while not rospy.is_shutdown():
-            for room in rooms:
+            for room in roomNodes:
                 # print('room', room)
                 points = []
                 for point in room:
                     p = Point()
-                    p.x = self.nodes[point][0] * self.resolution
-                    p.y = self.nodes[point][1] * self.resolution
+                    p.x = point[0] * self.resolution
+                    p.y = point[1] * self.resolution
                     p.z = 0
                     points.append(p)
                 rospy.loginfo("Printing room!")

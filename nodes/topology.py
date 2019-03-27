@@ -206,7 +206,7 @@ class Topology:
                     current_index = i
             max_values.append(max)
             threshold = perc_copy[current_index]
-        
+
         for i in range(len(perc)):
             if perc[i] > threshold:
                 doorNodes.append(candidateDoors[i])
@@ -214,12 +214,12 @@ class Topology:
 
     # Clustering of nodes to rooms with labels
     def findRooms(self, gvd, doors, nodes_with_ids, brushfire_instance):
-        roomID = -1
         visited = []
-        roomType = []
-        roomDoor = []
+
         rooms = []
-        areaDoors = []
+        roomType = []
+        roomDoors = []
+        roomNodes = []
 
         rospy.loginfo("Starting room segmentation!")
 
@@ -282,7 +282,7 @@ class Topology:
                                     if n in doors and n != door:
                                         foundDoor = True
                                         if n not in all_doors:
-                                            all_doors.append(i)
+                                            all_doors.append(n)
                                         continue
                                     # If it has not been visited
                                     if n not in visited and n not in doors:
@@ -292,24 +292,20 @@ class Topology:
                         current = next
                         next = []
 
+                    # FOLLOWING NOT YET CORRECT AS A SEGMENTATION
                     if foundDoor:
                         roomType.append(1)    # Area
-                        temp = []
-                        for n in all_doors:
-                            index = nodes_with_ids[0].index(n)
-                            temp.append(index)
-                        roomID += 1
-                        areaDoors.append((temp, roomID))
                     else:
                         roomType.append(0)    # Room
-                        index = nodes_with_ids[0].index(door)
-                        roomID += 1
-                        roomDoor.append((index, roomID))
 
-                    temp = []
-                    for n in current_room:
-                        index = nodes_with_ids[0].index(n)
-                        temp.append(index)
-                    rooms.append(temp)
+                    roomDoors.append(all_doors)
+                    roomNodes.append(current_room)
+
+        for door in doors:
+            roomDoors.append([])
+            roomType.append(3)      # Doorway
+            roomNodes.append([door])
+
+
         rospy.loginfo("Room segmentation finished!")
-        return rooms, roomDoor, roomType, areaDoors
+        return rooms, roomDoors, roomType, roomNodes
