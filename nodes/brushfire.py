@@ -218,3 +218,50 @@ class Brushfire:
             final_obstacles.append(min)
 
         return final_obstacles
+
+    # Brushfire from start point until a gvd point is reached, then it is returned
+    def pointToGvdBrushfire(self, start, ogm, gvd):
+        width = ogm.shape[0]
+        height = ogm.shape[1]
+
+        # Free space == 0, obstacles == 1, unknown == -1 at brushfire field
+        brushfire = np.zeros(ogm.shape, np.dtype('int8'))
+        brushfire[ogm > 49] = 1
+        brushfire[ogm == -1] = -1
+
+        queue = [start]
+
+        brush_value = 1
+        expand = True
+        found = False
+        # For all zero pixels do
+        while expand and not found:
+
+            expand = False
+            brush_value += 1
+            next_queue = []
+            for pixel in queue:
+                x, y = pixel
+                if found:
+                    break
+                for i in range(-1,2):
+                    if found:
+                        break
+                    for j in range(-1,2):
+                        # Boundary check
+                        if x+i < 0 or x+i > width-1 or y+j < 0 or y+j > height-1:
+                            continue
+                        if i == 0 and j == 0:
+                            continue
+                        if gvd[x+i][y+j] == 1:
+                            found = True
+                            point = (x+i, y+j)
+                            break
+                        if brushfire[x+i][y+j] == 0:
+                            next_queue.append((x+i,y+j))
+                            brushfire[x+i][y+j] = brush_value
+                            expand = True
+            # Keep every value only once
+            queue = list(set(next_queue))
+
+        return point
