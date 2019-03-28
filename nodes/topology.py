@@ -141,7 +141,7 @@ class Topology:
         height = gvd.shape[1]
         perc = []
         candidateDoors = []
-        rospy.loginfo("Starting finding door nodes!")
+        rospy.loginfo("Start finding door nodes!")
         # Check every node
         for node in nodes:
             # node = nodes.pop()
@@ -216,7 +216,7 @@ class Topology:
         return doorNodes
 
     # Clustering of nodes to rooms with labels
-    def findRooms(self, gvd, doors, nodes_with_ids, brushfire, brushfire_instance):
+    def findRooms(self, gvd, doors, nodes_with_ids, brushfire, ogm, brushfire_instance):
         visited = []
 
         rooms = []
@@ -224,7 +224,7 @@ class Topology:
         roomDoors = []
         roomNodes = []
 
-        rospy.loginfo("Starting room segmentation!")
+        rospy.loginfo("Start room segmentation!")
 
         for door in doors:
             # Add door to visited nodes
@@ -303,14 +303,12 @@ class Topology:
 
                     roomDoors.append(all_doors)
                     roomNodes.append(current_room)
+                    rooms.append([])
 
-        rospy.loginfo("Adding room points!")
+
         visited = []
 
-        # Add room pixels (all exact points)
-        # TO DO!!!
-
-
+        rospy.loginfo("Adding doorway points!")
         # Add doorways as areas
         for door in doors:
             roomDoors.append([])
@@ -339,6 +337,84 @@ class Topology:
                 current = next
                 next = []
             rooms.append(temp)
+
+        rospy.loginfo("Adding room points!")
+
+        # # Add room pixels (all exact points)
+        # # TO DO!!!
+        #
+        # index = np.where(brushfire > 1)
+        # free_space = zip(index[0], index[1])
+        # for pixel in free_space:
+        #     # x, y = pixel
+        #     # Find closest node of pixel through gvd
+        #     gvd_point = brushfire_instance.pointToGvdBrushfire(pixel, ogm, gvd)
+        #     # print('gvd point', gvd_point)
+        #     nn = brushfire_instance.gvdNeighborBrushfire(gvd_point, nodes_with_ids[0], gvd)
+        #     # print('NNs', nn)
+        #     # Append pixel to room that closest node is
+        #     found = False
+        #     for i in range(len(roomNodes)):
+        #         if roomType[i] == 3:
+        #             continue
+        #         for node in nn:
+        #             if node in roomNodes[i]:
+        #                 found = True
+        #                 rooms[i].append(pixel)
+        #                 break
+        #     if not found:
+        #         print('ERROR! Point', pixel, 'not classified to a room!')
+            # else:
+            #     print('All ok at', pixel)
+
+        # id = -1
+        # for room in roomNodes:
+        #     id += 1
+        #     print('id', id)
+        #     temp = []
+        #     current = room[:]
+        #
+        #     expand = True
+        #
+        #     while expand:
+        #         print('len cur', len(current), 'len temp', len(temp), 'len visited', len(visited))
+        #         expand = False
+        #
+        #         next = []
+        #         for pixel in current:
+        #             x, y = pixel
+        #             temp.append(pixel)
+        #             if pixel not in visited:
+        #                 visited.append(pixel)
+        #             for i in range(-1,2):
+        #                 for j in range(-1,2):
+        #                     if (x+i,y+j) in visited or (i == 0 and j == 0):
+        #                         continue
+        #                     if brushfire[x+i,y+j] >= 2:
+        #                         next.append((x+i,y+j))
+        #                         visited.append((x+i,y+j))
+        #                         expand = True
+        #         current = list(set(next))
+
+            # while current != []:
+            #     print('len cur', len(current), 'len temp', len(temp), 'len visited', len(visited))
+            #     next = []
+            #     for node in current:
+            #         # print('node', node)
+            #         if node not in visited:
+            #             temp.append(node)
+            #             visited.append(node)
+            #         for i in range(-1,2):
+            #             for j in range(-1,2):
+            #                 xx = node[0] + i
+            #                 yy = node[1] + j
+            #                 if brushfire[xx,yy] < 2 or (xx,yy) in visited or (i == 0 and j == 0):
+            #                     continue
+            #                 next.append((xx,yy))
+            #     current = list(set(next))
+            #
+            # rooms[id] = temp
+
 
 
         rospy.loginfo("Room segmentation finished!")

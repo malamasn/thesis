@@ -177,10 +177,12 @@ class Map_To_Topology:
 
 
         rooms, roomDoors, roomType, roomNodes = self.topology.findRooms(\
-                self.gvd, door_nodes, self.nodes_with_ids, self.brushfire)
-        print('rooms',rooms,'roomDoors', roomDoors,'roomType', roomType,'roomNodes', roomNodes)
+                self.gvd, door_nodes, self.nodes_with_ids, self.brush, \
+                self.ogm, self.brushfire)
+        # print('rooms',rooms,'roomDoors', roomDoors,'roomType', roomType,'roomNodes', roomNodes)
         while not rospy.is_shutdown():
-            for room in roomNodes:
+            # points = []
+            for room in rooms:
                 # print('room', room)
                 points = []
                 for point in room:
@@ -189,7 +191,7 @@ class Map_To_Topology:
                     p.y = point[1] * self.resolution
                     p.z = 0
                     points.append(p)
-                rospy.loginfo("Printing room!")
+                rospy.loginfo("Markers ready!")
                 # print(p)
                 # Create Marker for nodes
                 marker = Marker()
@@ -207,7 +209,7 @@ class Map_To_Topology:
                 marker.color.b = 1.0
                 marker.color.r = 1.0
 
-                # rospy.loginfo("Printing door nodes!")
+                rospy.loginfo("Printing room nodes!")
                 self.room_node_pub.publish(marker)
                 time.sleep(3)
         return
