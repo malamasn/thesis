@@ -176,7 +176,7 @@ class Map_To_Topology:
         self.door_node_pub.publish(marker)
 
 
-        rooms, roomDoors, roomType, roomNodes = self.topology.findRooms(\
+        rooms, roomDoors, roomType = self.topology.findRooms(\
                 self.gvd, door_nodes, self.nodes_with_ids, self.brush, \
                 self.ogm, self.brushfire)
         # print('rooms',rooms,'roomDoors', roomDoors,'roomType', roomType,'roomNodes', roomNodes)

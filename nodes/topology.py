@@ -2,6 +2,7 @@
 from __future__ import division
 import rospy
 import numpy as np
+import pandas as pd
 import math
 from skimage.morphology import skeletonize, binary_closing, thin
 from brushfire import Brushfire
@@ -117,7 +118,7 @@ class Topology:
                     doors.append((_x,_y))
         nodes = final_nodes[:]
 
-        # Check if nodes are closer than 25 and delete them
+        # # Check if nodes are closer than 25 and delete them
         for i in range(len(nodes)-1, -1, -1):
             x1 = nodes[i][0]
             y1 = nodes[i][1]
@@ -222,7 +223,6 @@ class Topology:
         rooms = []
         roomType = []
         roomDoors = []
-        roomNodes = []
 
         rospy.loginfo("Start room segmentation!")
 
@@ -297,125 +297,47 @@ class Topology:
 
                     # FOLLOWING NOT YET CORRECT AS A SEGMENTATION
                     if foundDoor:
-                        roomType.append(1)    # Area
+                        roomType.append(2)    # Area
                     else:
                         roomType.append(0)    # Room
 
                     roomDoors.append(all_doors)
-                    roomNodes.append(current_room)
-                    rooms.append([])
-
-
-        visited = []
-
-        rospy.loginfo("Adding doorway points!")
-        # Add doorways as areas
-        for door in doors:
-            roomDoors.append([])
-            roomType.append(3)      # Doorway
-            roomNodes.append([door])
-
-            # Find doorway's pixels
-            brush_value = brushfire[door]
-            print('door', door, brush_value)
-            temp = []
-            current = [door]
-            next = []
-            while current != []:
-                for node in current:
-                    if node not in visited:
-                        temp.append(node)
-                        visited.append(node)
-                    for i in range(-1,2):
-                        for j in range(-1,2):
-                            xx = node[0] + i
-                            yy = node[1] + j
-                            if brushfire[xx,yy] < 2 or (xx,yy) in visited or (xx,yy) in next:
-                                continue
-                            if ((xx-door[0])**2 + (yy-door[1])**2)**(1/2) < brushfire[door]:
-                                next.append((xx,yy))
-                current = next
-                next = []
-            rooms.append(temp)
-
-        rospy.loginfo("Adding room points!")
-
-        # # Add room pixels (all exact points)
-        # # TO DO!!!
-        #
-        # index = np.where(brushfire > 1)
-        # free_space = zip(index[0], index[1])
-        # for pixel in free_space:
-        #     # x, y = pixel
-        #     # Find closest node of pixel through gvd
-        #     gvd_point = brushfire_instance.pointToGvdBrushfire(pixel, ogm, gvd)
-        #     # print('gvd point', gvd_point)
-        #     nn = brushfire_instance.gvdNeighborBrushfire(gvd_point, nodes_with_ids[0], gvd)
-        #     # print('NNs', nn)
-        #     # Append pixel to room that closest node is
-        #     found = False
-        #     for i in range(len(roomNodes)):
-        #         if roomType[i] == 3:
-        #             continue
-        #         for node in nn:
-        #             if node in roomNodes[i]:
-        #                 found = True
-        #                 rooms[i].append(pixel)
-        #                 break
-        #     if not found:
-        #         print('ERROR! Point', pixel, 'not classified to a room!')
-            # else:
-            #     print('All ok at', pixel)
-
-        # id = -1
-        # for room in roomNodes:
-        #     id += 1
-        #     print('id', id)
-        #     temp = []
-        #     current = room[:]
-        #
-        #     expand = True
-        #
-        #     while expand:
-        #         print('len cur', len(current), 'len temp', len(temp), 'len visited', len(visited))
-        #         expand = False
-        #
-        #         next = []
-        #         for pixel in current:
-        #             x, y = pixel
-        #             temp.append(pixel)
-        #             if pixel not in visited:
-        #                 visited.append(pixel)
-        #             for i in range(-1,2):
-        #                 for j in range(-1,2):
-        #                     if (x+i,y+j) in visited or (i == 0 and j == 0):
-        #                         continue
-        #                     if brushfire[x+i,y+j] >= 2:
-        #                         next.append((x+i,y+j))
-        #                         visited.append((x+i,y+j))
-        #                         expand = True
-        #         current = list(set(next))
-
-            # while current != []:
-            #     print('len cur', len(current), 'len temp', len(temp), 'len visited', len(visited))
-            #     next = []
-            #     for node in current:
-            #         # print('node', node)
-            #         if node not in visited:
-            #             temp.append(node)
-            #             visited.append(node)
-            #         for i in range(-1,2):
-            #             for j in range(-1,2):
-            #                 xx = node[0] + i
-            #                 yy = node[1] + j
-            #                 if brushfire[xx,yy] < 2 or (xx,yy) in visited or (i == 0 and j == 0):
-            #                     continue
-            #                 next.append((xx,yy))
-            #     current = list(set(next))
-            #
-            # rooms[id] = temp
-
-
+                    rooms.append(current_room)
 
         rospy.loginfo("Room segmentation finished!")
-        return rooms, roomDoors, roomType, roomNodes
+
+        rospy.loginfo("Start collecting room data!")
+        size = len(rooms)
+        attribute_size = 5
+        data = np.zeros((size,attribute_size))
+        for i in range(size):
+            # Number of nodes
+            data[i][0] = len(rooms[i])
+            indexes = zip(*rooms[i])
+            # Brushfire mean of nodes
+            data[i][1] = np.sum(brushfire[indexes])/len(rooms[i])
+            # Mean of number of nodes' neighbors
+            total_neighbors = 0
+            for x,y in rooms[i]:
+                total_neighbors += np.sum(gvd[x-1:x+2, y-1:y+2]) - 1
+            total_neighbors /= len(rooms[i])
+            data[i][2] = total_neighbors
+            # Mean distance of nodes
+            total_distance = 0
+            for x in range(len(rooms[i])):
+                for y in range(x+1, len(rooms[i])):
+                    total_distance += np.linalg.norm(np.array(rooms[i][x])-np.array(rooms[i][y]))
+            data[i][3] = total_distance/np.sum(range(len(rooms[i])))
+            # Class attribute, depends on map 
+            data[i][attribute_size-1] = 0
+
+
+        df = pd.DataFrame(data, columns=['Number of Nodes', 'Brushfire mean',
+                        'NNs mean', 'Mean distance', 'Class'])
+        # csv name is map's name
+        df.to_csv('indoor_with_rooms_features.csv', index=False)
+
+
+        rospy.loginfo("Data saved to csv!")
+
+        return rooms, roomDoors, roomType
