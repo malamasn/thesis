@@ -308,7 +308,7 @@ class Topology:
 
         rospy.loginfo("Start collecting room data!")
         size = len(rooms)
-        attribute_size = 5
+        attribute_size = 6
         data = np.zeros((size,attribute_size))
         for i in range(size):
             # Number of nodes
@@ -326,16 +326,28 @@ class Topology:
             total_distance = 0
             for x in range(len(rooms[i])):
                 for y in range(x+1, len(rooms[i])):
-                    total_distance += np.linalg.norm(np.array(rooms[i][x])-np.array(rooms[i][y]))
+                    dist = np.linalg.norm(np.array(rooms[i][x])-np.array(rooms[i][y]))
+                    total_distance += dist
             data[i][3] = total_distance/np.sum(range(len(rooms[i])))
-            # Class attribute, depends on map 
+            # Mean minimum distance
+            min = np.zeros((len(rooms[i])))
+            min[:] = np.inf
+            for x in range(len(rooms[i])):
+                for y in range(len(rooms[i])):
+                    if x == y:
+                        continue
+                    dist = np.linalg.norm(np.array(rooms[i][x])-np.array(rooms[i][y]))
+                    if dist < min[x]:
+                        min[x] = dist
+            data[i][4] = np.sum(min)/len(rooms[i])
+            # Class attribute, depends on map
             data[i][attribute_size-1] = 0
 
 
         df = pd.DataFrame(data, columns=['Number of Nodes', 'Brushfire mean',
-                        'NNs mean', 'Mean distance', 'Class'])
+                        'NNs mean', 'Mean distance', 'Mean minimun distance', 'Class'])
         # csv name is map's name
-        df.to_csv('indoor_with_rooms_features.csv', index=False)
+        df.to_csv('indoor_with_nothing.csv', index=False)
 
 
         rospy.loginfo("Data saved to csv!")
