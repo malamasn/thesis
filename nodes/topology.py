@@ -333,12 +333,13 @@ class Topology:
             min = np.zeros((len(rooms[i])))
             min[:] = np.inf
             for x in range(len(rooms[i])):
-                for y in range(len(rooms[i])):
-                    if x == y:
-                        continue
-                    dist = np.linalg.norm(np.array(rooms[i][x])-np.array(rooms[i][y]))
+                nn = brushfire_instance.gvdNeighborBrushfire(\
+                                rooms[i][x], nodes_with_ids[0], gvd)
+                for node_nn in nn:
+                    dist = np.linalg.norm(np.array(node_nn)-np.array(rooms[i][x]))
                     if dist < min[x]:
                         min[x] = dist
+
             data[i][4] = np.sum(min)/len(rooms[i])
             # Class attribute, depends on map
             data[i][attribute_size-1] = 0
