@@ -20,7 +20,7 @@ y_pred = model.predict(x_test)
 print(confusion_matrix(y_test, y_pred))
 
 # Save model
-filename = 'room_classifier_no_dist_reev.sav'
+filename = 'room_classifier.sav'
 joblib.dump(model, filename)
 # # Reevaluate saved model
 # model2 = joblib.load(filename)
