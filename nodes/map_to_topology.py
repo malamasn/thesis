@@ -7,7 +7,8 @@ from geometry_msgs.msg import Point
 from visualization_msgs.msg import Marker
 from nav_msgs.msg import OccupancyGrid
 
-from brushfire import Brushfire
+# from brushfire import Brushfire
+from utilities import Cffi
 from topology import Topology
 from PIL import Image
 
@@ -15,7 +16,8 @@ from PIL import Image
 class Map_To_Topology:
 
     def __init__(self):
-        self.brushfire = Brushfire()
+        # self.brushfire = Brushfire()
+        self.brushfire = Cffi()
         self.topology = Topology()
         self.resolution = 0.05
         self.ogm = 0
@@ -43,7 +45,7 @@ class Map_To_Topology:
         rospy.loginfo("5 secs passed.")
 
         # Calculate brushfire field
-        self.brush = self.brushfire.obstacleBrushfire(self.ogm)
+        self.brush = self.brushfire.obstacleBrushfireCffi(self.ogm)
         # img = Image.fromarray(self.brush)
         # img.show()
         # img = img.convert('RGB')
@@ -182,6 +184,7 @@ class Map_To_Topology:
         # print('rooms',rooms,'roomDoors', roomDoors,'roomType', roomType,'roomNodes', roomNodes)
         while not rospy.is_shutdown():
             # points = []
+            i = 0
             for room in rooms:
                 # print('room', room)
                 points = []
@@ -211,6 +214,8 @@ class Map_To_Topology:
 
                 rospy.loginfo("Printing room nodes!")
                 self.room_node_pub.publish(marker)
+                print('room type: ', roomType[i])
+                i += 1
                 time.sleep(3)
         return
 
