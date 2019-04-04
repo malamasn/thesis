@@ -1,2 +1,4 @@
 *.pyc
 nodes/test.py
+*.o
+*.so
