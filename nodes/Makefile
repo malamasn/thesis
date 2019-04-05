@@ -1,2 +1,2 @@
 all:
-	python _cpp_functions.py
+	python cpp_functions.py
