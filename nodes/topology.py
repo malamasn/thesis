@@ -3,7 +3,7 @@ from __future__ import division
 import rospy
 import numpy as np
 import pandas as pd
-import math
+import math, os
 from skimage.morphology import skeletonize, binary_closing, thin
 from brushfire import Brushfire
 
@@ -20,7 +20,7 @@ class Topology:
         voronoi = np.zeros(ogm.shape)
         rospy.loginfo("GVD initialized.")
         # Set free space as starting gvd and skeletonize it to get one pixel diagram
-        voronoi[brushfire > 3] = 1
+        voronoi[brushfire >= 5] = 1
         voronoi = skeletonize(voronoi)
         voronoi = voronoi.astype(np.uint8)
         voronoi = binary_closing(voronoi)
@@ -152,12 +152,16 @@ class Topology:
             y = node[1]
 
             # print("candidate door node ", node) # DEBUG:
-            ob = brushfire_instance.closestObstacleBrushfire(node, ogm)
+            ob = brushfire_instance.closestObstacleBrushfireCffi(node, ogm)
             # Doors have always just 2 obstacle points
             if len(ob) != 2:
                 continue
-            else:
-                candidateDoors.append(node)
+            # Door nodes should always be inside the obstacles' line area
+            if x < np.min([ob[0][0], ob[1][0]])-5 or  x > np.max([ob[0][0], ob[1][0]])+5:
+                continue
+            if y < np.min([ob[0][1], ob[1][1]])-5 or  y > np.max([ob[0][1], ob[1][1]])+5:
+                continue
+            candidateDoors.append(node)
 
             # Find obstacle points' line
             obs_x = [ob[0][0], ob[1][0]]
@@ -187,30 +191,42 @@ class Topology:
                 min_x = np.min(obs_x)
                 max_x = np.max(obs_x)
                 for xx in range(min_x-50, max_x+50):
+                    if xx < 0 or xx >= width:
+                        continue
                     yy = int(xx * line_coeffs[0] + line_coeffs[1])
+                    if yy < 0 or yy >= height:
+                        continue
                     index = np.where(ogm[xx, yy-2:yy+3] > 49)
                     line_points += len(index[0])
                     all_points += (2+3)
 
             perc.append(line_points / all_points)
             # print("obstacles", ob, 'line', line_points, 'all', all_points, 'perc', line_points / all_points)
-
+        # that case if all nodes in perc are doors, they will be all set as doorNodes
+        perc = np.append(perc, 0.0)
         perc_copy = np.array(perc)
         perc_copy.sort()
-        diff = np.diff(perc_copy)
-        max_index = diff.argmax()
-        threshold = perc_copy[max_index]
-        max_values = [np.max(diff)]
-        while threshold > 0.20:
-            max = 0
-            current_index = -1
-            for i in range(len(diff)):
-                if diff[i] > max and diff[i] not in max_values:
-                    max = diff[i]
-                    current_index = i
-            max_values.append(max)
-            threshold = perc_copy[current_index]
-
+        if len(perc_copy) > 1:
+            diff = np.diff(perc_copy)
+            print('perc', perc_copy)
+            max_index = diff.argmax()
+            threshold = perc_copy[max_index]
+            max_values = [np.max(diff)]
+            while threshold > 0.20:
+                max = 0
+                current_index = -1
+                for i in range(len(diff)):
+                    if diff[i] > max and diff[i] not in max_values:
+                        max = diff[i]
+                        current_index = i
+                max_values.append(max)
+                threshold = perc_copy[current_index]
+        elif len(perc_copy) == 1:
+            threshold = perc_copy[0] - 0.001
+        else:
+            rospy.loginfo("No doors found!")
+            return doorNodes
+        print('threshold', threshold)
         rospy.loginfo("Comparing nodes with threshold.")
         for i in range(len(perc)):
             if perc[i] > threshold:
@@ -232,7 +248,7 @@ class Topology:
             # Add door to visited nodes
             visited.append(door)
             # Find door's first nearest neighbors nn
-            nn = brushfire_instance.gvdNeighborSplitBrushfire(door, nodes_with_ids[0], gvd)
+            nn = brushfire_instance.gvdNeighborSplitBrushfireCffi(door, nodes_with_ids[0], gvd)
             # Check if nodes have been visited and ignore them
             for j in range(1,-1,-1):
                 for i in range(len(nn[j])-1,-1,-1):
@@ -262,13 +278,13 @@ class Topology:
                         for node in current:
                             if node in doors and node != door:
                                 foundDoor = True
-                                node_nn = brushfire_instance.gvdNeighborBrushfire(\
+                                node_nn = brushfire_instance.gvdNeighborBrushfireCffi(\
                                             node, nodes_with_ids[0], gvd)
                                 # Check door's neighbors to find nodes of current_room
                                 for n in node_nn:
                                     if n in doors or n in visited:
                                         continue
-                                    n_nn =  brushfire_instance.gvdNeighborBrushfire(\
+                                    n_nn =  brushfire_instance.gvdNeighborBrushfireCffi(\
                                                 n, nodes_with_ids[0], gvd)
                                     for k in n_nn:
                                         if k in current_room:
@@ -279,7 +295,7 @@ class Topology:
                             else:
                                 # Find neighbors of each node
                                 visited.append(node)
-                                node_nn = brushfire_instance.gvdNeighborBrushfire(\
+                                node_nn = brushfire_instance.gvdNeighborBrushfireCffi(\
                                                 node, nodes_with_ids[0], gvd)
                                 # For each neighbor
                                 for n in node_nn:
@@ -308,91 +324,98 @@ class Topology:
 
         rospy.loginfo("Room segmentation finished!")
 
-        # rospy.loginfo("Start collecting room data!")
-        # size = len(rooms)
-        # attribute_size = 6
-        # data = np.zeros((size,attribute_size))
-        # for i in range(size):
-        #     # Number of nodes
-        #     data[i][0] = len(rooms[i])
-        #     indexes = zip(*rooms[i])
-        #     # Brushfire mean of nodes
-        #     data[i][1] = np.sum(brushfire[indexes])/len(rooms[i])
-        #     # Mean of number of nodes' neighbors
-        #     total_neighbors = 0
-        #     for x,y in rooms[i]:
-        #         total_neighbors += np.sum(gvd[x-1:x+2, y-1:y+2]) - 1
-        #     total_neighbors /= len(rooms[i])
-        #     data[i][2] = total_neighbors
-        #     # Mean distance of nodes
-        #     total_distance = 0
-        #     for x in range(len(rooms[i])):
-        #         for y in range(x+1, len(rooms[i])):
-        #             dist = np.linalg.norm(np.array(rooms[i][x])-np.array(rooms[i][y]))
-        #             total_distance += dist
-            # data[i][3] = total_distance/np.sum(range(len(rooms[i])))
-        #     # Mean minimum distance
-        #     min = np.zeros((len(rooms[i])))
-        #     min[:] = np.inf
-        #     for x in range(len(rooms[i])):
-        #         nn = brushfire_instance.gvdNeighborBrushfire(\
-        #                         rooms[i][x], nodes_with_ids[0], gvd)
-        #         for node_nn in nn:
-        #             dist = np.linalg.norm(np.array(node_nn)-np.array(rooms[i][x]))
-        #             if dist < min[x]:
-        #                 min[x] = dist
-        #
-        #     data[i][4] = np.sum(min)/len(rooms[i])
-        #     # Class attribute, depends on map
-        #     data[i][attribute_size-1] = 0
-        #
-        #
-        # df = pd.DataFrame(data, columns=['Number of Nodes', 'Brushfire mean',
-        #                 'NNs mean', 'Mean distance', 'Mean minimun distance', 'Class'])
-        # # csv name is map's name
-        # df.to_csv('indoor_with_nothing.csv', index=False)
-        #
-        #
-        # rospy.loginfo("Data saved to csv!")
+        rospy.loginfo("Start collecting room data!")
+        size = len(rooms)
+        attribute_size = 6
+        data = np.zeros((size,attribute_size))
+        for i in range(size):
+            # Number of nodes
+            data[i][0] = len(rooms[i])
+            indexes = zip(*rooms[i])
+            # Brushfire mean of nodes
+            data[i][1] = np.sum(brushfire[indexes])/len(rooms[i])
+            # Mean of number of nodes' neighbors
+            total_neighbors = 0
+            for x,y in rooms[i]:
+                total_neighbors += np.sum(gvd[x-1:x+2, y-1:y+2]) - 1
+            total_neighbors /= len(rooms[i])
+            data[i][2] = total_neighbors
+            # Mean distance of nodes
+            total_distance = 0
+            for x in range(len(rooms[i])):
+                for y in range(x+1, len(rooms[i])):
+                    dist = np.linalg.norm(np.array(rooms[i][x])-np.array(rooms[i][y]))
+                    total_distance += dist
+            data[i][3] = total_distance/np.sum(range(len(rooms[i])))
+            # Mean minimum distance
+            min = np.zeros((len(rooms[i])))
+            min[:] = np.inf
+            for x in range(len(rooms[i])):
+                nn = brushfire_instance.gvdNeighborBrushfireCffi(\
+                                rooms[i][x], nodes_with_ids[0], gvd)
+                for node_nn in nn:
+                    dist = np.linalg.norm(np.array(node_nn)-np.array(rooms[i][x]))
+                    if dist < min[x]:
+                        min[x] = dist
+            data[i][4] = np.sum(min)/len(rooms[i])
+            # If there are no room neighbors set mean distance as mean min distance
+            if len(rooms[i]) == 1 or total_distance == 0:
+                data[i][3] = data[i][4]
+            # Class attribute, depends on map
+            data[i][attribute_size-1] = 0
+        filename = 'new_data.csv'
+        file_exists = os.path.isfile(filename)
+        if not file_exists:
+            df = pd.DataFrame(data, columns=['Number of Nodes', 'Brushfire mean',
+                            'NNs mean', 'Mean distance', 'Mean minimun distance', 'Class'])
+        else:
+            df_old = pd.read_csv(filename)
+            df = df_old.copy()
+            df_new = pd.DataFrame(data)
+            df = df.append(df_new)
+        # csv name is a generic name
+        df.to_csv(filename, index=False)
 
-        rospy.loginfo("Predicting room types.")
-        filename = 'room_classifier.sav'
-        model = joblib.load(filename)
-        for i in range(len(rooms)):
-            # Areas with one door are set as rooms
-            if roomType[i] == 2:
-                x = np.zeros((1,5))
-                # Number of nodes
-                x[0][0] = len(rooms[i])
-                indexes = zip(*rooms[i])
-                # Brushfire mean of nodes
-                x[0][1] = np.sum(brushfire[indexes])/len(rooms[i])
-                # Mean of number of nodes' neighbors
-                total_neighbors = 0
-                for xx,yy in rooms[i]:
-                    total_neighbors += np.sum(gvd[xx-1:xx+2, yy-1:yy+2]) - 1
-                x[0][2] = total_neighbors/len(rooms[i])
-                # Mean distance of nodes
-                total_distance = 0
-                for xx in range(len(rooms[i])):
-                    for yy in range(xx+1, len(rooms[i])):
-                        dist = np.linalg.norm(np.array(rooms[i][xx])-np.array(rooms[i][yy]))
-                        total_distance += dist
-                x[0][3] = total_distance/np.sum(range(len(rooms[i])))
-                # Mean minimum distance
-                min = np.zeros((len(rooms[i])))
-                min[:] = np.inf
-                for xx in range(len(rooms[i])):
-                    nn = brushfire_instance.gvdNeighborBrushfire(\
-                                    rooms[i][xx], nodes_with_ids[0], gvd)
-                    for node_nn in nn:
-                        dist = np.linalg.norm(np.array(node_nn)-np.array(rooms[i][xx]))
-                        if dist < min[xx]:
-                            min[xx] = dist
-                x[0][4] = np.sum(min)/len(rooms[i])
-
-                # Predict room type
-                roomType[i] = int(model.predict(x))
+        rospy.loginfo("Data saved to csv!")
+        print('df', data)
+        # rospy.loginfo("Predicting room types.")
+        # filename = 'room_classifier.sav'
+        # model = joblib.load(filename)
+        # for i in range(len(rooms)):
+        #     # Areas with one door are set as rooms
+        #     if roomType[i] == 2:
+        #         x = np.zeros((1,5))
+        #         # Number of nodes
+        #         x[0][0] = len(rooms[i])
+        #         indexes = zip(*rooms[i])
+        #         # Brushfire mean of nodes
+        #         x[0][1] = np.sum(brushfire[indexes])/len(rooms[i])
+        #         # Mean of number of nodes' neighbors
+        #         total_neighbors = 0
+        #         for xx,yy in rooms[i]:
+        #             total_neighbors += np.sum(gvd[xx-1:xx+2, yy-1:yy+2]) - 1
+        #         x[0][2] = total_neighbors/len(rooms[i])
+        #         # Mean distance of nodes
+        #         total_distance = 0
+        #         for xx in range(len(rooms[i])):
+        #             for yy in range(xx+1, len(rooms[i])):
+        #                 dist = np.linalg.norm(np.array(rooms[i][xx])-np.array(rooms[i][yy]))
+        #                 total_distance += dist
+        #         x[0][3] = total_distance/np.sum(range(len(rooms[i])))
+        #         # Mean minimum distance
+        #         min = np.zeros((len(rooms[i])))
+        #         min[:] = np.inf
+        #         for xx in range(len(rooms[i])):
+        #             nn = brushfire_instance.gvdNeighborBrushfire(\
+        #                             rooms[i][xx], nodes_with_ids[0], gvd)
+        #             for node_nn in nn:
+        #                 dist = np.linalg.norm(np.array(node_nn)-np.array(rooms[i][xx]))
+        #                 if dist < min[xx]:
+        #                     min[xx] = dist
+        #         x[0][4] = np.sum(min)/len(rooms[i])
+        #
+        #         # Predict room type
+        #         roomType[i] = int(model.predict(x))
 
         rospy.loginfo("Room finding process done!")
         return rooms, roomDoors, roomType

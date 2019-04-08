@@ -7,7 +7,7 @@ from geometry_msgs.msg import Point
 from visualization_msgs.msg import Marker
 from nav_msgs.msg import OccupancyGrid
 
-# from brushfire import Brushfire
+from brushfire import Brushfire
 from utilities import Cffi
 from topology import Topology
 from PIL import Image
@@ -17,7 +17,7 @@ class Map_To_Topology:
 
     def __init__(self):
         # self.brushfire = Brushfire()
-        self.brushfire = Cffi()
+        self.brushfire_cffi = Cffi()
         self.topology = Topology()
         self.resolution = 0.05
         self.ogm = 0
@@ -45,7 +45,9 @@ class Map_To_Topology:
         rospy.loginfo("5 secs passed.")
 
         # Calculate brushfire field
-        self.brush = self.brushfire.obstacleBrushfireCffi(self.ogm)
+        rospy.loginfo("Brushfire initialized.")
+        self.brush = self.brushfire_cffi.obstacleBrushfireCffi(self.ogm)
+        rospy.loginfo("Brushfire done!")
         # img = Image.fromarray(self.brush)
         # img.show()
         # img = img.convert('RGB')
@@ -147,7 +149,8 @@ class Map_To_Topology:
         #     print(self.brush[i])
         # Calculate door nodes
         door_nodes = self.topology.findDoorNodes(candidateDoors,\
-                        self.nodes, self.ogm, self.gvd, self.brush, self.brushfire)
+                        self.nodes, self.ogm, self.gvd, self.brush, self.brushfire_cffi)
+        # door_nodes = candidateDoors
         # print(door_nodes)
         # Send door nodes to rviz with different color
         points = []
@@ -180,7 +183,7 @@ class Map_To_Topology:
 
         rooms, roomDoors, roomType = self.topology.findRooms(\
                 self.gvd, door_nodes, self.nodes_with_ids, self.brush, \
-                self.ogm, self.brushfire)
+                self.ogm, self.brushfire_cffi)
         # print('rooms',rooms,'roomDoors', roomDoors,'roomType', roomType,'roomNodes', roomNodes)
         while not rospy.is_shutdown():
             # points = []
