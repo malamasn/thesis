@@ -677,6 +677,64 @@ static void (*_cffi_call_python_org)(struct _cffi_externpy_s *, char *);
             step = step + 1;
         }
     }
+    static void closestObstacleBrushfire(int ** brushfire, int width, int height)
+    {
+        int i = 0;
+        int j = 0;
+        int step = 2;
+        char changed = 1;
+        char found = 0;
+        char last = 0;
+        while(changed == 1 && last == 0)
+        {
+            if(found == 1)
+            {
+                last = 1;
+            }
+            changed = 0;
+            for(i = 1 ; i < width - 2 ; i = i + 1)
+            {
+                for(j = 1 ; j < height - 2 ; j = j + 1)
+                {
+                    if(brushfire[i][j] == 0) // Free space
+                    {
+                        if(
+                            brushfire[i - 1][j] == step ||
+                            brushfire[i + 1][j] == step ||
+                            brushfire[i - 1][j - 1] == step ||
+                            brushfire[i + 1][j - 1] == step ||
+                            brushfire[i - 1][j + 1] == step ||
+                            brushfire[i + 1][j + 1] == step ||
+                            brushfire[i][j - 1] == step ||
+                            brushfire[i][j + 1] == step
+                        )
+                        {
+                            brushfire[i][j] = step + 1;
+                            changed = 1;
+                        }
+                    }
+                    else if(brushfire[i][j] == 1)   // Obstacles
+                    {
+                        if(
+                            brushfire[i - 1][j] == step ||
+                            brushfire[i + 1][j] == step ||
+                            brushfire[i - 1][j - 1] == step ||
+                            brushfire[i + 1][j - 1] == step ||
+                            brushfire[i - 1][j + 1] == step ||
+                            brushfire[i + 1][j + 1] == step ||
+                            brushfire[i][j - 1] == step ||
+                            brushfire[i][j + 1] == step
+                        )
+                        {
+                            brushfire[i][j] = -2;
+                            found = 1;
+                        }
+                    }
+                }
+            }
+            step = step + 1;
+        }
+    }
     
 
 /************************************************************/
@@ -696,6 +754,58 @@ static void *_cffi_types[] = {
 /* 11 */ _CFFI_OP(_CFFI_OP_POINTER, 3), // int *
 /* 12 */ _CFFI_OP(_CFFI_OP_PRIMITIVE, 0), // void
 };
+
+static void _cffi_d_closestObstacleBrushfire(int * * x0, int x1, int x2)
+{
+  closestObstacleBrushfire(x0, x1, x2);
+}
+#ifndef PYPY_VERSION
+static PyObject *
+_cffi_f_closestObstacleBrushfire(PyObject *self, PyObject *args)
+{
+  int * * x0;
+  int x1;
+  int x2;
+  Py_ssize_t datasize;
+  PyObject *arg0;
+  PyObject *arg1;
+  PyObject *arg2;
+
+  if (!PyArg_UnpackTuple(args, "closestObstacleBrushfire", 3, 3, &arg0, &arg1, &arg2))
+    return NULL;
+
+  datasize = _cffi_prepare_pointer_call_argument(
+      _cffi_type(1), arg0, (char **)&x0);
+  if (datasize != 0) {
+    if (datasize < 0)
+      return NULL;
+    x0 = (int * *)alloca((size_t)datasize);
+    memset((void *)x0, 0, (size_t)datasize);
+    if (_cffi_convert_array_from_object((char *)x0, _cffi_type(1), arg0) < 0)
+      return NULL;
+  }
+
+  x1 = _cffi_to_c_int(arg1, int);
+  if (x1 == (int)-1 && PyErr_Occurred())
+    return NULL;
+
+  x2 = _cffi_to_c_int(arg2, int);
+  if (x2 == (int)-1 && PyErr_Occurred())
+    return NULL;
+
+  Py_BEGIN_ALLOW_THREADS
+  _cffi_restore_errno();
+  { closestObstacleBrushfire(x0, x1, x2); }
+  _cffi_save_errno();
+  Py_END_ALLOW_THREADS
+
+  (void)self; /* unused */
+  Py_INCREF(Py_None);
+  return Py_None;
+}
+#else
+#  define _cffi_f_closestObstacleBrushfire _cffi_d_closestObstacleBrushfire
+#endif
 
 static void _cffi_d_gvdNeighborBrushfire(int * * x0, int x1, int x2)
 {
@@ -880,6 +990,7 @@ _cffi_f_obstacleBrushfire(PyObject *self, PyObject *args)
 #endif
 
 static const struct _cffi_global_s _cffi_globals[] = {
+  { "closestObstacleBrushfire", (void *)_cffi_f_closestObstacleBrushfire, _CFFI_OP(_CFFI_OP_CPYTHON_BLTN_V, 6), (void *)_cffi_d_closestObstacleBrushfire },
   { "gvdNeighborBrushfire", (void *)_cffi_f_gvdNeighborBrushfire, _CFFI_OP(_CFFI_OP_CPYTHON_BLTN_V, 6), (void *)_cffi_d_gvdNeighborBrushfire },
   { "gvdNeighborSplitBrushfire", (void *)_cffi_f_gvdNeighborSplitBrushfire, _CFFI_OP(_CFFI_OP_CPYTHON_BLTN_V, 0), (void *)_cffi_d_gvdNeighborSplitBrushfire },
   { "obstacleBrushfire", (void *)_cffi_f_obstacleBrushfire, _CFFI_OP(_CFFI_OP_CPYTHON_BLTN_V, 0), (void *)_cffi_d_obstacleBrushfire },
@@ -892,7 +1003,7 @@ static const struct _cffi_type_context_s _cffi_type_context = {
   NULL,  /* no struct_unions */
   NULL,  /* no enums */
   NULL,  /* no typenames */
-  3,  /* num_globals */
+  4,  /* num_globals */
   0,  /* num_struct_unions */
   0,  /* num_enums */
   0,  /* num_typenames */
