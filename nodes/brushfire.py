@@ -196,8 +196,8 @@ class Brushfire:
             next = []
             while current != []:
                 for x,y in current:
-                    for i in range(-3,4):
-                        for j in range(-3,4):
+                    for i in range(-5,6):
+                        for j in range(-5,6):
                             xx = x + i
                             yy = y + j
                             if (xx,yy) in obstacles and (xx,yy) not in visited:
