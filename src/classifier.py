@@ -14,7 +14,7 @@ y = data['Class']
 x_train, x_test, y_train, y_test = train_test_split(x,y, test_size=0.3)
 # print(set(y_train))
 # Train model
-model = SVC(kernel='poly')
+model = SVC(kernel='linear')
 model.fit(x_train, y_train)
 # # Predict
 y_pred = model.predict(x_test)
