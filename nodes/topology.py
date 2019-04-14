@@ -221,6 +221,19 @@ class Topology:
                         current_index = i
                 max_values.append(max)
                 threshold = perc_copy[current_index]
+            # if threshold < 0.10:
+            #     max_index = diff.argmax()
+            #     threshold = perc_copy[max_index]
+            #     max_values = [np.max(diff)]
+            #     while threshold > 0.30:
+            #         max = 0
+            #         current_index = -1
+            #         for i in range(len(diff)):
+            #             if diff[i] > max and diff[i] not in max_values:
+            #                 max = diff[i]
+            #                 current_index = i
+            #         max_values.append(max)
+            #         threshold = perc_copy[current_index]
         elif len(perc_copy) == 1:
             threshold = perc_copy[0] - 0.001
         else:
@@ -324,98 +337,104 @@ class Topology:
 
         rospy.loginfo("Room segmentation finished!")
 
-        rospy.loginfo("Start collecting room data!")
-        size = len(rooms)
-        attribute_size = 6
-        data = np.zeros((size,attribute_size))
-        for i in range(size):
-            # Number of nodes
-            data[i][0] = len(rooms[i])
-            indexes = zip(*rooms[i])
-            # Brushfire mean of nodes
-            data[i][1] = np.sum(brushfire[indexes])/len(rooms[i])
-            # Mean of number of nodes' neighbors
-            total_neighbors = 0
-            for x,y in rooms[i]:
-                total_neighbors += np.sum(gvd[x-1:x+2, y-1:y+2]) - 1
-            total_neighbors /= len(rooms[i])
-            data[i][2] = total_neighbors
-            # Mean distance of nodes
-            total_distance = 0
-            for x in range(len(rooms[i])):
-                for y in range(x+1, len(rooms[i])):
-                    dist = np.linalg.norm(np.array(rooms[i][x])-np.array(rooms[i][y]))
-                    total_distance += dist
-            data[i][3] = total_distance/np.sum(range(len(rooms[i])))
-            # Mean minimum distance
-            min = np.zeros((len(rooms[i])))
-            min[:] = np.inf
-            for x in range(len(rooms[i])):
-                nn = brushfire_instance.gvdNeighborBrushfireCffi(\
-                                rooms[i][x], nodes_with_ids[0], gvd)
-                for node_nn in nn:
-                    dist = np.linalg.norm(np.array(node_nn)-np.array(rooms[i][x]))
-                    if dist < min[x]:
-                        min[x] = dist
-            data[i][4] = np.sum(min)/len(rooms[i])
-            # If there are no room neighbors set mean distance as mean min distance
-            if len(rooms[i]) == 1 or total_distance == 0:
-                data[i][3] = data[i][4]
-            # Class attribute, depends on map
-            data[i][attribute_size-1] = 0
-        filename = 'new_data.csv'
-        file_exists = os.path.isfile(filename)
-        if not file_exists:
-            df = pd.DataFrame(data, columns=['Number of Nodes', 'Brushfire mean',
-                            'NNs mean', 'Mean distance', 'Mean minimun distance', 'Class'])
-        else:
-            df_old = pd.read_csv(filename)
-            df = df_old.copy()
-            df_new = pd.DataFrame(data)
-            df = df.append(df_new)
-        # csv name is a generic name
-        df.to_csv(filename, index=False)
+        # rospy.loginfo("Start collecting room data!")
+        # size = len(rooms)
+        # attribute_size = 7
+        # data = np.zeros((size,attribute_size))
+        # for i in range(size):
+        #     # Number of nodes
+        #     data[i][0] = len(rooms[i])
+        #     indexes = zip(*rooms[i])
+        #     # Brushfire mean of nodes
+        #     data[i][1] = np.sum(brushfire[indexes])/len(rooms[i])
+        #     # Standard deviation of brushfire
+        #     data[i][2] = np.std(brushfire[indexes])
+        #     # Mean of number of nodes' neighbors
+        #     total_neighbors = 0
+        #     for x,y in rooms[i]:
+        #         total_neighbors += np.sum(gvd[x-1:x+2, y-1:y+2]) - 1
+        #     total_neighbors /= len(rooms[i])
+        #     data[i][3] = total_neighbors
+        #     # Mean distance of nodes
+        #     total_distance = 0
+        #     for x in range(len(rooms[i])):
+        #         for y in range(x+1, len(rooms[i])):
+        #             dist = np.linalg.norm(np.array(rooms[i][x])-np.array(rooms[i][y]))
+        #             total_distance += dist
+        #     data[i][4] = total_distance/np.sum(range(len(rooms[i])))
+        #     # Mean minimum distance
+        #     min = np.zeros((len(rooms[i])))
+        #     min[:] = np.inf
+        #     for x in range(len(rooms[i])):
+        #         nn = brushfire_instance.gvdNeighborBrushfireCffi(\
+        #                         rooms[i][x], nodes_with_ids[0], gvd)
+        #         for node_nn in nn:
+        #             dist = np.linalg.norm(np.array(node_nn)-np.array(rooms[i][x]))
+        #             if dist < min[x]:
+        #                 min[x] = dist
+        #     data[i][5] = np.sum(min)/len(rooms[i])
+        #     # If there are no room neighbors set mean distance as mean min distance
+        #     if len(rooms[i]) == 1 or total_distance == 0:
+        #         data[i][4] = data[i][5]
+        #     # Class attribute, depends on map
+        #     data[i][attribute_size-1] = 0
+        # filename = 'new_data.csv'
+        # file_exists = os.path.isfile(filename)
+        # if not file_exists:
+        #     df = pd.DataFrame(data, columns=['Number of Nodes', 'Brushfire mean',
+        #                     'Standard deviation of Brushfire', 'NNs mean', 'Mean distance',
+        #                     'Mean minimun distance', 'Class'])
+        # else:
+        #     df_old = pd.read_csv(filename)
+        #     df = df_old.copy()
+        #     df_new = pd.DataFrame(data)
+        #     df = df.append(df_new)
+        # # csv name is a generic name
+        # df.to_csv(filename, index=False)
 
-        rospy.loginfo("Data saved to csv!")
-        print('df', data)
-        # rospy.loginfo("Predicting room types.")
-        # filename = 'room_classifier.sav'
-        # model = joblib.load(filename)
-        # for i in range(len(rooms)):
-        #     # Areas with one door are set as rooms
-        #     if roomType[i] == 2:
-        #         x = np.zeros((1,5))
-        #         # Number of nodes
-        #         x[0][0] = len(rooms[i])
-        #         indexes = zip(*rooms[i])
-        #         # Brushfire mean of nodes
-        #         x[0][1] = np.sum(brushfire[indexes])/len(rooms[i])
-        #         # Mean of number of nodes' neighbors
-        #         total_neighbors = 0
-        #         for xx,yy in rooms[i]:
-        #             total_neighbors += np.sum(gvd[xx-1:xx+2, yy-1:yy+2]) - 1
-        #         x[0][2] = total_neighbors/len(rooms[i])
-        #         # Mean distance of nodes
-        #         total_distance = 0
-        #         for xx in range(len(rooms[i])):
-        #             for yy in range(xx+1, len(rooms[i])):
-        #                 dist = np.linalg.norm(np.array(rooms[i][xx])-np.array(rooms[i][yy]))
-        #                 total_distance += dist
-        #         x[0][3] = total_distance/np.sum(range(len(rooms[i])))
-        #         # Mean minimum distance
-        #         min = np.zeros((len(rooms[i])))
-        #         min[:] = np.inf
-        #         for xx in range(len(rooms[i])):
-        #             nn = brushfire_instance.gvdNeighborBrushfire(\
-        #                             rooms[i][xx], nodes_with_ids[0], gvd)
-        #             for node_nn in nn:
-        #                 dist = np.linalg.norm(np.array(node_nn)-np.array(rooms[i][xx]))
-        #                 if dist < min[xx]:
-        #                     min[xx] = dist
-        #         x[0][4] = np.sum(min)/len(rooms[i])
-        #
-        #         # Predict room type
-        #         roomType[i] = int(model.predict(x))
+        # rospy.loginfo("Data saved to csv!")
+
+        rospy.loginfo("Predicting room types.")
+        filename = 'room_classifier.sav'
+        model = joblib.load(filename)
+        for i in range(len(rooms)):
+            # Areas with one door are set as rooms
+            if roomType[i] == 2:
+                x = np.zeros((1,6))
+                # Number of nodes
+                x[0][0] = len(rooms[i])
+                indexes = zip(*rooms[i])
+                # Brushfire mean of nodes
+                x[0][1] = np.sum(brushfire[indexes])/len(rooms[i])
+                # Standard deviation of brushfire
+                x[0][2] = np.std(brushfire[indexes])
+                # Mean of number of nodes' neighbors
+                total_neighbors = 0
+                for xx,yy in rooms[i]:
+                    total_neighbors += np.sum(gvd[xx-1:xx+2, yy-1:yy+2]) - 1
+                x[0][3] = total_neighbors/len(rooms[i])
+                # Mean distance of nodes
+                total_distance = 0
+                for xx in range(len(rooms[i])):
+                    for yy in range(xx+1, len(rooms[i])):
+                        dist = np.linalg.norm(np.array(rooms[i][xx])-np.array(rooms[i][yy]))
+                        total_distance += dist
+                x[0][4] = total_distance/np.sum(range(len(rooms[i])))
+                # Mean minimum distance
+                min = np.zeros((len(rooms[i])))
+                min[:] = np.inf
+                for xx in range(len(rooms[i])):
+                    nn = brushfire_instance.gvdNeighborBrushfireCffi(\
+                                    rooms[i][xx], nodes_with_ids[0], gvd)
+                    for node_nn in nn:
+                        dist = np.linalg.norm(np.array(node_nn)-np.array(rooms[i][xx]))
+                        if dist < min[xx]:
+                            min[xx] = dist
+                x[0][5] = np.sum(min)/len(rooms[i])
+                if len(rooms[i]) == 1 or total_distance == 0:
+                    x[0][4] = x[0][5]
+                # Predict room type
+                roomType[i] = int(model.predict(x))
 
         rospy.loginfo("Room finding process done!")
         return rooms, roomDoors, roomType
