@@ -1,0 +1,4 @@
+<launch>
+  <node pkg="topology_finder" type="map_to_topology.py" name="map_to_topology" output="screen"/>
+  <rosparam file="$(find topology_finder)/config/config.yaml" command="load"/>
+</launch>

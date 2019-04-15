@@ -184,47 +184,49 @@ class Map_To_Topology:
                 self.ogm, self.brushfire_cffi)
         # print('rooms',rooms,'roomDoors', roomDoors,'roomType', roomType)
 
+        # Save data to json file
         data = {"nodes": self.nodes, "doors": door_nodes,
                 "rooms": rooms, "roomDoors": roomDoors, "roomType": roomType}
-        filename = 'rooms_3.json'
+        map_name = rospy.get_param('map_name')
+        filename = '/home/mal/catkin_ws/src/topology_finder/data/' + map_name +'.json'
         with open(filename, 'w') as outfile:
                 data_to_json = json.dump(data, outfile)
 
-        while not rospy.is_shutdown():
-            # points = []
-            i = 0
-            for room in rooms:
-                # print('room', room)
-                points = []
-                for point in room:
-                    p = Point()
-                    p.x = point[0] * self.resolution
-                    p.y = point[1] * self.resolution
-                    p.z = 0
-                    points.append(p)
-                rospy.loginfo("Markers ready!")
-                # print(p)
-                # Create Marker for nodes
-                marker = Marker()
-                marker.header.frame_id = "/map"
-                marker.type = marker.POINTS
-                marker.action = marker.ADD
+        # while not rospy.is_shutdown():
+        # points = []
+        i = 0
+        for room in rooms:
+            # print('room', room)
+            points = []
+            for point in room:
+                p = Point()
+                p.x = point[0] * self.resolution
+                p.y = point[1] * self.resolution
+                p.z = 0
+                points.append(p)
+            rospy.loginfo("Markers ready!")
+            # print(p)
+            # Create Marker for nodes
+            marker = Marker()
+            marker.header.frame_id = "/map"
+            marker.type = marker.POINTS
+            marker.action = marker.ADD
 
-                marker.points = points
-                marker.pose.orientation.w = 1.0
+            marker.points = points
+            marker.pose.orientation.w = 1.0
 
-                marker.scale.x = 0.2
-                marker.scale.y = 0.2
-                marker.scale.z = 0.2
-                marker.color.a = 1.0
-                marker.color.b = 1.0
-                marker.color.r = 1.0
+            marker.scale.x = 0.2
+            marker.scale.y = 0.2
+            marker.scale.z = 0.2
+            marker.color.a = 1.0
+            marker.color.b = 1.0
+            marker.color.r = 1.0
 
-                rospy.loginfo("Printing room nodes!")
-                self.room_node_pub.publish(marker)
-                print('room type: ', roomType[i])
-                i += 1
-                time.sleep(3)
+            rospy.loginfo("Printing room nodes!")
+            self.room_node_pub.publish(marker)
+            print('room type: ', roomType[i])
+            i += 1
+            time.sleep(3)
         return
 
 
