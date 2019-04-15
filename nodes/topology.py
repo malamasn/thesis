@@ -248,7 +248,7 @@ class Topology:
         return doorNodes
 
     # Clustering of nodes to rooms with labels
-    def findRooms(self, gvd, doors, nodes_with_ids, brushfire, ogm, brushfire_instance):
+    def findRooms(self, gvd, doors, nodes, brushfire, ogm, brushfire_instance):
         visited = []
 
         rooms = []
@@ -261,7 +261,7 @@ class Topology:
             # Add door to visited nodes
             visited.append(door)
             # Find door's first nearest neighbors nn
-            nn = brushfire_instance.gvdNeighborSplitBrushfireCffi(door, nodes_with_ids[0], gvd)
+            nn = brushfire_instance.gvdNeighborSplitBrushfireCffi(door, nodes, gvd)
             # Check if nodes have been visited and ignore them
             for j in range(1,-1,-1):
                 for i in range(len(nn[j])-1,-1,-1):
@@ -292,13 +292,13 @@ class Topology:
                             if node in doors and node != door:
                                 foundDoor = True
                                 node_nn = brushfire_instance.gvdNeighborBrushfireCffi(\
-                                            node, nodes_with_ids[0], gvd)
+                                            node, nodes, gvd)
                                 # Check door's neighbors to find nodes of current_room
                                 for n in node_nn:
                                     if n in doors or n in visited:
                                         continue
                                     n_nn =  brushfire_instance.gvdNeighborBrushfireCffi(\
-                                                n, nodes_with_ids[0], gvd)
+                                                n, nodes, gvd)
                                     for k in n_nn:
                                         if k in current_room:
                                             visited.append(n)
@@ -309,7 +309,7 @@ class Topology:
                                 # Find neighbors of each node
                                 visited.append(node)
                                 node_nn = brushfire_instance.gvdNeighborBrushfireCffi(\
-                                                node, nodes_with_ids[0], gvd)
+                                                node, nodes, gvd)
                                 # For each neighbor
                                 for n in node_nn:
                                     # If is another door
@@ -367,7 +367,7 @@ class Topology:
         #     min[:] = np.inf
         #     for x in range(len(rooms[i])):
         #         nn = brushfire_instance.gvdNeighborBrushfireCffi(\
-        #                         rooms[i][x], nodes_with_ids[0], gvd)
+        #                         rooms[i][x], nodes, gvd)
         #         for node_nn in nn:
         #             dist = np.linalg.norm(np.array(node_nn)-np.array(rooms[i][x]))
         #             if dist < min[x]:
@@ -425,7 +425,7 @@ class Topology:
                 min[:] = np.inf
                 for xx in range(len(rooms[i])):
                     nn = brushfire_instance.gvdNeighborBrushfireCffi(\
-                                    rooms[i][xx], nodes_with_ids[0], gvd)
+                                    rooms[i][xx], nodes, gvd)
                     for node_nn in nn:
                         dist = np.linalg.norm(np.array(node_nn)-np.array(rooms[i][xx]))
                         if dist < min[xx]:

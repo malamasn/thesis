@@ -28,7 +28,6 @@ class Map_To_Topology:
         self.gvd = 0
         self.brush = 0
         self.nodes = []
-        self.nodes_with_ids = []
         # self.brush_publisher = rospy.Publisher('/brushfire', OccupancyGrid, queue_size = 10)
         self.node_publisher = rospy.Publisher('/nodes', Marker, queue_size = 100)
         self.candidate_door_node_pub = rospy.Publisher('/nodes/candidateDoors', Marker, queue_size = 100)
@@ -74,7 +73,6 @@ class Map_To_Topology:
 
         # Give every node an ID number
         # self.nodes_with_ids[0] has the (x,y) and self.nodes_with_ids[1] the ID
-        self.nodes_with_ids = [self.nodes, range(len(self.nodes))]
 
         # Create list of nodes as Point() values
         rospy.loginfo("Start collecting markers")
@@ -182,7 +180,7 @@ class Map_To_Topology:
 
 
         rooms, roomDoors, roomType = self.topology.findRooms(\
-                self.gvd, door_nodes, self.nodes_with_ids, self.brush, \
+                self.gvd, door_nodes, self.nodes, self.brush, \
                 self.ogm, self.brushfire_cffi)
         # print('rooms',rooms,'roomDoors', roomDoors,'roomType', roomType,'roomNodes', roomNodes)
         while not rospy.is_shutdown():
