@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import rospy
+import rospy, json
 import numpy as np
 import time
 
@@ -182,7 +182,14 @@ class Map_To_Topology:
         rooms, roomDoors, roomType = self.topology.findRooms(\
                 self.gvd, door_nodes, self.nodes, self.brush, \
                 self.ogm, self.brushfire_cffi)
-        # print('rooms',rooms,'roomDoors', roomDoors,'roomType', roomType,'roomNodes', roomNodes)
+        # print('rooms',rooms,'roomDoors', roomDoors,'roomType', roomType)
+
+        data = {"nodes": self.nodes, "doors": door_nodes,
+                "rooms": rooms, "roomDoors": roomDoors, "roomType": roomType}
+        filename = 'rooms_3.json'
+        with open(filename, 'w') as outfile:
+                data_to_json = json.dump(data, outfile)
+
         while not rospy.is_shutdown():
             # points = []
             i = 0
