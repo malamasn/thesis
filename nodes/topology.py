@@ -23,10 +23,10 @@ class Topology:
         voronoi[brushfire >= 5] = 1
         voronoi = skeletonize(voronoi)
         voronoi = voronoi.astype(np.uint8)
-        voronoi = binary_closing(voronoi)
-        voronoi = voronoi.astype(np.uint8)
-        voronoi = thin(voronoi)
-        voronoi = voronoi.astype(np.uint8)
+        # voronoi = binary_closing(voronoi)
+        # voronoi = voronoi.astype(np.uint8)
+        # voronoi = thin(voronoi)
+        # voronoi = voronoi.astype(np.uint8)
 
         ## DO I NEED THINNING HERE ?
         rospy.loginfo("GVD done!")
@@ -208,7 +208,7 @@ class Topology:
         perc_copy.sort()
         if len(perc_copy) > 1:
             diff = np.diff(perc_copy)
-            print('perc', perc_copy)
+            # print('perc', perc_copy)
             max_index = diff.argmax()
             threshold = perc_copy[max_index]
             max_values = [np.max(diff)]
@@ -239,7 +239,7 @@ class Topology:
         else:
             rospy.loginfo("No doors found!")
             return doorNodes
-        print('threshold', threshold)
+        # print('threshold', threshold)
         rospy.loginfo("Comparing nodes with threshold.")
         for i in range(len(perc)):
             if perc[i] > threshold:
@@ -395,7 +395,7 @@ class Topology:
         # rospy.loginfo("Data saved to csv!")
 
         rospy.loginfo("Predicting room types.")
-        filename = 'room_classifier.sav'
+        filename = '/home/mal/catkin_ws/src/room_classification/models/room_classifier.sav'
         model = joblib.load(filename)
         for i in range(len(rooms)):
             # Areas with one door are set as rooms
