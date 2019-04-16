@@ -2,6 +2,7 @@
 import rospy, json
 import numpy as np
 import time
+from dijkstar import Graph, find_path
 
 from geometry_msgs.msg import Point
 from visualization_msgs.msg import Marker
@@ -10,6 +11,8 @@ from nav_msgs.msg import OccupancyGrid
 from brushfire import Brushfire
 from utilities import Cffi
 from topology import Topology
+
+
 
 class Map_To_Graph:
 
@@ -38,17 +41,17 @@ class Map_To_Graph:
     def server_start(self):
         rospy.init_node('map_to_topology')
         rospy.loginfo('map_to_topology node initialized.')
-        rospy.Subscriber(self.ogm_topic, OccupancyGrid, self.read_ogm)
-        rospy.loginfo("Waiting 5 secs to read ogm.")
-        time.sleep(5)
-        rospy.loginfo("5 secs passed.")
-
-        # Calculate brushfire field
-        rospy.loginfo("Brushfire initialized.")
-        self.brush = self.brushfire_cffi.obstacleBrushfireCffi(self.ogm)
-        rospy.loginfo("Brushfire done!")
-        # Calculate gvd from brushfire and ogm
-        self.gvd = self.topology.gvd(self.ogm, self.brush)
+        # rospy.Subscriber(self.ogm_topic, OccupancyGrid, self.read_ogm)
+        # rospy.loginfo("Waiting 5 secs to read ogm.")
+        # time.sleep(5)
+        # rospy.loginfo("5 secs passed.")
+        #
+        # # Calculate brushfire field
+        # rospy.loginfo("Brushfire initialized.")
+        # self.brush = self.brushfire_cffi.obstacleBrushfireCffi(self.ogm)
+        # rospy.loginfo("Brushfire done!")
+        # # Calculate gvd from brushfire and ogm
+        # self.gvd = self.topology.gvd(self.ogm, self.brush)
 
         # Load nodes from json file
         map_name = rospy.get_param('map_name')
@@ -152,6 +155,20 @@ class Map_To_Graph:
         #     print('room type: ', self.room_type[i])
         #     i += 1
         #     time.sleep(3)
+        # print(self.door_nodes)
+        graph = Graph()
+        for room in self.room_doors:
+            if len(room) > 1:
+                for i in range(len(room)):
+                    for j in range(i+1, len(room)):
+                        node_id_1 = self.door_nodes.index(room[i])
+                        node_id_2 = self.door_nodes.index(room[j])
+                        dist = np.linalg.norm(np.array(room[i])- np.array(room[j]))
+                        graph.add_edge(node_id_1, node_id_2, dist)
+                        graph.add_edge(node_id_2, node_id_1, dist)
+
+        # for i in range(len(self.door_nodes)):
+        #     print(graph[i])
 
         return
 
