@@ -25,6 +25,10 @@ class Map_To_Graph:
         self.gvd = 0
         self.brush = 0
         self.nodes = []
+        self.door_nodes = []
+        self.rooms = []
+        self.room_doors = []
+        self.room_type = []
         self.node_publisher = rospy.Publisher('/nodes', Marker, queue_size = 100)
         self.candidate_door_node_pub = rospy.Publisher('/nodes/candidateDoors', Marker, queue_size = 100)
         self.door_node_pub = rospy.Publisher('/nodes/doors', Marker, queue_size = 100)
@@ -38,6 +42,24 @@ class Map_To_Graph:
         time.sleep(5)
         rospy.loginfo("5 secs passed.")
 
+        # Calculate brushfire field
+        rospy.loginfo("Brushfire initialized.")
+        self.brush = self.brushfire_cffi.obstacleBrushfireCffi(self.ogm)
+        rospy.loginfo("Brushfire done!")
+        # Calculate gvd from brushfire and ogm
+        self.gvd = self.topology.gvd(self.ogm, self.brush)
+
+        # Load nodes from json file
+        map_name = rospy.get_param('map_name')
+        filename = '/home/mal/catkin_ws/src/topology_finder/data/' + map_name +'.json'
+        with open(filename, 'r') as read_file:
+                data = json.load(read_file)
+
+        self.nodes = data['nodes']
+        self.door_nodes = data['doors']
+        self.rooms = data['rooms']
+        self.room_doors = data['roomDoors']
+        self.room_type = data['roomType']
 
 
 
