@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import numpy as np
+import random
 
 
 
@@ -14,3 +15,8 @@ class Routing:
             city_2 = tour[j]
             total += distances[city_1, city_2]
         return total
+
+    def init_random_route(self, length):
+        route = range(length)
+        random.shuffle(route)
+        return route
