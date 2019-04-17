@@ -20,3 +20,36 @@ class Routing:
         route = range(length)
         random.shuffle(route)
         return route
+
+    def all_pairs(self, size,shuffle=random.shuffle):
+        r1=range(size)
+        r2=range(size)
+        if shuffle:
+            shuffle(r1)
+            shuffle(r2)
+        for i in r1:
+            for j in r2:
+                yield (i,j)
+
+    def swapped_nodes(self, route):
+        '''generator to create all possible variations
+          where two cities have been swapped'''
+        for i,j in self.all_pairs(len(route)):
+            if i < j:
+                copy=route[:]
+                copy[i],copy[j]=route[j],route[i]
+                yield copy
+
+    def reversed_sections(self, route):
+        '''generator to return all possible variations
+          where the section between two cities are swapped'''
+        for i,j in self.all_pairs(len(route)):
+            if i != j:
+                copy=route[:]
+                if i < j:
+                    copy[i:j+1]=reversed(route[i:j+1])
+                else:
+                    copy[i+1:]=reversed(route[:j])
+                    copy[:j]=reversed(route[i+1:])
+                if copy != route: # no point returning the same tour
+                    yield copy
