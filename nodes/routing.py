@@ -6,13 +6,13 @@ import random
 
 class Routing:
 
-    def route_length(self, distances, tour):
+    def route_length(self, distances, route):
         total = 0
-        num_nodes = len(tour)
+        num_nodes = len(route)
         for i in range(num_nodes):
             j = (i+1) % num_nodes
-            city_1 = tour[i]
-            city_2 = tour[j]
+            city_1 = route[i]
+            city_2 = route[j]
             total += distances[city_1, city_2]
         return total
 
@@ -53,3 +53,35 @@ class Routing:
                     copy[:j]=reversed(route[i+1:])
                 if copy != route: # no point returning the same tour
                     yield copy
+
+    def hillclimb(self, distances, epochs):
+        '''
+        hillclimb until either epochs
+        is reached or we are at a local optima
+        '''
+        length = distances.shape[0]
+        best = self.init_random_route(length)
+        best_score = self.route_length(distances, best)
+
+        iter = 1
+
+        while iter < epochs:
+            # examine moves around our current position
+            move_made = False
+            for next in self.swapped_nodes(best):
+                if iter >= epochs:
+                    break
+                # see if this move is better than the current
+                next_score = self.route_length(distances, next)
+                iter += 1
+                if next_score > best_score:
+                    best = next
+                    best_score = next_score
+                    move_made = True
+                    break # depth first search
+
+            if not move_made:
+                break # we couldn't find a better move
+                         # (must be at a local maximum)
+
+        return best, best_score, iter

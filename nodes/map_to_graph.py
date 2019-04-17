@@ -11,7 +11,7 @@ from nav_msgs.msg import OccupancyGrid
 from brushfire import Brushfire
 from utilities import Cffi
 from topology import Topology
-
+from routing import Routing
 
 
 class Map_To_Graph:
@@ -19,6 +19,7 @@ class Map_To_Graph:
     def __init__(self):
         self.brushfire_cffi = Cffi()
         self.topology = Topology()
+        self.routing = Routing()
         self.resolution = 0.05
         self.ogm_topic = '/map'
         self.ogm = 0
@@ -178,9 +179,11 @@ class Map_To_Graph:
                 _, _, _, dist = find_path(graph, i, j)
                 distances[i][j] = dist
                 distances[j][i] = distances[i][j]
-        # print(distances)
 
-
+        # Call hill climb
+        max_iterations = 20
+        route, cost, iter = self.routing.hillclimb(distances, max_iterations)
+        # print(route, cost, iter)
 
         return
 
