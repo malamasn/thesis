@@ -10,3 +10,5 @@ All data are saved in json files at 'data/' directory.
 
 map_to_graph node reads data from json files, creates the graph of all door nodes and determines the best (minimum distance) sequence to visit all rooms (full graph coverage).
 The used graph structure was forked from https://github.com/wylee/Dijkstar.
+
+Traveling salesman problem hill climbing solution is influenced from http://www.psychicorigami.com/2007/05/12/tackling-the-travelling-salesman-problem-hill-climbing/.
