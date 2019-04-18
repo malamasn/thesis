@@ -248,7 +248,7 @@ class Topology:
         return doorNodes
 
     # Clustering of nodes to rooms with labels
-    def findRooms(self, gvd, doors, nodes, brushfire, ogm, brushfire_instance):
+    def findRooms(self, gvd, doors, nodes, brushfire, ogm, resolution, brushfire_instance):
         visited = []
 
         rooms = []
@@ -346,9 +346,9 @@ class Topology:
         #     data[i][0] = len(rooms[i])
         #     indexes = zip(*rooms[i])
         #     # Brushfire mean of nodes
-        #     data[i][1] = np.sum(brushfire[indexes])/len(rooms[i])
+        #     data[i][1] = resolution * p.sum(brushfire[indexes])/len(rooms[i])
         #     # Standard deviation of brushfire
-        #     data[i][2] = np.std(brushfire[indexes])
+        #     data[i][2] = resolution * p.std(brushfire[indexes])
         #     # Mean of number of nodes' neighbors
         #     total_neighbors = 0
         #     for x,y in rooms[i]:
@@ -361,7 +361,7 @@ class Topology:
         #         for y in range(x+1, len(rooms[i])):
         #             dist = np.linalg.norm(np.array(rooms[i][x])-np.array(rooms[i][y]))
         #             total_distance += dist
-        #     data[i][4] = total_distance/np.sum(range(len(rooms[i])))
+        #     data[i][4] = resolution * total_distance/np.sum(range(len(rooms[i])))
         #     # Mean minimum distance
         #     min = np.zeros((len(rooms[i])))
         #     min[:] = np.inf
@@ -372,7 +372,7 @@ class Topology:
         #             dist = np.linalg.norm(np.array(node_nn)-np.array(rooms[i][x]))
         #             if dist < min[x]:
         #                 min[x] = dist
-        #     data[i][5] = np.sum(min)/len(rooms[i])
+        #     data[i][5] = resolution * np.sum(min)/len(rooms[i])
         #     # If there are no room neighbors set mean distance as mean min distance
         #     if len(rooms[i]) == 1 or total_distance == 0:
         #         data[i][4] = data[i][5]
@@ -405,9 +405,9 @@ class Topology:
                 x[0][0] = len(rooms[i])
                 indexes = zip(*rooms[i])
                 # Brushfire mean of nodes
-                x[0][1] = np.sum(brushfire[indexes])/len(rooms[i])
+                x[0][1] = resolution * np.sum(brushfire[indexes])/len(rooms[i])
                 # Standard deviation of brushfire
-                x[0][2] = np.std(brushfire[indexes])
+                x[0][2] = resolution * np.std(brushfire[indexes])
                 # Mean of number of nodes' neighbors
                 total_neighbors = 0
                 for xx,yy in rooms[i]:
@@ -419,7 +419,7 @@ class Topology:
                     for yy in range(xx+1, len(rooms[i])):
                         dist = np.linalg.norm(np.array(rooms[i][xx])-np.array(rooms[i][yy]))
                         total_distance += dist
-                x[0][4] = total_distance/np.sum(range(len(rooms[i])))
+                x[0][4] = resolution * total_distance/np.sum(range(len(rooms[i])))
                 # Mean minimum distance
                 min = np.zeros((len(rooms[i])))
                 min[:] = np.inf
@@ -430,7 +430,7 @@ class Topology:
                         dist = np.linalg.norm(np.array(node_nn)-np.array(rooms[i][xx]))
                         if dist < min[xx]:
                             min[xx] = dist
-                x[0][5] = np.sum(min)/len(rooms[i])
+                x[0][5] = resolution * np.sum(min)/len(rooms[i])
                 if len(rooms[i]) == 1 or total_distance == 0:
                     x[0][4] = x[0][5]
                 # Predict room type

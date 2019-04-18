@@ -181,7 +181,7 @@ class Map_To_Topology:
 
         rooms, roomDoors, roomType = self.topology.findRooms(\
                 self.gvd, door_nodes, self.nodes, self.brush, \
-                self.ogm, self.brushfire_cffi)
+                self.ogm, self.resolution, self.brushfire_cffi)
         # print('rooms',rooms,'roomDoors', roomDoors,'roomType', roomType)
 
         # Save data to json file
