@@ -22,8 +22,8 @@ class Routing:
         return route
 
     def all_pairs(self, size,shuffle=random.shuffle):
-        r1=range(size)
-        r2=range(size)
+        r1 = range(size)
+        r2 = range(size)
         if shuffle:
             shuffle(r1)
             shuffle(r2)
@@ -68,7 +68,7 @@ class Routing:
         while iter < epochs:
             # examine moves around our current position
             move_made = False
-            for next in self.swapped_nodes(best):
+            for next in self.reversed_sections(best):
                 if iter >= epochs:
                     break
                 # see if this move is better than the current
@@ -83,5 +83,24 @@ class Routing:
             if not move_made:
                 break # we couldn't find a better move
                          # (must be at a local maximum)
+
+        return best, best_score, iter
+
+    def random_restart_hillclimb(self, distances, epochs):
+        '''
+        repeatedly hillclimb until max_evaluations is reached
+        '''
+        best = None
+        best_score = 0
+
+        iter = 0
+        while iter < epochs:
+            iters_left = epochs - iter
+
+            sequence, score, iters_made = self.hillclimb(distances, iters_left)
+            iter += iters_made
+            if score > best_score or best is None:
+                best_score = score
+                best = sequence
 
         return best, best_score, iter
