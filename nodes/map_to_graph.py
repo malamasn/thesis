@@ -179,11 +179,25 @@ class Map_To_Graph:
                 _, _, _, dist = find_path(graph, i, j)
                 distances[i][j] = dist
                 distances[j][i] = distances[i][j]
+        # print(distances)
 
         # Call hill climb
-        max_iterations = 20
-        route, cost, iter = self.routing.hillclimb(distances, max_iterations)
-        # print(route, cost, iter)
+        max_iterations = 50
+        # route, cost, iter = self.routing.hillclimb(distances, max_iterations)
+        door_route, cost, iter = self.routing.random_restart_hillclimb(distances, max_iterations)
+        # print(door_route, cost, iter)
+
+
+        # Correspond door route to room route
+        route = []
+        for door in door_route:
+            for i in range(len(self.room_doors)):
+                if self.door_nodes[door] in self.room_doors[i] and i not in route:
+                    route.append(i)
+        # print route
+
+        # # TO DO: FIND CLOSEST NODE
+
 
         return
 
