@@ -123,40 +123,6 @@ class Map_To_Graph:
         # rospy.loginfo("Printing door nodes!")
         # self.door_node_pub.publish(marker)
 
-        # i = 0
-        # for room in self.rooms:
-        #     # print('room', room)
-        #     points = []
-        #     for point in room:
-        #         p = Point()
-        #         p.x = point[0] * self.resolution
-        #         p.y = point[1] * self.resolution
-        #         p.z = 0
-        #         points.append(p)
-        #     rospy.loginfo("Markers ready!")
-        #     # print(p)
-        #     # Create Marker for nodes
-        #     marker = Marker()
-        #     marker.header.frame_id = "/map"
-        #     marker.type = marker.POINTS
-        #     marker.action = marker.ADD
-        #
-        #     marker.points = points
-        #     marker.pose.orientation.w = 1.0
-        #
-        #     marker.scale.x = 0.2
-        #     marker.scale.y = 0.2
-        #     marker.scale.z = 0.2
-        #     marker.color.a = 1.0
-        #     marker.color.b = 1.0
-        #     marker.color.r = 1.0
-        #
-        #     rospy.loginfo("Printing room nodes!")
-        #     self.room_node_pub.publish(marker)
-        #     print('room type: ', self.room_type[i])
-        #     i += 1
-        #     time.sleep(3)
-        # print(self.door_nodes)
         graph = Graph()
         for room in self.room_doors:
             if len(room) > 1:
@@ -182,9 +148,10 @@ class Map_To_Graph:
         # print(distances)
 
         # Call hill climb
-        max_iterations = 50
-        # route, cost, iter = self.routing.hillclimb(distances, max_iterations)
-        door_route, cost, iter = self.routing.random_restart_hillclimb(distances, max_iterations)
+        max_iterations = 500
+        # door_route, cost, iter = self.routing.hillclimb(distances, max_iterations)
+        # door_route, cost, iter = self.routing.random_restart_hillclimb(distances, max_iterations)
+        door_route, cost, iter = self.routing.anneal(distances, max_iterations, 1.0, 0.95)
         # print(door_route, cost, iter)
 
 
@@ -194,10 +161,50 @@ class Map_To_Graph:
             for i in range(len(self.room_doors)):
                 if self.door_nodes[door] in self.room_doors[i] and i not in route:
                     route.append(i)
-        # print route
+        print route, self.routing.route_length(distances, door_route)
 
-        # # TO DO: FIND CLOSEST NODE
+        # Save room sequence
+        data['room_sequence'] = route
+        map_name = rospy.get_param('map_name')
+        filename = '/home/mal/catkin_ws/src/topology_finder/data/' + map_name +'.json'
+        with open(filename, 'w') as outfile:
+                data_to_json = json.dump(data, outfile)
+        time.sleep(1)
+        # i = 0
+        # route = data['room_sequence']
+        for _ in range(1):
+            for room_id in route:
+                # print('room', room)
+                points = []
+                for point in self.rooms[room_id]:
+                    p = Point()
+                    p.x = point[0] * self.resolution
+                    p.y = point[1] * self.resolution
+                    p.z = 0
+                    points.append(p)
+                rospy.loginfo("Markers ready!")
+                # print(p)
+                # Create Marker for nodes
+                marker = Marker()
+                marker.header.frame_id = "/map"
+                marker.type = marker.POINTS
+                marker.action = marker.ADD
 
+                marker.points = points
+                marker.pose.orientation.w = 1.0
+
+                marker.scale.x = 0.2
+                marker.scale.y = 0.2
+                marker.scale.z = 0.2
+                marker.color.a = 1.0
+                marker.color.b = 1.0
+                marker.color.r = 1.0
+
+                rospy.loginfo("Printing room nodes!")
+                self.room_node_pub.publish(marker)
+                print('room type: ', self.room_type[room_id])
+                # i += 1
+                time.sleep(3)
 
         return
 
