@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import numpy as np
-import random
+import random, math
 
 
 
@@ -54,13 +54,27 @@ class Routing:
                 if copy != route: # no point returning the same tour
                     yield copy
 
+    def P(self, prev_score, next_score, temperature):
+        if next_score > prev_score:
+            return 1.0
+        else:
+            return math.exp(-abs(next_score - prev_score)/temperature)
+
+    def kirkpatrick_cooling(self, start_temp, alpha):
+        T = start_temp
+        while True:
+            yield T
+            T = alpha * T
+
+
     def hillclimb(self, distances, epochs):
         '''
         hillclimb until either epochs
         is reached or we are at a local optima
         '''
         length = distances.shape[0]
-        best = self.init_random_route(length)
+        # best = self.init_random_route(length)
+        best = range(length)
         best_score = self.route_length(distances, best)
 
         iter = 1
@@ -102,5 +116,40 @@ class Routing:
             if score > best_score or best is None:
                 best_score = score
                 best = sequence
+
+        return best, best_score, iter
+
+
+
+    def anneal(self, distances, epochs, start_temp, alpha):
+
+        length = distances.shape[0]
+        best = range(length)
+        best_score = self.route_length(distances, best)
+        iter = 0
+
+        cooling_schedule = self.kirkpatrick_cooling(start_temp, alpha)
+
+        for temperature in cooling_schedule:
+            done = False
+            # examine moves around our current position
+            for next in self.reversed_sections(best):
+                if iter >= epochs:
+                    done = True
+                    break
+
+                next_score = self.route_length(distances, best)
+                iter += 1
+
+                # probablistically accept this solution
+                # always accepting better solutions
+                p = self.P(best_score, next_score, temperature)
+                if random.random() < p:
+                    best = next
+                    best_score = next_score
+                    break
+            # see if completely finished
+            if done:
+                 break
 
         return best, best_score, iter
