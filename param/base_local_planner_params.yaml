@@ -106,7 +106,7 @@ DWAPlannerROS:
   max_vel_x_backwards: 0.11
 
 # Maximum angular velocity of the robot
-  max_vel_theta: 1.5
+  max_vel_theta: 0.3
 
 # Maximum strafing velocity of the robot (should be zero for non-holonomic
 # robots!)
@@ -152,7 +152,7 @@ DWAPlannerROS:
 ## GoalTolerance ###############################################################
 
 # Allowed final euclidean distance to the goal position
-  xy_goal_tolerance: 0.1
+  xy_goal_tolerance: 0.2
 
 # Allowed final orientation error to the goal orientation
   yaw_goal_tolerance: 0.1
@@ -165,7 +165,7 @@ DWAPlannerROS:
 ## Obstacles ###################################################################
 
 # Minimum desired separation from obstacles
-  min_obstacle_dist: 0.1
+  min_obstacle_dist: 0.4
 
 # Buffer zone around obstacles with non-zero penalty costs (should be larger
 # than min_obstacle_dist in order to take effect)

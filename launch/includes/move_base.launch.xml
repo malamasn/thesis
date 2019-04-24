@@ -17,8 +17,8 @@
     <rosparam file="$(find my_navigation)/param/costmap_common_params.yaml" command="load" ns="local_costmap" />
     <rosparam file="$(find my_navigation)/param/local_costmap_params.yaml" command="load" />
     <rosparam file="$(find my_navigation)/param/global_costmap_params.yaml" command="load" />
-    <rosparam file="$(find my_navigation)/param/base_local_planner_params.yaml" command="load" />
-    <!-- <rosparam file="$(find my_navigation)/param/teb_local_planner_params.yaml" command="load" />  -->
+    <!-- <rosparam file="$(find my_navigation)/param/base_local_planner_params.yaml" command="load" /> -->
+    <rosparam file="$(find my_navigation)/param/teb_local_planner_params.yaml" command="load" /> 
     <rosparam file="$(find my_navigation)/param/move_base_params.yaml" command="load" />
     <rosparam file="$(find my_navigation)/param/global_planner_params.yaml" command="load" />
     <!-- <rosparam file="$(find my_navigation)/param/navfn_global_planner_params.yaml" command="load" /> -->
