@@ -55,7 +55,9 @@ class Navigation:
         # Load map's translation
         origin = rospy.get_param('origin')
         self.resolution = rospy.get_param('resolution')
-        
+        # Calculate current x,y in map's frame
+        current_x = (self.current_pose.position.x - origin[0])/self.resolution
+        current_y = (self.current_pose.position.y - origin[1])/self.resolution
 
 
 
