@@ -42,17 +42,9 @@ class Map_To_Graph:
     def server_start(self):
         rospy.init_node('map_to_topology')
         rospy.loginfo('map_to_topology node initialized.')
-        # rospy.Subscriber(self.ogm_topic, OccupancyGrid, self.read_ogm)
-        # rospy.loginfo("Waiting 5 secs to read ogm.")
-        # time.sleep(5)
-        # rospy.loginfo("5 secs passed.")
-        #
-        # # Calculate brushfire field
-        # rospy.loginfo("Brushfire initialized.")
-        # self.brush = self.brushfire_cffi.obstacleBrushfireCffi(self.ogm)
-        # rospy.loginfo("Brushfire done!")
-        # # Calculate gvd from brushfire and ogm
-        # self.gvd = self.topology.gvd(self.ogm, self.brush)
+
+        x_translation = rospy.get_param('x_translation')
+        y_translation = rospy.get_param('y_translation')
 
         # Load nodes from json file
         map_name = rospy.get_param('map_name')
@@ -71,8 +63,8 @@ class Map_To_Graph:
         points = []
         for point in self.nodes:
             p = Point()
-            p.x = point[0] * self.resolution
-            p.y = point[1] * self.resolution
+            p.x = point[0] * self.resolution + x_translation
+            p.y = point[1] * self.resolution + y_translation
             p.z = 0
             points.append(p)
         rospy.loginfo("Markers ready!")
@@ -99,8 +91,8 @@ class Map_To_Graph:
         # points = []
         # for point in self.door_nodes:
         #     p = Point()
-        #     p.x = point[0] * self.resolution
-        #     p.y = point[1] * self.resolution
+        #     p.x = point[0] * self.resolution + x_translation
+        #     p.y = point[1] * self.resolution + y_translation
         #     p.z = 0
         #     points.append(p)
         # rospy.loginfo("Markers ready!")
@@ -163,12 +155,12 @@ class Map_To_Graph:
                     route.append(i)
         print route, self.routing.route_length(distances, door_route)
 
-        # Save room sequence
-        data['room_sequence'] = route
-        map_name = rospy.get_param('map_name')
-        filename = '/home/mal/catkin_ws/src/topology_finder/data/' + map_name +'.json'
-        with open(filename, 'w') as outfile:
-                data_to_json = json.dump(data, outfile)
+        # # Save room sequence
+        # data['room_sequence'] = route
+        # map_name = rospy.get_param('map_name')
+        # filename = '/home/mal/catkin_ws/src/topology_finder/data/' + map_name +'.json'
+        # with open(filename, 'w') as outfile:
+        #         data_to_json = json.dump(data, outfile)
         time.sleep(1)
         # i = 0
         # route = data['room_sequence']
@@ -178,8 +170,8 @@ class Map_To_Graph:
                 points = []
                 for point in self.rooms[room_id]:
                     p = Point()
-                    p.x = point[0] * self.resolution
-                    p.y = point[1] * self.resolution
+                    p.x = point[0] * self.resolution + x_translation
+                    p.y = point[1] * self.resolution + y_translation
                     p.z = 0
                     points.append(p)
                 rospy.loginfo("Markers ready!")

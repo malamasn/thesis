@@ -79,8 +79,8 @@ class Map_To_Topology:
         points = []
         for point in self.nodes:
             p = Point()
-            p.x = point[0] * self.resolution
-            p.y = point[1] * self.resolution
+            p.x = point[0] * self.resolution + x_translation
+            p.y = point[1] * self.resolution + y_translation
             p.z = 0
             points.append(p)
         rospy.loginfo("Markers ready!")
@@ -118,8 +118,8 @@ class Map_To_Topology:
         points = []
         for point in candidateDoors:
             p = Point()
-            p.x = point[0] * self.resolution
-            p.y = point[1] * self.resolution
+            p.x = point[0] * self.resolution + x_translation
+            p.y = point[1] * self.resolution + y_translation
             p.z = 0
             points.append(p)
         rospy.loginfo("Markers ready!")
@@ -154,8 +154,8 @@ class Map_To_Topology:
         points = []
         for point in door_nodes:
             p = Point()
-            p.x = point[0] * self.resolution
-            p.y = point[1] * self.resolution
+            p.x = point[0] * self.resolution + x_translation
+            p.y = point[1] * self.resolution + y_translation
             p.z = 0
             points.append(p)
         rospy.loginfo("Markers ready!")
@@ -200,8 +200,8 @@ class Map_To_Topology:
             points = []
             for point in room:
                 p = Point()
-                p.x = point[0] * self.resolution
-                p.y = point[1] * self.resolution
+                p.x = point[0] * self.resolution + x_translation
+                p.y = point[1] * self.resolution + y_translation
                 p.z = 0
                 points.append(p)
             rospy.loginfo("Markers ready!")
