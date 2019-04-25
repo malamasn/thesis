@@ -13,7 +13,7 @@ class Navigation:
 
     def __init__(self):
         # self.routing = Routing()
-        self.resolution = 0.05
+        self.resolution = 0
 
         self.current_pose = Pose()
 
@@ -54,8 +54,9 @@ class Navigation:
 
         # Load map's translation
         origin = rospy.get_param('origin')
-
+        self.resolution = rospy.get_param('resolution')
         
+
 
 
         return

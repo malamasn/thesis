@@ -19,7 +19,7 @@ class Map_To_Topology:
         # self.brushfire = Brushfire()
         self.brushfire_cffi = Cffi()
         self.topology = Topology()
-        self.resolution = 0.05
+        self.resolution = 0
         self.ogm = 0
         self.ogm_raw = 0
         self.ogm_width = 0
@@ -41,6 +41,7 @@ class Map_To_Topology:
         origin = rospy.get_param('origin')
         x_translation = origin[0]
         y_translation = origin[1]
+        self.resolution = rospy.get_param('resolution')
 
         ogm_topic = '/map'
         rospy.Subscriber(ogm_topic, OccupancyGrid, self.read_ogm)

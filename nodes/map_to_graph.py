@@ -20,7 +20,7 @@ class Map_To_Graph:
         self.brushfire_cffi = Cffi()
         self.topology = Topology()
         self.routing = Routing()
-        self.resolution = 0.05
+        self.resolution = 0
         self.ogm_topic = '/map'
         self.ogm = 0
         self.ogm_raw = 0
@@ -47,6 +47,7 @@ class Map_To_Graph:
         origin = rospy.get_param('origin')
         x_translation = origin[0]
         y_translation = origin[1]
+        self.resolution = rospy.get_param('resolution')
 
         # Load nodes from json file
         map_name = rospy.get_param('map_name')
