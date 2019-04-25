@@ -100,7 +100,18 @@ class Navigation:
             if current_room != -1:
                 break
         if current_room == -1:
-            rospy.loginfo("Problem finding current room!")
+            rospy.loginfo("Problem finding current room! Exiting...")
+            return
+
+        current_room_index = self.room_sequence.index(current_room)
+
+        for i in range(len(self.room_sequence)):
+            # TO DO: NAVIGATE IN THE ROOM
+
+
+            current_room_index = (current_room_index + 1) % len(self.room_sequence)
+            current_room = self.room_sequence[current_room_index]
+
 
 
         return
