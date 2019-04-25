@@ -37,6 +37,11 @@ class Map_To_Topology:
     def server_start(self):
         rospy.init_node('map_to_topology')
         rospy.loginfo('map_to_topology node initialized.')
+
+        origin = rospy.get_param('origin')
+        x_translation = origin[0]
+        y_translation = origin[1]
+
         ogm_topic = '/map'
         rospy.Subscriber(ogm_topic, OccupancyGrid, self.read_ogm)
         rospy.loginfo("Waiting 5 secs to read ogm.")

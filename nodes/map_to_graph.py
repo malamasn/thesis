@@ -43,8 +43,10 @@ class Map_To_Graph:
         rospy.init_node('map_to_topology')
         rospy.loginfo('map_to_topology node initialized.')
 
-        x_translation = rospy.get_param('x_translation')
-        y_translation = rospy.get_param('y_translation')
+        # Load map's translation
+        origin = rospy.get_param('origin')
+        x_translation = origin[0]
+        y_translation = origin[1]
 
         # Load nodes from json file
         map_name = rospy.get_param('map_name')

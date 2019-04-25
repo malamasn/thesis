@@ -52,6 +52,11 @@ class Navigation:
         self.room_type = data['roomType']
         self.room_sequence = data['room_sequence']
 
+        # Load map's translation
+        origin = rospy.get_param('origin')
+
+        
+
 
         return
 
