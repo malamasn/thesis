@@ -155,3 +155,22 @@ class Cffi:
             final_obstacles.append(min)
 
         return final_obstacles
+
+    @staticmethod
+    def pointToGvdBrushfireCffi(start, ogm, gvd):
+        brushfire = np.zeros(ogm.shape, np.dtype('int32'))
+        brushfire[ogm > 49] = 1
+        brushfire[ogm == -1] = 1
+        brushfire[start] = 2
+        brushfire[gvd == 1] = -1
+
+        x = [np.array(v, dtype='int32') for v in brushfire]
+        xi = ffi.new(("int* [%d]") % (len(x)))
+        for i in range(len(x)):
+            xi[i] = ffi.cast("int *", x[i].ctypes.data)
+
+        br_c = lib.pointToGvdBrushfire(xi, len(x), len(x[0]))
+        brushfire[:] = np.array(x)
+        index = np.where(brushfire == -2)
+        gvd_nodes = zip(index[0], index[1])
+        return gvd_nodes
