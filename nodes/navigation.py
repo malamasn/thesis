@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import rospy, json
+import rospy, json, actionlib
 import numpy as np
 import time
 from dijkstar import Graph, find_path
@@ -7,6 +7,7 @@ from dijkstar import Graph, find_path
 from nav_msgs.msg import Odometry, OccupancyGrid
 from geometry_msgs.msg import Pose, Point
 from visualization_msgs.msg import Marker
+from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 
 from utilities import Cffi
 from topology import Topology
@@ -19,6 +20,7 @@ class Navigation:
         self.topology = Topology()
 
         self.resolution = 0
+        self.origin = []
         self.current_pose = Pose()
 
         self.ogm_topic = '/map'
@@ -42,6 +44,7 @@ class Navigation:
         self.room_node_pub = rospy.Publisher('/nodes/rooms', Marker, queue_size = 100)
         self.odom_sub = rospy.Subscriber('/odom', Odometry, self.odom_callback)
 
+        self.move_base_client = actionlib.SimpleActionClient('move_base', MoveBaseAction)
 
     # Cb to read robot's pose
     def odom_callback(self, msg):
@@ -66,11 +69,11 @@ class Navigation:
         self.room_sequence = data['room_sequence']
 
         # Load map's translation
-        origin = rospy.get_param('origin')
+        self.origin = rospy.get_param('origin')
         self.resolution = rospy.get_param('resolution')
         # Calculate current x,y in map's frame
-        current_x = (self.current_pose.position.x - origin[0])/self.resolution
-        current_y = (self.current_pose.position.y - origin[1])/self.resolution
+        current_x = (self.current_pose.position.x - self.origin[0])/self.resolution
+        current_y = (self.current_pose.position.y - self.origin[1])/self.resolution
 
         # Read ogm
         rospy.Subscriber(self.ogm_topic, OccupancyGrid, self.read_ogm)
@@ -105,9 +108,23 @@ class Navigation:
 
         current_room_index = self.room_sequence.index(current_room)
 
+        # Navigate in all rooms with given sequence
         for i in range(len(self.room_sequence)):
-            # TO DO: NAVIGATE IN THE ROOM
 
+            # TO DO: FIRST GO TO DOOR (only if i>0, robot already inside first room)
+            # if not i:
+            #     goToGoal()
+            # print self.room_doors[current_room][0]
+            # result = self.goToGoal(self.room_doors[current_room[0])
+
+            # find nodes of current room
+            nodes = self.rooms[current_room]
+            nodes.sort()    # for debugging to be faster
+            # navigate to all nodes
+            for node in nodes:
+                result = self.goToGoal(node)
+
+            # TODO: KEEP TRACK OF VISITED NODES
 
             current_room_index = (current_room_index + 1) % len(self.room_sequence)
             current_room = self.room_sequence[current_room_index]
@@ -115,6 +132,25 @@ class Navigation:
 
 
         return
+
+    # Gets target pose, sends it to move_base and waits for the result
+    def goToGoal(self, target):
+        self.move_base_client.wait_for_server()
+
+        goal = MoveBaseGoal()
+        goal.target_pose.header.frame_id = 'map'
+        goal.target_pose.header.stamp = rospy.Time.now()
+        goal.target_pose.pose.position.x = target[0]*self.resolution + self.origin[0]
+        goal.target_pose.pose.position.y = target[1]*self.resolution + self.origin[1]
+        goal.target_pose.pose.orientation.w = 1.0
+        print goal
+        self.move_base_client.send_goal(goal)
+        wait = self.move_base_client.wait_for_result()
+        if not wait:
+            rospy.logerr("Action server not available!")
+            rospy.signal_shutdown("Action server not available!")
+        else:
+            return self.move_base_client.get_result()
 
 
     def read_ogm(self, data):
