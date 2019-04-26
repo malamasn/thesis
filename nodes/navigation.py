@@ -107,15 +107,9 @@ class Navigation:
             return
 
         current_room_index = self.room_sequence.index(current_room)
-
+        self.print_markers(self.nodes)
         # Navigate in all rooms with given sequence
         for i in range(len(self.room_sequence)):
-
-            # TO DO: FIRST GO TO DOOR (only if i>0, robot already inside first room)
-            # if not i:
-            #     goToGoal()
-            # print self.room_doors[current_room][0]
-            # result = self.goToGoal(self.room_doors[current_room[0])
 
             # find nodes of current room
             nodes = self.rooms[current_room]
@@ -124,7 +118,7 @@ class Navigation:
             for node in nodes:
                 result = self.goToGoal(node)
 
-            # TODO: KEEP TRACK OF VISITED NODES
+            # TODO: KEEP TRACK OF VISITED NODES (should I?)
 
             current_room_index = (current_room_index + 1) % len(self.room_sequence)
             current_room = self.room_sequence[current_room_index]
@@ -143,7 +137,7 @@ class Navigation:
         goal.target_pose.pose.position.x = target[0]*self.resolution + self.origin[0]
         goal.target_pose.pose.position.y = target[1]*self.resolution + self.origin[1]
         goal.target_pose.pose.orientation.w = 1.0
-        print goal
+
         self.move_base_client.send_goal(goal)
         wait = self.move_base_client.wait_for_result()
         if not wait:
@@ -173,6 +167,36 @@ class Navigation:
                 self.ogm[x][y] = data.data[x + data.info.width * y]
         return
 
+    def print_markers(self, nodes):
+
+        rospy.loginfo("Start collecting markers")
+        points = []
+        for point in nodes:
+            p = Point()
+            p.x = point[0] * self.resolution + self.origin[0]
+            p.y = point[1] * self.resolution + self.origin[1]
+            p.z = 0
+            points.append(p)
+        rospy.loginfo("Markers ready!")
+
+        # Create Marker for nodes
+        marker = Marker()
+        marker.header.frame_id = "/map"
+        marker.type = marker.POINTS
+        marker.action = marker.ADD
+
+        marker.points = points
+        marker.pose.orientation.w = 1.0
+
+        marker.scale.x = 0.2
+        marker.scale.y = 0.2
+        marker.scale.z = 0.2
+        marker.color.a = 1.0
+        marker.color.r = 1.0
+
+        rospy.loginfo("Printing nodes!")
+        self.node_publisher.publish(marker)
+        return
 
 if __name__ == '__main__':
     node = Navigation()
