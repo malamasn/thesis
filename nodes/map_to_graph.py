@@ -60,7 +60,7 @@ class Map_To_Graph:
         map_name = rospy.get_param('map_name')
         filename = '/home/mal/catkin_ws/src/topology_finder/data/' + map_name +'.json'
         with open(filename, 'r') as read_file:
-                data = json.load(read_file)
+            data = json.load(read_file)
 
         self.nodes = data['nodes']
         self.door_nodes = data['doors']
