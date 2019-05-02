@@ -1,1 +1,7 @@
-map_name: 'rooms_3'
+# RFID antenna specs
+sensor_name: rfid_antenna
+sensor_direction: 0
+fov: 60
+range: 1
+shape: 'circular'
+reliability: 1
