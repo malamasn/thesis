@@ -79,8 +79,8 @@ class Navigation:
         self.origin['y'] = translation[1]
         self.resolution = rospy.get_param('resolution')
         # Calculate current x,y in map's frame
-        current_x = (self.current_pose.position.x - self.origin[0])/self.resolution
-        current_y = (self.current_pose.position.y - self.origin[1])/self.resolution
+        current_x = (self.current_pose.position.x - self.origin['x'])/self.resolution
+        current_y = (self.current_pose.position.y - self.origin['y'])/self.resolution
 
         # Read ogm
         rospy.Subscriber(self.ogm_topic, OccupancyGrid, self.read_ogm)
@@ -119,8 +119,11 @@ class Navigation:
         for i in range(len(self.room_sequence)):
 
             # find nodes of current room
+            # # TO DO: USE ENHANCED NODES
             nodes = self.rooms[current_room]
+            # # TO DO: ADD SEQUENCE PATTERN
             nodes.sort()    # for debugging to be faster
+            # # TODO: ADD ORIENATION
             # navigate to all nodes
             for node in nodes:
                 result = self.goToGoal(node)
@@ -141,8 +144,8 @@ class Navigation:
         goal = MoveBaseGoal()
         goal.target_pose.header.frame_id = 'map'
         goal.target_pose.header.stamp = rospy.Time.now()
-        goal.target_pose.pose.position.x = target[0]*self.resolution + self.origin[0]
-        goal.target_pose.pose.position.y = target[1]*self.resolution + self.origin[1]
+        goal.target_pose.pose.position.x = target[0]*self.resolution + self.origin['x']
+        goal.target_pose.pose.position.y = target[1]*self.resolution + self.origin['y']
         goal.target_pose.pose.orientation.w = 1.0
 
         self.move_base_client.send_goal(goal)
@@ -180,8 +183,8 @@ class Navigation:
         points = []
         for point in nodes:
             p = Point()
-            p.x = point[0] * self.resolution + self.origin[0]
-            p.y = point[1] * self.resolution + self.origin[1]
+            p.x = point[0] * self.resolution + self.origin['x']
+            p.y = point[1] * self.resolution + self.origin['y']
             p.z = 0
             points.append(p)
         rospy.loginfo("Markers ready!")
