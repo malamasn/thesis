@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import rospy
 import numpy as np
-from math import hypot
+from scipy.spatial import distance
 
 from nav_msgs.msg import Odometry, OccupancyGrid
 from geometry_msgs.msg import Pose
@@ -95,8 +95,12 @@ class Coverage:
                     y = int(yy + j)
                     if self.ogm[x, y] > 49 or self.ogm[x, y] == -1:
                         continue
-                    # TODO: Use fov!!!
-                    
+                    # Check if point inside fov of sensor
+                    cosine = distance.cosine([xx, x], [yy, y])
+                    angle = np.arccos(cosine)
+                    if angle - self.sensor_direction > self.sensor_fov / 2 or \
+                            angle - self.sensor_direction < -self.sensor_fov / 2:
+                        continue
                     self.coverage[x, y] = 100
                     index = int((xx + i) + self.ogm_info.width * (yy + j))
                     self.coverage_ogm.data[index] = 100
@@ -109,10 +113,14 @@ class Coverage:
                     if self.ogm[x, y] > 49 or self.ogm[x, y] == -1:
                         continue
                     # Check if point inside cover circle
-                    if hypot(xx-x, yy-y) > cover_length:
+                    if distance.euclidean([xx, x], [yy, y]) > cover_length:
                         continue
-                    # TODO: Use fov!!!
-
+                    # Check if point inside fov of sensor
+                    cosine = distance.cosine([xx, x], [yy, y])
+                    angle = np.arccos(cosine)
+                    if angle - self.sensor_direction > self.sensor_fov / 2 or \
+                            angle - self.sensor_direction < -self.sensor_fov / 2:
+                        continue
                     self.coverage[x, y] = 100
                     index = int((xx + i) + self.ogm_info.width * (yy + j))
                     self.coverage_ogm.data[index] = 100
