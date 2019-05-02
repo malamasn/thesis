@@ -24,11 +24,30 @@ class Coverage:
         self.ogm_height = 0
         self.ogm_header = 0
 
+        # Holds the coverage information. This has the same size as the ogm
+        # If a cell has the value of 0 it is uncovered
+        # In the opposite case the cell's value will be 100
+        self.coverage = []
+
+        # Read ogm
+        rospy.Subscriber(self.ogm_topic, OccupancyGrid, self.read_ogm)
+
         self.current_pose = Pose()
 
         self.odom_sub = rospy.Subscriber('/odom', Odometry, self.odom_callback)
-        self.ogm_sub = rospy.Subscriber(self.ogm_topic, OccupancyGrid, self.read_ogm)
 
+
+    def server_start(self):
+        rospy.init_node('coverage')
+        rospy.loginfo('Coverage node initialized.')
+
+        # Load map's translation
+        translation = rospy.get_param('origin')
+        self.origin['x'] = translation[0]
+        self.origin['y'] = translation[1]
+        self.resolution = rospy.get_param('resolution')
+
+        return
 
     # Cb to read robot's pose
     def odom_callback(self, msg):
@@ -53,9 +72,13 @@ class Coverage:
         for x in range(0, data.info.width):
             for y in range(0, data.info.height):
                 self.ogm[x][y] = data.data[x + data.info.width * y]
+
+        # Initilize coverage OGM with same size width x height
+        self.coverage = np.zeros([self.ogm_info.width, self.ogm_info.height])
         return
 
 
 
 if __name__ == '__main__':
     node = Coverage()
+    node.server_start()
