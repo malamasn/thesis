@@ -19,8 +19,13 @@ class Navigation:
         self.brushfire_cffi = Cffi()
         self.topology = Topology()
 
+        # Origin is the translation between the (0,0) of the robot pose and the
+        # (0,0) of the map
+        self.origin = {}
+        self.origin['x'] = 0
+        self.origin['y'] = 0
         self.resolution = 0
-        self.origin = []
+
         self.current_pose = Pose()
 
         self.ogm_topic = '/map'
@@ -69,7 +74,9 @@ class Navigation:
         self.room_sequence = data['room_sequence']
 
         # Load map's translation
-        self.origin = rospy.get_param('origin')
+        translation = rospy.get_param('origin')
+        self.origin['x'] = translation[0]
+        self.origin['y'] = translation[1]
         self.resolution = rospy.get_param('resolution')
         # Calculate current x,y in map's frame
         current_x = (self.current_pose.position.x - self.origin[0])/self.resolution

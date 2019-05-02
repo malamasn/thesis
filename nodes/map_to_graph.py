@@ -20,7 +20,14 @@ class Map_To_Graph:
         self.brushfire_cffi = Cffi()
         self.topology = Topology()
         self.routing = Routing()
+
+        # Origin is the translation between the (0,0) of the robot pose and the
+        # (0,0) of the map
+        self.origin = {}
+        self.origin['x'] = 0
+        self.origin['y'] = 0
         self.resolution = 0
+
         self.ogm_topic = '/map'
         self.ogm = 0
         self.ogm_raw = 0
@@ -44,9 +51,9 @@ class Map_To_Graph:
         rospy.loginfo('map_to_topology node initialized.')
 
         # Load map's translation
-        origin = rospy.get_param('origin')
-        x_translation = origin[0]
-        y_translation = origin[1]
+        translation = rospy.get_param('origin')
+        self.origin['x'] = translation[0]
+        self.origin['y'] = translation[1]
         self.resolution = rospy.get_param('resolution')
 
         # Load nodes from json file
@@ -66,8 +73,8 @@ class Map_To_Graph:
         points = []
         for point in self.nodes:
             p = Point()
-            p.x = point[0] * self.resolution + x_translation
-            p.y = point[1] * self.resolution + y_translation
+            p.x = point[0] * self.resolution + self.origin['x']
+            p.y = point[1] * self.resolution + self.origin['y']
             p.z = 0
             points.append(p)
         rospy.loginfo("Markers ready!")
@@ -94,8 +101,8 @@ class Map_To_Graph:
         # points = []
         # for point in self.door_nodes:
         #     p = Point()
-        #     p.x = point[0] * self.resolution + x_translation
-        #     p.y = point[1] * self.resolution + y_translation
+        #     p.x = point[0] * self.resolution + self.origin['x']
+        #     p.y = point[1] * self.resolution + self.origin['y']
         #     p.z = 0
         #     points.append(p)
         # rospy.loginfo("Markers ready!")
@@ -173,8 +180,8 @@ class Map_To_Graph:
                 points = []
                 for point in self.rooms[room_id]:
                     p = Point()
-                    p.x = point[0] * self.resolution + x_translation
-                    p.y = point[1] * self.resolution + y_translation
+                    p.x = point[0] * self.resolution + self.origin['x']
+                    p.y = point[1] * self.resolution + self.origin['y']
                     p.z = 0
                     points.append(p)
                 rospy.loginfo("Markers ready!")

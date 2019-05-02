@@ -19,7 +19,14 @@ class Map_To_Topology:
         # self.brushfire = Brushfire()
         self.brushfire_cffi = Cffi()
         self.topology = Topology()
+
+        # Origin is the translation between the (0,0) of the robot pose and the
+        # (0,0) of the map
+        self.origin = {}
+        self.origin['x'] = 0
+        self.origin['y'] = 0
         self.resolution = 0
+
         self.ogm = 0
         self.ogm_raw = 0
         self.ogm_width = 0
@@ -38,9 +45,9 @@ class Map_To_Topology:
         rospy.init_node('map_to_topology')
         rospy.loginfo('map_to_topology node initialized.')
 
-        origin = rospy.get_param('origin')
-        x_translation = origin[0]
-        y_translation = origin[1]
+        translation = rospy.get_param('origin')
+        self.origin['x'] = translation[0]
+        self.origin['y'] = translation[1]
         self.resolution = rospy.get_param('resolution')
 
         ogm_topic = '/map'
@@ -85,8 +92,8 @@ class Map_To_Topology:
         points = []
         for point in self.nodes:
             p = Point()
-            p.x = point[0] * self.resolution + x_translation
-            p.y = point[1] * self.resolution + y_translation
+            p.x = point[0] * self.resolution + self.origin['x']
+            p.y = point[1] * self.resolution + self.origin['y']
             p.z = 0
             points.append(p)
         rospy.loginfo("Markers ready!")
@@ -124,8 +131,8 @@ class Map_To_Topology:
         points = []
         for point in candidateDoors:
             p = Point()
-            p.x = point[0] * self.resolution + x_translation
-            p.y = point[1] * self.resolution + y_translation
+            p.x = point[0] * self.resolution + self.origin['x']
+            p.y = point[1] * self.resolution + self.origin['y']
             p.z = 0
             points.append(p)
         rospy.loginfo("Markers ready!")
@@ -160,8 +167,8 @@ class Map_To_Topology:
         points = []
         for point in door_nodes:
             p = Point()
-            p.x = point[0] * self.resolution + x_translation
-            p.y = point[1] * self.resolution + y_translation
+            p.x = point[0] * self.resolution + self.origin['x']
+            p.y = point[1] * self.resolution + self.origin['y']
             p.z = 0
             points.append(p)
         rospy.loginfo("Markers ready!")
@@ -206,8 +213,8 @@ class Map_To_Topology:
             points = []
             for point in room:
                 p = Point()
-                p.x = point[0] * self.resolution + x_translation
-                p.y = point[1] * self.resolution + y_translation
+                p.x = point[0] * self.resolution + self.origin['x']
+                p.y = point[1] * self.resolution + self.origin['y']
                 p.z = 0
                 points.append(p)
             rospy.loginfo("Markers ready!")
