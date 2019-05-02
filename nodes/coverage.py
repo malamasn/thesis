@@ -17,6 +17,12 @@ class Coverage:
         self.origin['y'] = 0
         self.resolution = 0
 
+        # Load map's translation
+        translation = rospy.get_param('origin')
+        self.origin['x'] = translation[0]
+        self.origin['y'] = translation[1]
+        self.resolution = rospy.get_param('resolution')
+
         self.ogm_topic = '/map'
         self.ogm = 0
         self.ogm_raw = 0
@@ -28,6 +34,10 @@ class Coverage:
         # If a cell has the value of 0 it is uncovered
         # In the opposite case the cell's value will be 100
         self.coverage = []
+        # coverage_ogm will be published in the coverage_topic
+        self.coverage_ogm = OccupancyGrid()
+        self.coverage_ogm.header.frame_id = "map"
+        self.coverage_topic = '/map/coverage'
 
         # Read ogm
         rospy.Subscriber(self.ogm_topic, OccupancyGrid, self.read_ogm)
@@ -35,17 +45,16 @@ class Coverage:
         self.current_pose = Pose()
 
         self.odom_sub = rospy.Subscriber('/odom', Odometry, self.odom_callback)
+        self.coverage_pub = rospy.Publisher(self.coverage_topic, \
+            OccupancyGrid, queue_size = 10)
+
 
 
     def server_start(self):
         rospy.init_node('coverage')
         rospy.loginfo('Coverage node initialized.')
 
-        # Load map's translation
-        translation = rospy.get_param('origin')
-        self.origin['x'] = translation[0]
-        self.origin['y'] = translation[1]
-        self.resolution = rospy.get_param('resolution')
+
 
         return
 
