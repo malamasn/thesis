@@ -17,6 +17,14 @@ class Coverage:
         self.origin['y'] = 0
         self.resolution = 0
 
+        # Read sensor's specs
+        self.sensor_name = rospy.get_param('sensor_name')
+        self.sensor_direction = rospy.get_param('sensor_direction')
+        self.sensor_fov = rospy.get_param('fov')
+        self.sensor_range = rospy.get_param('range')
+        self.sensor_hape = rospy.get_param('shape')
+        self.sensor_reliability = rospy.get_param('reliability')
+
         # Load map's translation
         translation = rospy.get_param('origin')
         self.origin['x'] = translation[0]
@@ -43,8 +51,8 @@ class Coverage:
         rospy.Subscriber(self.ogm_topic, OccupancyGrid, self.read_ogm)
 
         self.current_pose = Pose()
+        rospy.Subscriber('/odom', Odometry, self.odom_callback)
 
-        self.odom_sub = rospy.Subscriber('/odom', Odometry, self.odom_callback)
         self.coverage_pub = rospy.Publisher(self.coverage_topic, \
             OccupancyGrid, queue_size = 10)
 
@@ -54,13 +62,15 @@ class Coverage:
         rospy.init_node('coverage')
         rospy.loginfo('Coverage node initialized.')
 
-
+        rospy.Subscriber('/odom', Odometry, self.odom_callback)
 
         return
 
     # Cb to read robot's pose
     def odom_callback(self, msg):
         self.current_pose =  msg.pose.pose
+
+
         return
 
     def read_ogm(self, data):

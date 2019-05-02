@@ -1,5 +1,5 @@
 # RFID antenna specs
-sensor_name: rfid_antenna
+sensor_name: 'rfid_antenna'
 sensor_direction: 0
 fov: 60
 range: 1
