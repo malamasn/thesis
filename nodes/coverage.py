@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import rospy
+import rospy, tf, time
 import numpy as np
 from scipy.spatial import distance
 
@@ -48,9 +48,6 @@ class Coverage:
         self.coverage_ogm.header.frame_id = "map"
         self.coverage_topic = '/map/coverage'
 
-        # Read ogm
-        rospy.Subscriber(self.ogm_topic, OccupancyGrid, self.read_ogm)
-
         self.current_pose = Pose()
         # robot_pose is current_pose in map's frame (aka in pixels)
         self.robot_pose = {}
@@ -68,9 +65,80 @@ class Coverage:
         rospy.init_node('coverage')
         rospy.loginfo('Coverage node initialized.')
 
-        rospy.Subscriber('/odom', Odometry, self.odom_callback)
-
+        # Read ogm
+        rospy.Subscriber(self.ogm_topic, OccupancyGrid, self.read_ogm)
+        rospy.loginfo("Waiting 5 secs to read ogm.")
+        time.sleep(5)
+        while not rospy.is_shutdown():
+            rospy.Subscriber('/odom', Odometry, self.odom_callback)
+            rospy.sleep(0.1)
+            self.updateCover()
+            rospy.sleep(0.9)
+            # rospy.Timer(rospy.Duration(0.2), self.readRobotPose)
+            # rospy.spin()
         return
+
+    # def readRobotPose(self, event):
+    #     rospy.Subscriber('/odom', Odometry, self.odom_callback)
+    #     # time.sleep(1)
+    #     return
+
+    def updateCover(self):
+        cover_length = int(self.sensor_range / self.resolution)
+        xx = self.robot_pose['x']
+        yy = self.robot_pose['y']
+        th = self.robot_pose['th']
+        # print(self.robot_pose, 'xx,yy', xx, yy)
+        # # cover_length = 20
+        # updates = 0
+        if self.sensor_shape == 'rectangular':
+            for i in range(-cover_length, cover_length):
+                for j in range(-cover_length, cover_length):
+                    x = int(xx + i)
+                    y = int(yy + j)
+                    if x < 0 or y < 0 or x >= self.ogm_width or y >= self.ogm_height:
+                        continue
+                    if self.ogm[x, y] > 49 or self.ogm[x, y] == -1:
+                        continue
+                    # Check if point inside fov of sensor
+                    # cosine = distance.cosine([xx, x], [yy, y])
+                    # angle = np.arccos(cosine)
+                    # if angle - self.sensor_direction > self.sensor_fov / 2 or \
+                    #         angle - self.sensor_direction < -self.sensor_fov / 2:
+                    #     continue
+                    self.coverage[x, y] = 100
+                    index = int(x + self.ogm_width * y)
+                    self.coverage_ogm.data[index] = 100
+                    # updates += 1
+        elif self.sensor_shape == 'circular':
+
+            for i in range(-cover_length, cover_length):
+                for j in range(-cover_length, cover_length):
+                    x = int(xx + i)
+                    y = int(yy + j)
+                    if x < 0 or y < 0 or x >= self.ogm_width or y >= self.ogm_height:
+                        continue
+                    if self.ogm[x, y] > 49 or self.ogm[x, y] == -1:
+                        continue
+                    # Check if point inside cover circle
+                    if distance.euclidean([xx, yy], [x, y]) >= cover_length:
+                        continue
+                    # # Check if point inside fov of sensor
+                    # cosine = distance.cosine([xx, x], [yy, y])
+                    # angle = np.arccos(cosine)
+                    # if angle - self.sensor_direction > self.sensor_fov / 2 or \
+                    #         angle - self.sensor_direction < -self.sensor_fov / 2:
+                    #     continue
+                    self.coverage[x][y] = 100
+                    index = int(x + self.ogm_width * y)
+                    self.coverage_ogm.data[index] = 100
+                    # updates += 1
+
+
+        # print('updates' , updates)
+        self.coverage_pub.publish(self.coverage_ogm)
+        return
+
 
     # Cb to read robot's pose
     def odom_callback(self, msg):
@@ -81,58 +149,12 @@ class Coverage:
         self.robot_pose['y'] = (self.current_pose.position.y - self.origin['y'])/self.resolution
 
         # Getting the Euler angles
-        angles = tf.transformations.euler_from_quaternion(rotation)
+        q = (msg.pose.pose.orientation.x,
+             msg.pose.pose.orientation.y,
+             msg.pose.pose.orientation.z,
+             msg.pose.pose.orientation.w)
+        angles = tf.transformations.euler_from_quaternion(q)
         self.robot_pose['th'] = angles[2]   # yaw
-
-        cover_length = int(self.sensor_range / self.resolution)
-        xx = self.robot_pose['x']
-        yy = self.robot_pose['y']
-
-        if self.sensor_shape == 'rectangular':
-            for i in range(-cover_length, cover_length):
-                for j in range(-cover_length, cover_length):
-                    x = int(xx + i)
-                    y = int(yy + j)
-                    if self.ogm[x, y] > 49 or self.ogm[x, y] == -1:
-                        continue
-                    # Check if point inside fov of sensor
-                    cosine = distance.cosine([xx, x], [yy, y])
-                    angle = np.arccos(cosine)
-                    if angle - self.sensor_direction > self.sensor_fov / 2 or \
-                            angle - self.sensor_direction < -self.sensor_fov / 2:
-                        continue
-                    self.coverage[x, y] = 100
-                    index = int((xx + i) + self.ogm_info.width * (yy + j))
-                    self.coverage_ogm.data[index] = 100
-
-        elif self.sensor_shape == 'circular':
-            for i in range(-cover_length, cover_length):
-                for j in range(-cover_length, cover_length):
-                    x = int(xx + i)
-                    y = int(yy + j)
-                    if self.ogm[x, y] > 49 or self.ogm[x, y] == -1:
-                        continue
-                    # Check if point inside cover circle
-                    if distance.euclidean([xx, x], [yy, y]) > cover_length:
-                        continue
-                    # Check if point inside fov of sensor
-                    cosine = distance.cosine([xx, x], [yy, y])
-                    angle = np.arccos(cosine)
-                    if angle - self.sensor_direction > self.sensor_fov / 2 or \
-                            angle - self.sensor_direction < -self.sensor_fov / 2:
-                        continue
-                    self.coverage[x, y] = 100
-                    index = int((xx + i) + self.ogm_info.width * (yy + j))
-                    self.coverage_ogm.data[index] = 100
-
-
-
-        self.coverage_publisher.publish(self.coverage_ogm)
-
-
-
-
-
         return
 
     def read_ogm(self, data):
@@ -155,7 +177,10 @@ class Coverage:
                 self.ogm[x][y] = data.data[x + data.info.width * y]
 
         # Initilize coverage OGM with same size width x height
-        self.coverage = np.zeros([self.ogm_info.width, self.ogm_info.height])
+        self.coverage = np.zeros((self.ogm_width, self.ogm_height))
+        self.coverage_ogm.info = data.info
+        self.coverage_ogm.data = np.zeros(self.ogm_width * self.ogm_height)
+
         return
 
 
