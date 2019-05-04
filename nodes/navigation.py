@@ -95,7 +95,13 @@ class Navigation:
 
         # Find current room
         start = (int(current_x), int(current_y))
-        gvd_nodes = self.brushfire_cffi.pointToGvdBrushfireCffi(start, self.ogm, self.gvd)
+        if self.gvd[start]:
+            gvd_nodes = [start]
+        else:
+            gvd_nodes = self.brushfire_cffi.pointToGvdBrushfireCffi(start, self.ogm, self.gvd)
+        if not len(gvd_nodes):
+            rospy.loginfo("Error. No gvd in the neighborhood.")
+            return
         neighbor_nodes = self.brushfire_cffi.gvdNeighborBrushfireCffi(gvd_nodes[0], self.nodes, self.gvd)
 
         current_room = -1
