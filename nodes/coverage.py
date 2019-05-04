@@ -94,7 +94,7 @@ class Coverage:
         yy = self.robot_pose['y']
         th = self.robot_pose['th']
         th_deg = math.degrees(th)
-        # print(self.robot_pose, th_deg)
+        print(self.robot_pose, th_deg)
 
         # updates = 0
         if self.sensor_shape == 'rectangular':
@@ -109,8 +109,8 @@ class Coverage:
                     # Check if point inside fov of sensor
                     cosine = 1 - distance.cosine([xx, x], [yy, y])
                     angle = math.degrees(np.arccos(cosine))
-                    if angle - self.sensor_direction > self.sensor_fov / 2 or \
-                            angle - self.sensor_direction < -self.sensor_fov / 2:
+                    if angle - self.sensor_direction > th_deg + self.sensor_fov / 2 or \
+                            angle - self.sensor_direction < th_deg - self.sensor_fov / 2:
                         continue
                     self.coverage[x, y] = 100
                     index = int(x + self.ogm_width * y)
@@ -134,8 +134,8 @@ class Coverage:
                     angle = math.degrees(np.arccos(cosine))
                     # robot_cosine = distance.cosine([1, 0], [xx, yy])
                     # robot_angle = math.degrees(np.arccos(robot_cosine))
-                    if angle - self.sensor_direction  > self.sensor_fov / 2 or \
-                            angle - self.sensor_direction  < -self.sensor_fov / 2:
+                    if angle - self.sensor_direction  > th_deg + self.sensor_fov / 2 or \
+                            angle - self.sensor_direction  < th_deg - self.sensor_fov / 2:
                         continue
                     self.coverage[x][y] = 100
                     index = int(x + self.ogm_width * y)
