@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import rospy, tf, time
+import rospy, tf, time, math
 import numpy as np
 from scipy.spatial import distance
 
@@ -10,7 +10,8 @@ from geometry_msgs.msg import Pose
 
 class Coverage:
     def __init__(self):
-
+        rospy.init_node('coverage')
+        rospy.loginfo('Coverage node initialized.')
         # Origin is the translation between the (0,0) of the robot pose and the
         # (0,0) of the map
         self.origin = {}
@@ -54,7 +55,9 @@ class Coverage:
         self.robot_pose['x'] = 0
         self.robot_pose['y'] = 0
         self.robot_pose['th'] = 0
+        # self.robot_pose['changed'] = False
 
+        # rospy.Timer(rospy.Duration(0.3), self.readRobotPose)
 
         self.coverage_pub = rospy.Publisher(self.coverage_topic, \
             OccupancyGrid, queue_size = 10)
@@ -62,8 +65,7 @@ class Coverage:
 
 
     def server_start(self):
-        rospy.init_node('coverage')
-        rospy.loginfo('Coverage node initialized.')
+
 
         # Read ogm
         rospy.Subscriber(self.ogm_topic, OccupancyGrid, self.read_ogm)
@@ -72,24 +74,28 @@ class Coverage:
         while not rospy.is_shutdown():
             rospy.Subscriber('/odom', Odometry, self.odom_callback)
             rospy.sleep(0.1)
+            # if self.robot_pose['changed']:
             self.updateCover()
-            rospy.sleep(0.9)
+                # self.robot_pose['changed'] = False
+            rospy.sleep(0.5)
+            # break
             # rospy.Timer(rospy.Duration(0.2), self.readRobotPose)
             # rospy.spin()
         return
 
-    # def readRobotPose(self, event):
-    #     rospy.Subscriber('/odom', Odometry, self.odom_callback)
-    #     # time.sleep(1)
-    #     return
+    def readRobotPose(self, event):
+        rospy.Subscriber('/odom', Odometry, self.odom_callback)
+        # time.sleep(1)
+        return
 
     def updateCover(self):
         cover_length = int(self.sensor_range / self.resolution)
         xx = self.robot_pose['x']
         yy = self.robot_pose['y']
         th = self.robot_pose['th']
-        # print(self.robot_pose, 'xx,yy', xx, yy)
-        # # cover_length = 20
+        th_deg = math.degrees(th)
+        # print(self.robot_pose, th_deg)
+
         # updates = 0
         if self.sensor_shape == 'rectangular':
             for i in range(-cover_length, cover_length):
@@ -101,11 +107,11 @@ class Coverage:
                     if self.ogm[x, y] > 49 or self.ogm[x, y] == -1:
                         continue
                     # Check if point inside fov of sensor
-                    # cosine = distance.cosine([xx, x], [yy, y])
-                    # angle = np.arccos(cosine)
-                    # if angle - self.sensor_direction > self.sensor_fov / 2 or \
-                    #         angle - self.sensor_direction < -self.sensor_fov / 2:
-                    #     continue
+                    cosine = 1 - distance.cosine([xx, x], [yy, y])
+                    angle = math.degrees(np.arccos(cosine))
+                    if angle - self.sensor_direction > self.sensor_fov / 2 or \
+                            angle - self.sensor_direction < -self.sensor_fov / 2:
+                        continue
                     self.coverage[x, y] = 100
                     index = int(x + self.ogm_width * y)
                     self.coverage_ogm.data[index] = 100
@@ -123,27 +129,32 @@ class Coverage:
                     # Check if point inside cover circle
                     if distance.euclidean([xx, yy], [x, y]) >= cover_length:
                         continue
-                    # # Check if point inside fov of sensor
-                    # cosine = distance.cosine([xx, x], [yy, y])
-                    # angle = np.arccos(cosine)
-                    # if angle - self.sensor_direction > self.sensor_fov / 2 or \
-                    #         angle - self.sensor_direction < -self.sensor_fov / 2:
-                    #     continue
+                    # Check if point inside fov of sensor
+                    cosine = 1 - distance.cosine([1,0], [x-xx, y-yy])
+                    angle = math.degrees(np.arccos(cosine))
+                    # robot_cosine = distance.cosine([1, 0], [xx, yy])
+                    # robot_angle = math.degrees(np.arccos(robot_cosine))
+                    if angle - self.sensor_direction  > self.sensor_fov / 2 or \
+                            angle - self.sensor_direction  < -self.sensor_fov / 2:
+                        continue
                     self.coverage[x][y] = 100
                     index = int(x + self.ogm_width * y)
                     self.coverage_ogm.data[index] = 100
                     # updates += 1
-
+        else:
+            rospy.loginfo("Error!Sensor's shape not found!")
+            return
 
         # print('updates' , updates)
         self.coverage_pub.publish(self.coverage_ogm)
+        rospy.loginfo("Update coverage ogm!")
         return
 
 
     # Cb to read robot's pose
     def odom_callback(self, msg):
         self.current_pose =  msg.pose.pose
-
+        # pose = {}
         # Calculate current x,y in map's frame (aka in pixels)
         self.robot_pose['x'] = (self.current_pose.position.x - self.origin['x'])/self.resolution
         self.robot_pose['y'] = (self.current_pose.position.y - self.origin['y'])/self.resolution
@@ -155,6 +166,12 @@ class Coverage:
              msg.pose.pose.orientation.w)
         angles = tf.transformations.euler_from_quaternion(q)
         self.robot_pose['th'] = angles[2]   # yaw
+        # if int(pose['x']) != int(self.robot_pose['x']) or int(pose['y']) != int(self.robot_pose['y']) \
+        #         or int(10 * pose['th']) != int(10 * self.robot_pose['th']):
+        #     self.robot_pose['x'] = pose['x']
+        #     self.robot_pose['y'] = pose['y']
+        #     self.robot_pose['th'] = pose['th']
+        #     self.robot_pose['changed'] = True
         return
 
     def read_ogm(self, data):
@@ -180,7 +197,7 @@ class Coverage:
         self.coverage = np.zeros((self.ogm_width, self.ogm_height))
         self.coverage_ogm.info = data.info
         self.coverage_ogm.data = np.zeros(self.ogm_width * self.ogm_height)
-
+        rospy.loginfo("OGM read!")
         return
 
 
