@@ -10,8 +10,8 @@ from geometry_msgs.msg import Pose
 
 class Coverage:
     def __init__(self):
-        rospy.init_node('coverage')
-        rospy.loginfo('Coverage node initialized.')
+        # rospy.init_node('coverage')
+        # rospy.loginfo('Coverage node initialized.')
         # Origin is the translation between the (0,0) of the robot pose and the
         # (0,0) of the map
         self.origin = {}
@@ -39,6 +39,7 @@ class Coverage:
         self.ogm_width = 0
         self.ogm_height = 0
         self.ogm_header = 0
+        self.ogm_compute = True
 
         # Holds the coverage information. This has the same size as the ogm
         # If a cell has the value of 0 it is uncovered
@@ -63,38 +64,52 @@ class Coverage:
             OccupancyGrid, queue_size = 10)
 
 
+    def getCoverage(self):
+        return np.copy(self.coverage)
+
+    def getCoverageOgm(self):
+        return self.coverage_ogm
+
 
     def server_start(self):
 
 
         # Read ogm
         rospy.Subscriber(self.ogm_topic, OccupancyGrid, self.read_ogm)
-        rospy.loginfo("Waiting 5 secs to read ogm.")
-        time.sleep(5)
+        rospy.loginfo("Waiting read ogm.")
+        # time.sleep(1)
+        while self.ogm_compute:
+            pass
+        iter = 0
         while not rospy.is_shutdown():
             rospy.Subscriber('/odom', Odometry, self.odom_callback)
             rospy.sleep(0.1)
             # if self.robot_pose['changed']:
             self.updateCover()
                 # self.robot_pose['changed'] = False
-            rospy.sleep(0.5)
+            rospy.sleep(0.1)
             # break
             # rospy.Timer(rospy.Duration(0.2), self.readRobotPose)
             # rospy.spin()
+            if not iter % 10:
+                self.coverage_pub.publish(self.coverage_ogm)
+                rospy.loginfo("Update coverage ogm!")
+            iter += 1
         return
 
-    def readRobotPose(self, event):
+    def readRobotPose(self):
         rospy.Subscriber('/odom', Odometry, self.odom_callback)
-        # time.sleep(1)
         return
 
     def updateCover(self):
+        self.readRobotPose()
+
         cover_length = int(self.sensor_range / self.resolution)
         xx = self.robot_pose['x']
         yy = self.robot_pose['y']
         th = self.robot_pose['th']
         th_deg = math.degrees(th)
-        print(self.robot_pose, th_deg)
+        # print(self.robot_pose, th_deg)
 
         # updates = 0
         if self.sensor_shape == 'rectangular':
@@ -198,10 +213,11 @@ class Coverage:
         self.coverage_ogm.info = data.info
         self.coverage_ogm.data = np.zeros(self.ogm_width * self.ogm_height)
         rospy.loginfo("OGM read!")
+        self.ogm_compute = False
         return
 
 
 
-if __name__ == '__main__':
-    node = Coverage()
-    node.server_start()
+# if __name__ == '__main__':
+#     node = Coverage()
+#     node.server_start()
