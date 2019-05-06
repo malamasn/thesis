@@ -6,5 +6,5 @@
   <rosparam file="$(find maps_package)/maps/gmapping/$(arg map).yaml" command="load"/>
   <rosparam file="$(find topology_finder)/config/config.yaml" command="load"/>
 
-  <!-- <node pkg="topology_finder" type="coverage.py" name="coverage" output="screen"/> -->
+  <node pkg="topology_finder" type="coverage.py" name="coverage" output="screen"/>
 </launch>
