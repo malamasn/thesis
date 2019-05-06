@@ -21,12 +21,12 @@ class Coverage:
         self.resolution = 0
 
         # Read sensor's specs
-        self.sensor_name = rospy.get_param('sensor_name')
-        self.sensor_direction = rospy.get_param('sensor_direction')
-        self.sensor_fov = rospy.get_param('fov')
-        self.sensor_range = rospy.get_param('range')
-        self.sensor_shape = rospy.get_param('shape')
-        self.sensor_reliability = rospy.get_param('reliability')
+        self.sensor_name = rospy.get_param('rfid/sensor_name')
+        self.sensor_direction = rospy.get_param('rfid/sensor_direction')
+        self.sensor_fov = rospy.get_param('rfid/fov')
+        self.sensor_range = rospy.get_param('rfid/range')
+        self.sensor_shape = rospy.get_param('rfid/shape')
+        self.sensor_reliability = rospy.get_param('rfid/reliability')
 
         # Load map's translation
         translation = rospy.get_param('origin')
