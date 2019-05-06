@@ -19,7 +19,6 @@ class Navigation:
         # self.routing = Routing()
         self.brushfire_cffi = Cffi()
         self.topology = Topology()
-        self.coverage = Coverage()
 
         # Origin is the translation between the (0,0) of the robot pose and the
         # (0,0) of the map
@@ -28,18 +27,23 @@ class Navigation:
         self.origin['y'] = 0
         self.resolution = 0
 
+        # Flag to wait ogm subscriber to finish
+        self.ogm_compute = False
+
         self.current_pose = Pose()
 
+        # OGM related attributes
         self.ogm_topic = '/map'
         self.ogm = 0
         self.ogm_raw = 0
         self.ogm_width = 0
         self.ogm_height = 0
         self.ogm_header = 0
-        self.ogm_compute = False
+
         self.gvd = 0
         self.brush = 0
 
+        # Attributes read from json file
         self.nodes = []
         self.door_nodes = []
         self.rooms = []
@@ -53,8 +57,6 @@ class Navigation:
         self.odom_sub = rospy.Subscriber('/odom', Odometry, self.odom_callback)
 
         self.move_base_client = actionlib.SimpleActionClient('move_base', MoveBaseAction)
-
-
 
 
     # Cb to read robot's pose
@@ -91,15 +93,14 @@ class Navigation:
         # Read ogm
         self.ogm_compute = True
         rospy.Subscriber(self.ogm_topic, OccupancyGrid, self.read_ogm)
-        rospy.loginfo("Waiting to read ogm.")
         while self.ogm_compute:
             pass
-        # rospy.loginfo("5 secs passed.")
+
         # Calculate brushfire field
         self.brush = self.brushfire_cffi.obstacleBrushfireCffi(self.ogm)
+
         # Calculate gvd from brushfire and ogm
         self.gvd = self.topology.gvd(self.ogm, self.brush)
-
 
         # Find current room
         start = (int(current_x), int(current_y))
@@ -127,8 +128,10 @@ class Navigation:
             rospy.loginfo("Problem finding current room! Exiting...")
             return
 
+
         current_room_index = self.room_sequence.index(current_room)
         self.print_markers(self.nodes)
+
         # Navigate in all rooms with given sequence
         for i in range(len(self.room_sequence)):
 
@@ -141,9 +144,9 @@ class Navigation:
             # navigate to all nodes
             for node in nodes:
                 result = self.goToGoal(node)
-                # rospy.sleep(0.5)
+                rospy.sleep(0.1)
                 # self.coverage.readRobotPose()
-                self.coverage.updateCover()
+                # self.coverage.updateCover()     # Cover each reached goal
             # TODO: KEEP TRACK OF VISITED NODES (should I?)
 
             current_room_index = (current_room_index + 1) % len(self.room_sequence)
@@ -180,8 +183,7 @@ class Navigation:
         # 100 is an occupied pixel
         # 50 or -1 is the unknown
 
-        self.coverage.read_ogm(data)    # Not needed
-
+        rospy.loginfo("Navigation node reading ogm.")
         self.ogm_raw = np.array(data.data)
         self.ogm_width = data.info.width
         self.ogm_height = data.info.height
@@ -193,6 +195,8 @@ class Navigation:
         for x in range(0, data.info.width):
             for y in range(0, data.info.height):
                 self.ogm[x][y] = data.data[x + data.info.width * y]
+
+        rospy.loginfo("OGM read!")
         self.ogm_compute = False
         return
 
