@@ -10,8 +10,9 @@ from geometry_msgs.msg import Pose
 
 class Coverage:
     def __init__(self):
-        # rospy.init_node('coverage')
-        # rospy.loginfo('Coverage node initialized.')
+        rospy.init_node('coverage')
+        rospy.loginfo('Coverage node initialized.')
+
         # Origin is the translation between the (0,0) of the robot pose and the
         # (0,0) of the map
         self.origin = {}
@@ -33,13 +34,17 @@ class Coverage:
         self.origin['y'] = translation[1]
         self.resolution = rospy.get_param('resolution')
 
+        # OGM related attributes
         self.ogm_topic = '/map'
         self.ogm = 0
         self.ogm_raw = 0
         self.ogm_width = 0
         self.ogm_height = 0
         self.ogm_header = 0
+
+        # Flags to wait subscribers to finish reading data
         self.ogm_compute = True
+        self.readPose = False
 
         # Holds the coverage information. This has the same size as the ogm
         # If a cell has the value of 0 it is uncovered
@@ -56,9 +61,6 @@ class Coverage:
         self.robot_pose['x'] = 0
         self.robot_pose['y'] = 0
         self.robot_pose['th'] = 0
-        # self.robot_pose['changed'] = False
-
-        # rospy.Timer(rospy.Duration(0.3), self.readRobotPose)
 
         self.coverage_pub = rospy.Publisher(self.coverage_topic, \
             OccupancyGrid, queue_size = 10)
@@ -72,44 +74,37 @@ class Coverage:
 
 
     def server_start(self):
-
-
         # Read ogm
         rospy.Subscriber(self.ogm_topic, OccupancyGrid, self.read_ogm)
-        rospy.loginfo("Waiting read ogm.")
-        # time.sleep(1)
         while self.ogm_compute:
             pass
-        iter = 0
+
         while not rospy.is_shutdown():
-            rospy.Subscriber('/odom', Odometry, self.odom_callback)
-            rospy.sleep(0.1)
-            # if self.robot_pose['changed']:
             self.updateCover()
-                # self.robot_pose['changed'] = False
+            # if not iter % 10:
+            # self.coverage_pub.publish(self.coverage_ogm)
+            #     rospy.loginfo("Update coverage ogm!")
+            # iter += 1
             rospy.sleep(0.1)
-            # break
-            # rospy.Timer(rospy.Duration(0.2), self.readRobotPose)
-            # rospy.spin()
-            if not iter % 10:
-                self.coverage_pub.publish(self.coverage_ogm)
-                rospy.loginfo("Update coverage ogm!")
-            iter += 1
         return
 
+    # Read current pose of robot from odometry
     def readRobotPose(self):
-        rospy.Subscriber('/odom', Odometry, self.odom_callback)
+        rospy.Subscriber('/odom', Odometry, self.odom_callback, queue_size = 1)
         return
+
 
     def updateCover(self):
+        self.readPose = True
         self.readRobotPose()
+        while self.readPose:
+            pass
 
         cover_length = int(self.sensor_range / self.resolution)
         xx = self.robot_pose['x']
         yy = self.robot_pose['y']
         th = self.robot_pose['th']
         th_deg = math.degrees(th)
-        # print(self.robot_pose, th_deg)
 
         # updates = 0
         if self.sensor_shape == 'rectangular':
@@ -122,12 +117,9 @@ class Coverage:
                     if self.ogm[x, y] > 49 or self.ogm[x, y] == -1:
                         continue
                     # Check if point inside fov of sensor
-                    cosine = 1 - distance.cosine([xx, x], [yy, y])
-                    angle = math.degrees(np.arccos(cosine))
-                    if angle - self.sensor_direction > th_deg + self.sensor_fov / 2 or \
-                            angle - self.sensor_direction < th_deg - self.sensor_fov / 2:
-                        continue
-                    self.coverage[x, y] = 100
+                    angle_rads = np.arctan2(j,i)
+                    angle = math.degrees(angle_rads)
+                    self.coverage[x, y] = 100 * self.sensor_reliability
                     index = int(x + self.ogm_width * y)
                     self.coverage_ogm.data[index] = 100
                     # updates += 1
@@ -145,14 +137,12 @@ class Coverage:
                     if distance.euclidean([xx, yy], [x, y]) >= cover_length:
                         continue
                     # Check if point inside fov of sensor
-                    cosine = 1 - distance.cosine([1,0], [x-xx, y-yy])
-                    angle = math.degrees(np.arccos(cosine))
-                    # robot_cosine = distance.cosine([1, 0], [xx, yy])
-                    # robot_angle = math.degrees(np.arccos(robot_cosine))
-                    if angle - self.sensor_direction  > th_deg + self.sensor_fov / 2 or \
+                    angle_rads = np.arctan2(j,i)
+                    angle = math.degrees(angle_rads)
+                    if angle - self.sensor_direction  >  th_deg + self.sensor_fov / 2 or \
                             angle - self.sensor_direction  < th_deg - self.sensor_fov / 2:
                         continue
-                    self.coverage[x][y] = 100
+                    self.coverage[x][y] = 100 * self.sensor_reliability
                     index = int(x + self.ogm_width * y)
                     self.coverage_ogm.data[index] = 100
                     # updates += 1
@@ -160,7 +150,7 @@ class Coverage:
             rospy.loginfo("Error!Sensor's shape not found!")
             return
 
-        # print('updates' , updates)
+        # print('pose', self.robot_pose, th_deg, 'updates' , updates)
         self.coverage_pub.publish(self.coverage_ogm)
         rospy.loginfo("Update coverage ogm!")
         return
@@ -169,7 +159,6 @@ class Coverage:
     # Cb to read robot's pose
     def odom_callback(self, msg):
         self.current_pose =  msg.pose.pose
-        # pose = {}
         # Calculate current x,y in map's frame (aka in pixels)
         self.robot_pose['x'] = (self.current_pose.position.x - self.origin['x'])/self.resolution
         self.robot_pose['y'] = (self.current_pose.position.y - self.origin['y'])/self.resolution
@@ -181,12 +170,7 @@ class Coverage:
              msg.pose.pose.orientation.w)
         angles = tf.transformations.euler_from_quaternion(q)
         self.robot_pose['th'] = angles[2]   # yaw
-        # if int(pose['x']) != int(self.robot_pose['x']) or int(pose['y']) != int(self.robot_pose['y']) \
-        #         or int(10 * pose['th']) != int(10 * self.robot_pose['th']):
-        #     self.robot_pose['x'] = pose['x']
-        #     self.robot_pose['y'] = pose['y']
-        #     self.robot_pose['th'] = pose['th']
-        #     self.robot_pose['changed'] = True
+        self.readPose = False
         return
 
     def read_ogm(self, data):
@@ -195,6 +179,8 @@ class Coverage:
         # 0 is an unoccupied pixel
         # 100 is an occupied pixel
         # 50 or -1 is the unknown
+
+        rospy.loginfo("Coverage node reading ogm.")
 
         self.ogm_raw = np.array(data.data)
         self.ogm_width = data.info.width
@@ -212,12 +198,13 @@ class Coverage:
         self.coverage = np.zeros((self.ogm_width, self.ogm_height))
         self.coverage_ogm.info = data.info
         self.coverage_ogm.data = np.zeros(self.ogm_width * self.ogm_height)
+
         rospy.loginfo("OGM read!")
         self.ogm_compute = False
         return
 
 
 
-# if __name__ == '__main__':
-#     node = Coverage()
-#     node.server_start()
+if __name__ == '__main__':
+    node = Coverage()
+    node.server_start()
