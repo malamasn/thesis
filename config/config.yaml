@@ -6,3 +6,5 @@ rfid:
   range: 1
   shape: 'circular'
   reliability: 1
+
+min_distance: 0.5

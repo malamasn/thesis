@@ -41,6 +41,7 @@ class Map_To_Graph:
         self.sensor_range = rospy.get_param('rfid/range')
         self.sensor_shape = rospy.get_param('rfid/shape')
         self.sensor_reliability = rospy.get_param('rfid/reliability')
+        self.min_distance = rospy.get_param('min_distance')
 
         self.ogm_topic = '/map'
         self.ogm = 0
@@ -166,7 +167,7 @@ class Map_To_Graph:
             for x in range(0, self.ogm_width, step):
                 for y in range(0, self.ogm_height, step):
                     # Node should be close to obstacle, but not too close to avoid collision
-                    if self.brush[x][y] > 0.5 / self.resolution and \
+                    if self.brush[x][y] > self.min_distance / self.resolution and \
                             self.brush[x][y] <= self.sensor_range / self.resolution:
                         nodes.append((x,y))
 
