@@ -49,6 +49,9 @@ class Map_To_Graph:
         self.ogm_height = 0
         self.ogm_header = 0
 
+        # Flag to wait ogm subscriber to finish
+        self.ogm_compute = False
+
         self.gvd = 0
         self.brush = 0
 
@@ -58,6 +61,7 @@ class Map_To_Graph:
         self.room_doors = []
         self.room_type = []
         self.room_sequence = []
+        self.wall_nodes = []
 
         # Load nodes from json file
         map_name = rospy.get_param('map_name')
@@ -74,6 +78,9 @@ class Map_To_Graph:
         if 'room_sequence' in data:
             self.room_sequence = data['room_sequence']
 
+        if 'wall_nodes' in data:
+            self.wall_nodes = data['wall_nodes']
+
         self.node_publisher = rospy.Publisher('/nodes', Marker, queue_size = 100)
         self.candidate_door_node_pub = rospy.Publisher('/nodes/candidateDoors', Marker, queue_size = 100)
         self.door_node_pub = rospy.Publisher('/nodes/doors', Marker, queue_size = 100)
@@ -83,9 +90,19 @@ class Map_To_Graph:
         rospy.init_node('map_to_topology')
         rospy.loginfo('map_to_topology node initialized.')
 
-        time.sleep(1)
-        self.print_markers(self.nodes, [1., 0., 0.], self.node_publisher)
-        self.print_markers(self.door_nodes, [0., 0., 1.], self.door_node_pub)
+
+        # Read ogm
+        self.ogm_compute = True
+        rospy.Subscriber(self.ogm_topic, OccupancyGrid, self.read_ogm)
+        while self.ogm_compute:
+            pass
+
+        # Calculate brushfire field
+        self.brush = self.brushfire_cffi.obstacleBrushfireCffi(self.ogm)
+
+        # time.sleep(1)
+        # self.print_markers(self.nodes, [1., 0., 0.], self.node_publisher)
+        # self.print_markers(self.door_nodes, [0., 0., 1.], self.door_node_pub)
 
         # Find sequence of rooms if not already exists
         if self.room_sequence == []:
@@ -130,15 +147,30 @@ class Map_To_Graph:
             with open(filename, 'w') as outfile:
                     data_to_json = json.dump(data, outfile)
 
-        time.sleep(1)
-        # i = 0
-        # route = data['room_sequence']
-        for _ in range(1):
-            for room_id in self.room_sequence:
-                self.print_markers(self.rooms[room_id], [1.0, 0., 1.0], self.room_node_pub)
-                print('room type: ', self.room_type[room_id])
-                # i += 1
-                time.sleep(3)
+        # time.sleep(1)
+        # # i = 0
+        # # route = data['room_sequence']
+        # for _ in range(1):
+        #     for room_id in self.room_sequence:
+        #         self.print_markers(self.rooms[room_id], [1.0, 0., 1.0], self.room_node_pub)
+        #         print('room type: ', self.room_type[room_id])
+        #         # i += 1
+        #         time.sleep(3)
+
+        # Find nodes for wall following coverage
+        if self.wall_nodes == []:
+            # Uniform sampling on map
+            nodes = []
+            # Sampling step if half the sensor's range
+            step = int(self.sensor_range /(self.resolution * 2))
+            for x in range(0, self.ogm_width, step):
+                for y in range(0, self.ogm_height, step):
+                    # Node should be close to obstacle, but not too close to avoid collision
+                    if self.brush[x][y] > 0.5 / self.resolution and \
+                            self.brush[x][y] <= self.sensor_range / self.resolution:
+                        nodes.append((x,y))
+
+            # self.print_markers(nodes, [1., 0., 0.], self.node_publisher)
 
         return
 
@@ -163,6 +195,7 @@ class Map_To_Graph:
         for x in range(0, data.info.width):
             for y in range(0, data.info.height):
                 self.ogm[x][y] = data.data[x + data.info.width * y]
+        self.ogm_compute = False
         return
 
     # Method to publish points to rviz
