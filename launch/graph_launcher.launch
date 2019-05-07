@@ -4,4 +4,6 @@
   <arg name='map' value='rooms_3'/>
   <param name="map_name" type="str" value="$(arg map)" />
   <rosparam file="$(find maps_package)/maps/gmapping/$(arg map).yaml" command="load"/>
+  <rosparam file="$(find topology_finder)/config/config.yaml" command="load"/>
+
 </launch>
