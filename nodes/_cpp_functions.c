@@ -788,24 +788,68 @@ static void (*_cffi_call_python_org)(struct _cffi_externpy_s *, char *);
             step = step + 1;
         }
     }
+    static void pointToPointBrushfire(int ** brushfire, int width, int height, int iterations)
+    {
+        int i = 0;
+        int j = 0;
+        int step = 2;
+        char changed = 1;
+        int iters_made = 0;
+        while(changed == 1 && iters_made < iterations)
+        {
+            changed = 0;
+            for(i = 1 ; i < width - 2 ; i = i + 1)
+            {
+                for(j = 1 ; j < height - 2 ; j = j + 1)
+                {
+                    if(brushfire[i][j] == 0) // Free space
+                    {
+                        if(
+                            brushfire[i - 1][j] == step ||
+                            brushfire[i + 1][j] == step ||
+                            brushfire[i - 1][j - 1] == step ||
+                            brushfire[i + 1][j - 1] == step ||
+                            brushfire[i - 1][j + 1] == step ||
+                            brushfire[i + 1][j + 1] == step ||
+                            brushfire[i][j - 1] == step ||
+                            brushfire[i][j + 1] == step
+                        )
+                        {
+                            brushfire[i][j] = step + 1;
+                            changed = 1;
+                        }
+                    }
+
+                }
+            }
+            step = step + 1;
+            iters_made++;
+        }
+    }
     
 
 /************************************************************/
 
 static void *_cffi_types[] = {
-/*  0 */ _CFFI_OP(_CFFI_OP_FUNCTION, 12), // void()(int * *, int * *, int, int)
-/*  1 */ _CFFI_OP(_CFFI_OP_POINTER, 11), // int * *
+/*  0 */ _CFFI_OP(_CFFI_OP_FUNCTION, 18), // void()(int * *, int * *, int, int)
+/*  1 */ _CFFI_OP(_CFFI_OP_POINTER, 17), // int * *
 /*  2 */ _CFFI_OP(_CFFI_OP_NOOP, 1),
 /*  3 */ _CFFI_OP(_CFFI_OP_PRIMITIVE, 7), // int
 /*  4 */ _CFFI_OP(_CFFI_OP_PRIMITIVE, 7),
 /*  5 */ _CFFI_OP(_CFFI_OP_FUNCTION_END, 0),
-/*  6 */ _CFFI_OP(_CFFI_OP_FUNCTION, 12), // void()(int * *, int, int)
+/*  6 */ _CFFI_OP(_CFFI_OP_FUNCTION, 18), // void()(int * *, int, int)
 /*  7 */ _CFFI_OP(_CFFI_OP_NOOP, 1),
 /*  8 */ _CFFI_OP(_CFFI_OP_PRIMITIVE, 7),
 /*  9 */ _CFFI_OP(_CFFI_OP_PRIMITIVE, 7),
 /* 10 */ _CFFI_OP(_CFFI_OP_FUNCTION_END, 0),
-/* 11 */ _CFFI_OP(_CFFI_OP_POINTER, 3), // int *
-/* 12 */ _CFFI_OP(_CFFI_OP_PRIMITIVE, 0), // void
+/* 11 */ _CFFI_OP(_CFFI_OP_FUNCTION, 18), // void()(int * *, int, int, int)
+/* 12 */ _CFFI_OP(_CFFI_OP_NOOP, 1),
+/* 13 */ _CFFI_OP(_CFFI_OP_PRIMITIVE, 7),
+/* 14 */ _CFFI_OP(_CFFI_OP_PRIMITIVE, 7),
+/* 15 */ _CFFI_OP(_CFFI_OP_PRIMITIVE, 7),
+/* 16 */ _CFFI_OP(_CFFI_OP_FUNCTION_END, 0),
+/* 17 */ _CFFI_OP(_CFFI_OP_POINTER, 3), // int *
+/* 18 */ _CFFI_OP(_CFFI_OP_PRIMITIVE, 0), // void
 };
 
 static void _cffi_d_closestObstacleBrushfire(int * * x0, int x1, int x2)
@@ -1094,12 +1138,71 @@ _cffi_f_pointToGvdBrushfire(PyObject *self, PyObject *args)
 #  define _cffi_f_pointToGvdBrushfire _cffi_d_pointToGvdBrushfire
 #endif
 
+static void _cffi_d_pointToPointBrushfire(int * * x0, int x1, int x2, int x3)
+{
+  pointToPointBrushfire(x0, x1, x2, x3);
+}
+#ifndef PYPY_VERSION
+static PyObject *
+_cffi_f_pointToPointBrushfire(PyObject *self, PyObject *args)
+{
+  int * * x0;
+  int x1;
+  int x2;
+  int x3;
+  Py_ssize_t datasize;
+  PyObject *arg0;
+  PyObject *arg1;
+  PyObject *arg2;
+  PyObject *arg3;
+
+  if (!PyArg_UnpackTuple(args, "pointToPointBrushfire", 4, 4, &arg0, &arg1, &arg2, &arg3))
+    return NULL;
+
+  datasize = _cffi_prepare_pointer_call_argument(
+      _cffi_type(1), arg0, (char **)&x0);
+  if (datasize != 0) {
+    if (datasize < 0)
+      return NULL;
+    x0 = (int * *)alloca((size_t)datasize);
+    memset((void *)x0, 0, (size_t)datasize);
+    if (_cffi_convert_array_from_object((char *)x0, _cffi_type(1), arg0) < 0)
+      return NULL;
+  }
+
+  x1 = _cffi_to_c_int(arg1, int);
+  if (x1 == (int)-1 && PyErr_Occurred())
+    return NULL;
+
+  x2 = _cffi_to_c_int(arg2, int);
+  if (x2 == (int)-1 && PyErr_Occurred())
+    return NULL;
+
+  x3 = _cffi_to_c_int(arg3, int);
+  if (x3 == (int)-1 && PyErr_Occurred())
+    return NULL;
+
+  Py_BEGIN_ALLOW_THREADS
+  _cffi_restore_errno();
+  { pointToPointBrushfire(x0, x1, x2, x3); }
+  _cffi_save_errno();
+  Py_END_ALLOW_THREADS
+
+  (void)self; /* unused */
+  Py_INCREF(Py_None);
+  return Py_None;
+}
+#else
+#  define _cffi_f_pointToPointBrushfire _cffi_d_pointToPointBrushfire
+#endif
+
 static const struct _cffi_global_s _cffi_globals[] = {
   { "closestObstacleBrushfire", (void *)_cffi_f_closestObstacleBrushfire, _CFFI_OP(_CFFI_OP_CPYTHON_BLTN_V, 6), (void *)_cffi_d_closestObstacleBrushfire },
   { "gvdNeighborBrushfire", (void *)_cffi_f_gvdNeighborBrushfire, _CFFI_OP(_CFFI_OP_CPYTHON_BLTN_V, 6), (void *)_cffi_d_gvdNeighborBrushfire },
   { "gvdNeighborSplitBrushfire", (void *)_cffi_f_gvdNeighborSplitBrushfire, _CFFI_OP(_CFFI_OP_CPYTHON_BLTN_V, 0), (void *)_cffi_d_gvdNeighborSplitBrushfire },
   { "obstacleBrushfire", (void *)_cffi_f_obstacleBrushfire, _CFFI_OP(_CFFI_OP_CPYTHON_BLTN_V, 0), (void *)_cffi_d_obstacleBrushfire },
   { "pointToGvdBrushfire", (void *)_cffi_f_pointToGvdBrushfire, _CFFI_OP(_CFFI_OP_CPYTHON_BLTN_V, 6), (void *)_cffi_d_pointToGvdBrushfire },
+  { "pointToPointBrushfire", (void *)_cffi_f_pointToPointBrushfire, _CFFI_OP(_CFFI_OP_CPYTHON_BLTN_V, 11), (void *)_cffi_d_pointToPointBrushfire },
 };
 
 static const struct _cffi_type_context_s _cffi_type_context = {
@@ -1109,12 +1212,12 @@ static const struct _cffi_type_context_s _cffi_type_context = {
   NULL,  /* no struct_unions */
   NULL,  /* no enums */
   NULL,  /* no typenames */
-  5,  /* num_globals */
+  6,  /* num_globals */
   0,  /* num_struct_unions */
   0,  /* num_enums */
   0,  /* num_typenames */
   NULL,  /* no includes */
-  13,  /* num_types */
+  19,  /* num_types */
   0,  /* flags */
 };
 
