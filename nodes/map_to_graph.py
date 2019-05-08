@@ -80,8 +80,8 @@ class Map_To_Graph:
         if 'room_sequence' in self.data:
             self.room_sequence = self.data['room_sequence']
 
-        # if 'wall_follow_nodes' in self.data:
-        #     self.wall_follow_nodes = self.data['wall_follow_nodes']
+        if 'wall_follow_nodes' in self.data:
+            self.wall_follow_nodes = self.data['wall_follow_nodes']
 
         self.node_publisher = rospy.Publisher('/nodes', Marker, queue_size = 100)
         self.candidate_door_node_pub = rospy.Publisher('/nodes/candidateDoors', Marker, queue_size = 100)
@@ -166,20 +166,11 @@ class Map_To_Graph:
         if self.wall_follow_nodes == []:
             rospy.loginfo("Finding wall follow nodes...")
 
-            # for i in range(len(self.rooms)):
-            #     self.wall_follow_nodes.append([])
-
             # Uniform sampling on map
-            # ob_nodes = []
             nodes = []
             # Sampling step is half the sensor's range
             step = int(self.sensor_range /(self.resolution * 2))
             safety_offset = self.min_distance / self.resolution
-
-            # last = False
-            # last_room = -1
-            # x_last = -1
-            # y_last = -1
 
             for x in range(0, self.ogm_width, step):
                 for y in range(0, self.ogm_height, step):
@@ -191,53 +182,67 @@ class Map_To_Graph:
             # Find rooms of nodes
             # Fill door holes with "wall"
             filled_ogm = self.topology.doorClosure(self.door_nodes, self.ogm, self.brushfire_cffi)
-            split_wall_nodes = []
-            # Brushfire inside each room and gather brushed wall_follow_nodes
+
             for i in range(len(self.rooms)):
+                # Brushfire inside each room and gather brushed wall_follow_nodes
                 found_nodes = []
                 brush = self.brushfire_cffi.pointBrushfireCffi(self.rooms[i], filled_ogm)
-
                 for n in nodes:
                     if brush[n] > 0:
                         found_nodes.append(n)
+                found_nodes.sort()  # Optimize path finding
 
-                split_wall_nodes.append(found_nodes)
+                # Create graph
+                graph = Graph()
+                for n in found_nodes:
+                    for i in range(len(found_nodes)):
+                        for j in range(i+1, len(found_nodes)):
+                            dist = np.linalg.norm(np.array(found_nodes[i])- np.array(found_nodes[j]))
+                            graph.add_edge(i, j, dist)
+                            graph.add_edge(j, i, dist)
 
-            # # Find closest obstacle to get best yaw
-            # obstacles = self.brushfire_cffi.closestObstacleBrushfireCffi((x,y), self.ogm)
-            # for point in obstacles:
-            #     # Calculate yaw for each obstacle
-            #     ob_nodes.append(point)
-            #     x_diff = point[0] - x
-            #     y_diff = point[1] - y
-            #     yaw = math.atan2(y_diff, x_diff)
-            #
-            #     # Add dictionary to right room
-            #
-            #     temp_dict = {'position': (x,y), 'yaw': yaw}
-            #     self.wall_follow_nodes[room_number].append(temp_dict)
+                # Calculate graph's distances between all nodes
+                nodes_length = len(found_nodes)
+                distances = np.zeros((nodes_length, nodes_length), dtype=np.float64)
+                for i in range(nodes_length):
+                    for j in range(i+1, nodes_length):
+                        _, _, _, dist = find_path(graph, i, j)
+                        distances[i][j] = dist
+                        distances[j][i] = distances[i][j]
 
+                # Call hill climb algorithm
+                max_iterations = 200 * nodes_length
+                node_route, cost, iter = self.routing.anneal(distances, max_iterations, 1.0, 0.95)
 
+                found_nodes_with_yaw = []
+                for index in node_route:
+                    # Find closest obstacle to get best yaw
+                    x, y = found_nodes[index]
+                    obstacles = self.brushfire_cffi.closestObstacleBrushfireCffi((x,y), self.ogm)
+                    for point in obstacles:
+                        # Calculate yaw for each obstacle
+                        x_diff = point[0] - x
+                        y_diff = point[1] - y
+                        yaw = math.atan2(y_diff, x_diff)
 
+                        # Add dictionary to right room
+                        temp_dict = {'position': (x,y), 'yaw': yaw}
+                        found_nodes_with_yaw.append(temp_dict)
+                # print(found_nodes_with_yaw)
+                self.wall_follow_nodes.append(found_nodes_with_yaw)
 
-
-
-
-            # for i in range(len(split_wall_nodes)):
-            #     self.print_markers(split_wall_nodes[i], [1., 0., 0.], self.node_publisher)
-            #     rospy.sleep(2)
-
-                # self.print_markers(ob, [0., 1., 0.], self.room_node_pub)
+                # # Print found_nodes
+                # self.print_markers(found_nodes, [0., 1., 0.], self.room_node_pub)
                 # rospy.sleep(2)
 
 
 
-            # # Save wall nodes to json
-            # self.data['wall_follow_nodes'] = self.wall_follow_nodes
-            # map_name = rospy.get_param('map_name')
-            # filename = '/home/mal/catkin_ws/src/topology_finder/data/' + map_name +'.json'
-            # with open(filename, 'w') as outfile:
-            #     data_to_json = json.dump(self.data, outfile)
+            # Save wall nodes to json
+            self.data['wall_follow_nodes'] = self.wall_follow_nodes
+            map_name = rospy.get_param('map_name')
+            filename = '/home/mal/catkin_ws/src/topology_finder/data/' + map_name +'.json'
+            with open(filename, 'w') as outfile:
+                data_to_json = json.dump(self.data, outfile)
 
 
         return
