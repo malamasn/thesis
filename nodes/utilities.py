@@ -30,6 +30,25 @@ class Cffi:
         return brushfire
 
     @staticmethod
+    def pointBrushfireCffi(start, ogm):
+
+        brushfire = np.zeros(ogm.shape, np.dtype('int32'))
+        brushfire[ogm > 49] = 1
+        brushfire[ogm == -1] = -1
+        i,j = zip(*start)
+        index = (np.array(i), np.array(j))
+        brushfire[index] = 2
+
+        y = [np.array(v, dtype='int32') for v in brushfire]
+        yi = ffi.new(("int* [%d]") % (len(y)))
+        for i in range(len(y)):
+            yi[i] = ffi.cast("int *", y[i].ctypes.data)
+
+        br_c = lib.pointBrushfire(yi, len(y), len(y[0]))
+        brushfire[0:,0:] = np.array(y)
+        return brushfire
+
+    @staticmethod
     def gvdNeighborBrushfireCffi(start, nodes, gvd):
 
         brushfire = np.zeros(gvd.shape, np.dtype('int32'))
