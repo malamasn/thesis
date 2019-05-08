@@ -250,6 +250,8 @@ class Topology:
     # Fill door holes with wall
     def doorClosure(self, doors, ogm, brushfire_instance):
         filled_ogm = np.copy(ogm)
+        width = ogm.shape[0]
+        height = ogm.shape[1]
 
         for door in doors:
             ob = brushfire_instance.closestObstacleBrushfireCffi(tuple(door), ogm)
