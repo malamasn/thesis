@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import rospy, json
 import numpy as np
-import time
+import time, math
 from dijkstar import Graph, find_path
 
 from geometry_msgs.msg import Point
@@ -12,6 +12,7 @@ from brushfire import Brushfire
 from utilities import Cffi
 from topology import Topology
 from routing import Routing
+from PIL import Image
 
 
 class Map_To_Graph:
@@ -62,25 +63,25 @@ class Map_To_Graph:
         self.room_doors = []
         self.room_type = []
         self.room_sequence = []
-        self.wall_nodes = []
+        self.wall_follow_nodes = []
 
         # Load nodes from json file
         map_name = rospy.get_param('map_name')
         filename = '/home/mal/catkin_ws/src/topology_finder/data/' + map_name +'.json'
         with open(filename, 'r') as read_file:
-            data = json.load(read_file)
+            self.data = json.load(read_file)
 
-        self.nodes = data['nodes']
-        self.door_nodes = data['doors']
-        self.rooms = data['rooms']
-        self.room_doors = data['roomDoors']
-        self.room_type = data['roomType']
+        self.nodes = self.data['nodes']
+        self.door_nodes = self.data['doors']
+        self.rooms = self.data['rooms']
+        self.room_doors = self.data['roomDoors']
+        self.room_type = self.data['roomType']
 
-        if 'room_sequence' in data:
-            self.room_sequence = data['room_sequence']
+        if 'room_sequence' in self.data:
+            self.room_sequence = self.data['room_sequence']
 
-        if 'wall_nodes' in data:
-            self.wall_nodes = data['wall_nodes']
+        # if 'wall_follow_nodes' in self.data:
+        #     self.wall_follow_nodes = self.data['wall_follow_nodes']
 
         self.node_publisher = rospy.Publisher('/nodes', Marker, queue_size = 100)
         self.candidate_door_node_pub = rospy.Publisher('/nodes/candidateDoors', Marker, queue_size = 100)
@@ -88,8 +89,8 @@ class Map_To_Graph:
         self.room_node_pub = rospy.Publisher('/nodes/rooms', Marker, queue_size = 100)
 
     def server_start(self):
-        rospy.init_node('map_to_topology')
-        rospy.loginfo('map_to_topology node initialized.')
+        rospy.init_node('map_to_graph')
+        rospy.loginfo('map_to_graph node initialized.')
 
 
         # Read ogm
@@ -100,13 +101,16 @@ class Map_To_Graph:
 
         # Calculate brushfire field
         self.brush = self.brushfire_cffi.obstacleBrushfireCffi(self.ogm)
+        # Calculate gvd from brushfire and ogm
+        self.gvd = self.topology.gvd(self.ogm, self.brush)
 
-        # time.sleep(1)
+        time.sleep(1)
         # self.print_markers(self.nodes, [1., 0., 0.], self.node_publisher)
         # self.print_markers(self.door_nodes, [0., 0., 1.], self.door_node_pub)
 
         # Find sequence of rooms if not already exists
         if self.room_sequence == []:
+            rospy.loginfo("Finding room sequence...")
             # Create graph
             graph = Graph()
             for room in self.room_doors:
@@ -142,15 +146,15 @@ class Map_To_Graph:
                         self.room_sequence.append(i)
 
             # Save room sequence
-            data['room_sequence'] = self.room_sequence
+            self.data['room_sequence'] = self.room_sequence
             map_name = rospy.get_param('map_name')
             filename = '/home/mal/catkin_ws/src/topology_finder/data/' + map_name +'.json'
             with open(filename, 'w') as outfile:
-                    data_to_json = json.dump(data, outfile)
+                data_to_json = json.dump(self.data, outfile)
 
         # time.sleep(1)
         # # i = 0
-        # # route = data['room_sequence']
+        # # route = self.data['room_sequence']
         # for _ in range(1):
         #     for room_id in self.room_sequence:
         #         self.print_markers(self.rooms[room_id], [1.0, 0., 1.0], self.room_node_pub)
@@ -159,19 +163,82 @@ class Map_To_Graph:
         #         time.sleep(3)
 
         # Find nodes for wall following coverage
-        if self.wall_nodes == []:
+        if self.wall_follow_nodes == []:
+            rospy.loginfo("Finding wall follow nodes...")
+
+            # for i in range(len(self.rooms)):
+            #     self.wall_follow_nodes.append([])
+
             # Uniform sampling on map
+            # ob_nodes = []
             nodes = []
-            # Sampling step if half the sensor's range
+            # Sampling step is half the sensor's range
             step = int(self.sensor_range /(self.resolution * 2))
+            safety_offset = self.min_distance / self.resolution
+
+            # last = False
+            # last_room = -1
+            # x_last = -1
+            # y_last = -1
+
             for x in range(0, self.ogm_width, step):
                 for y in range(0, self.ogm_height, step):
                     # Node should be close to obstacle, but not too close to avoid collision
-                    if self.brush[x][y] > self.min_distance / self.resolution and \
-                            self.brush[x][y] <= self.sensor_range / self.resolution:
+                    if self.brush[x][y] > safety_offset and self.brush[x][y] <= 2 * step:
                         nodes.append((x,y))
 
-            # self.print_markers(nodes, [1., 0., 0.], self.node_publisher)
+
+            # Find rooms of nodes
+            # Fill door holes with "wall"
+            filled_ogm = self.topology.doorClosure(self.door_nodes, self.ogm, self.brushfire_cffi)
+            split_wall_nodes = []
+            # Brushfire inside each room and gather brushed wall_follow_nodes
+            for i in range(len(self.rooms)):
+                found_nodes = []
+                brush = self.brushfire_cffi.pointBrushfireCffi(self.rooms[i], filled_ogm)
+
+                for n in nodes:
+                    if brush[n] > 0:
+                        found_nodes.append(n)
+
+                split_wall_nodes.append(found_nodes)
+
+            # # Find closest obstacle to get best yaw
+            # obstacles = self.brushfire_cffi.closestObstacleBrushfireCffi((x,y), self.ogm)
+            # for point in obstacles:
+            #     # Calculate yaw for each obstacle
+            #     ob_nodes.append(point)
+            #     x_diff = point[0] - x
+            #     y_diff = point[1] - y
+            #     yaw = math.atan2(y_diff, x_diff)
+            #
+            #     # Add dictionary to right room
+            #
+            #     temp_dict = {'position': (x,y), 'yaw': yaw}
+            #     self.wall_follow_nodes[room_number].append(temp_dict)
+
+
+
+
+
+
+
+            # for i in range(len(split_wall_nodes)):
+            #     self.print_markers(split_wall_nodes[i], [1., 0., 0.], self.node_publisher)
+            #     rospy.sleep(2)
+
+                # self.print_markers(ob, [0., 1., 0.], self.room_node_pub)
+                # rospy.sleep(2)
+
+
+
+            # # Save wall nodes to json
+            # self.data['wall_follow_nodes'] = self.wall_follow_nodes
+            # map_name = rospy.get_param('map_name')
+            # filename = '/home/mal/catkin_ws/src/topology_finder/data/' + map_name +'.json'
+            # with open(filename, 'w') as outfile:
+            #     data_to_json = json.dump(self.data, outfile)
+
 
         return
 
