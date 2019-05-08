@@ -247,6 +247,43 @@ class Topology:
         rospy.loginfo("Door nodes found!")
         return doorNodes
 
+    # Fill door holes with wall
+    def doorClosure(self, doors, ogm, brushfire_instance):
+        filled_ogm = np.copy(ogm)
+
+        for door in doors:
+            ob = brushfire_instance.closestObstacleBrushfireCffi(tuple(door), ogm)
+            # Find obstacle points' line
+            obs_x = [ob[0][0], ob[1][0]]
+            obs_y = [ob[0][1], ob[1][1]]
+            # For all line cases fill
+            if np.abs(obs_x[0] - obs_x[1]) <= 3:  # a -> inf
+                min_y = np.min(obs_y)
+                max_y = np.max(obs_y)
+                mean_x = int(np.mean(obs_x))
+                filled_ogm[mean_x-1:mean_x+2, min_y:max_y] = 100
+
+            elif np.abs(obs_y[0] - obs_y[1]) <= 3: # a -> 0
+                min_x = np.min(obs_x)
+                max_x = np.max(obs_x)
+                mean_y = int(np.mean(obs_y))
+                filled_ogm[min_x:max_x, mean_y-1:mean_y+2] = 100
+
+            else:
+                line_coeffs = np.polyfit(obs_x, obs_y, 1)
+                line_points = 0
+                all_points = 0
+                min_x = np.min(obs_x)
+                max_x = np.max(obs_x)
+                for xx in range(min_x, max_x):
+                    if xx < 0 or xx >= width:
+                        continue
+                    yy = int(xx * line_coeffs[0] + line_coeffs[1])
+                    if yy < 0 or yy >= height:
+                        continue
+                    filled_ogm[xx, yy-1:yy+2] = 100
+        return filled_ogm
+
     # Clustering of nodes to rooms with labels
     def findRooms(self, gvd, doors, nodes, brushfire, ogm, resolution, brushfire_instance):
         visited = []
