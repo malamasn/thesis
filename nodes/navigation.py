@@ -166,7 +166,7 @@ class Navigation:
                 nodes = self.wall_follow_nodes[current_room]
                 # navigate to all nodes
                 for node in nodes:
-                    result = self.goToGoal(node['position'], node['yaw'])
+                    result = self.goToGoal(node['position'], node['yaw']-self.sensor_direction)
                     rospy.sleep(0.1)
                 current_room_index = (current_room_index + 1) % len(self.room_sequence)
                 current_room = self.room_sequence[current_room_index]
@@ -180,7 +180,7 @@ class Navigation:
                 nodes = sorted(self.wall_follow_nodes[current_room], key=itemgetter('position'))
                 # navigate to all nodes
                 for node in nodes:
-                    result = self.goToGoal(node['position'], node['yaw'])
+                    result = self.goToGoal(node['position'], node['yaw']-self.sensor_direction)
                     rospy.sleep(0.1)
                 current_room_index = (current_room_index + 1) % len(self.room_sequence)
                 current_room = self.room_sequence[current_room_index]
