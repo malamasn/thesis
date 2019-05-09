@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import rospy, json, actionlib
 import numpy as np
-import time
+import time, tf
 from dijkstar import Graph, find_path
 
 from nav_msgs.msg import Odometry, OccupancyGrid
@@ -27,6 +27,12 @@ class Navigation:
         self.origin['y'] = 0
         self.resolution = 0
 
+        # Load map's translation
+        translation = rospy.get_param('origin')
+        self.origin['x'] = translation[0]
+        self.origin['y'] = translation[1]
+        self.resolution = rospy.get_param('resolution')
+
         # Flag to wait ogm subscriber to finish
         self.ogm_compute = False
 
@@ -43,6 +49,9 @@ class Navigation:
         self.gvd = 0
         self.brush = 0
 
+        # Load path pattern for navigation
+        self.navigation_pattern = rospy.get_param('navigation_pattern')
+
         # Attributes read from json file
         self.nodes = []
         self.door_nodes = []
@@ -50,6 +59,21 @@ class Navigation:
         self.room_doors = []
         self.room_type = []
         self.room_sequence = []
+        self.wall_follow_nodes = []
+
+        # Load nodes from json file
+        map_name = rospy.get_param('map_name')
+        filename = '/home/mal/catkin_ws/src/topology_finder/data/' + map_name +'.json'
+        with open(filename, 'r') as read_file:
+                data = json.load(read_file)
+
+        self.nodes = data['nodes']
+        self.door_nodes = data['doors']
+        self.rooms = data['rooms']
+        self.room_doors = data['roomDoors']
+        self.room_type = data['roomType']
+        self.room_sequence = data['room_sequence']
+        self.wall_follow_nodes = data['wall_follow_nodes']
 
         self.node_publisher = rospy.Publisher('/nodes', Marker, queue_size = 100)
         self.door_node_pub = rospy.Publisher('/nodes/doors', Marker, queue_size = 100)
@@ -68,33 +92,15 @@ class Navigation:
         rospy.init_node('navigation')
         rospy.loginfo('navigation node initialized.')
 
-        # Load nodes from json file
-        map_name = rospy.get_param('map_name')
-        filename = '/home/mal/catkin_ws/src/topology_finder/data/' + map_name +'.json'
-        with open(filename, 'r') as read_file:
-                data = json.load(read_file)
-
-        self.nodes = data['nodes']
-        self.door_nodes = data['doors']
-        self.rooms = data['rooms']
-        self.room_doors = data['roomDoors']
-        self.room_type = data['roomType']
-        self.room_sequence = data['room_sequence']
-
-        # Load map's translation
-        translation = rospy.get_param('origin')
-        self.origin['x'] = translation[0]
-        self.origin['y'] = translation[1]
-        self.resolution = rospy.get_param('resolution')
-        # Calculate current x,y in map's frame
-        current_x = (self.current_pose.position.x - self.origin['x'])/self.resolution
-        current_y = (self.current_pose.position.y - self.origin['y'])/self.resolution
-
         # Read ogm
         self.ogm_compute = True
         rospy.Subscriber(self.ogm_topic, OccupancyGrid, self.read_ogm)
         while self.ogm_compute:
             pass
+
+        # Calculate current x,y in map's frame
+        current_x = (self.current_pose.position.x - self.origin['x'])/self.resolution
+        current_y = (self.current_pose.position.y - self.origin['y'])/self.resolution
 
         # Calculate brushfire field
         self.brush = self.brushfire_cffi.obstacleBrushfireCffi(self.ogm)
@@ -130,34 +136,45 @@ class Navigation:
 
 
         current_room_index = self.room_sequence.index(current_room)
-        self.print_markers(self.nodes)
 
-        # Navigate in all rooms with given sequence
-        for i in range(len(self.room_sequence)):
+        if self.navigation_pattern == 'random':
+            self.print_markers(self.nodes)
+            # Navigate in all rooms with given sequence
+            for i in range(len(self.room_sequence)):
+                # find nodes of current room
+                # # TO DO: USE ENHANCED NODES
+                nodes = self.rooms[current_room]
+                # # TO DO: ADD SEQUENCE PATTERN
+                nodes.sort()    # for debugging to be faster
+                # # TODO: ADD ORIENATION
+                # navigate to all nodes
+                for node in nodes:
+                    result = self.goToGoal(node, 0)
+                    rospy.sleep(0.1)
+                # TODO: KEEP TRACK OF VISITED NODES (should I?)
+                current_room_index = (current_room_index + 1) % len(self.room_sequence)
+                current_room = self.room_sequence[current_room_index]
 
-            # find nodes of current room
-            # # TO DO: USE ENHANCED NODES
-            nodes = self.rooms[current_room]
-            # # TO DO: ADD SEQUENCE PATTERN
-            nodes.sort()    # for debugging to be faster
-            # # TODO: ADD ORIENATION
-            # navigate to all nodes
-            for node in nodes:
-                result = self.goToGoal(node)
-                rospy.sleep(0.1)
-                # self.coverage.readRobotPose()
-                # self.coverage.updateCover()     # Cover each reached goal
-            # TODO: KEEP TRACK OF VISITED NODES (should I?)
+        elif self.navigation_pattern == 'wall_follow':
 
-            current_room_index = (current_room_index + 1) % len(self.room_sequence)
-            current_room = self.room_sequence[current_room_index]
-
+            for i in range(len(self.room_sequence)):
+                # print nodes
+                nodes = [k['position'] for k in self.wall_follow_nodes[current_room]]
+                self.print_markers(nodes)
+                # find nodes of current room
+                nodes = self.wall_follow_nodes[current_room]
+                # navigate to all nodes
+                for node in nodes:
+                    result = self.goToGoal(node['position'], node['yaw'])
+                    rospy.sleep(0.1)
+                current_room_index = (current_room_index + 1) % len(self.room_sequence)
+                current_room = self.room_sequence[current_room_index]
 
 
         return
 
     # Gets target pose, sends it to move_base and waits for the result
-    def goToGoal(self, target):
+    def goToGoal(self, target, yaw):
         self.move_base_client.wait_for_server()
 
         goal = MoveBaseGoal()
@@ -165,7 +182,11 @@ class Navigation:
         goal.target_pose.header.stamp = rospy.Time.now()
         goal.target_pose.pose.position.x = target[0]*self.resolution + self.origin['x']
         goal.target_pose.pose.position.y = target[1]*self.resolution + self.origin['y']
-        goal.target_pose.pose.orientation.w = 1.0
+        quaternion = tf.transformations.quaternion_from_euler(0, 0, yaw)
+        goal.target_pose.pose.orientation.x = quaternion[0]
+        goal.target_pose.pose.orientation.y = quaternion[1]
+        goal.target_pose.pose.orientation.z = quaternion[2]
+        goal.target_pose.pose.orientation.w = quaternion[3]
 
         self.move_base_client.send_goal(goal)
         wait = self.move_base_client.wait_for_result()
