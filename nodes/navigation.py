@@ -3,6 +3,7 @@ import rospy, json, actionlib
 import numpy as np
 import time, tf
 from dijkstar import Graph, find_path
+from operator import itemgetter
 
 from nav_msgs.msg import Odometry, OccupancyGrid
 from geometry_msgs.msg import Pose, Point
@@ -163,6 +164,20 @@ class Navigation:
                 self.print_markers(nodes)
                 # find nodes of current room
                 nodes = self.wall_follow_nodes[current_room]
+                # navigate to all nodes
+                for node in nodes:
+                    result = self.goToGoal(node['position'], node['yaw'])
+                    rospy.sleep(0.1)
+                current_room_index = (current_room_index + 1) % len(self.room_sequence)
+                current_room = self.room_sequence[current_room_index]
+
+        elif self.navigation_pattern == 'boustrophedon':
+            for i in range(len(self.room_sequence)):
+                # print nodes
+                nodes = [k['position'] for k in self.wall_follow_nodes[current_room]]
+                self.print_markers(nodes)
+                # find nodes of current room
+                nodes = sorted(self.wall_follow_nodes[current_room], key=itemgetter('position'))
                 # navigate to all nodes
                 for node in nodes:
                     result = self.goToGoal(node['position'], node['yaw'])

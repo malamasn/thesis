@@ -8,4 +8,4 @@ rfid:
   reliability: 1
 
 min_distance: 0.5
-navigation_pattern: 'wall_follow'
+navigation_pattern: 'boustrophedon'
