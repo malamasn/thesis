@@ -34,6 +34,15 @@ class Navigation:
         self.origin['y'] = translation[1]
         self.resolution = rospy.get_param('resolution')
 
+        # Read sensor's specs
+        self.sensor_name = rospy.get_param('rfid/sensor_name')
+        self.sensor_direction = rospy.get_param('rfid/sensor_direction')
+        self.sensor_fov = rospy.get_param('rfid/fov')
+        self.sensor_range = rospy.get_param('rfid/range')
+        self.sensor_shape = rospy.get_param('rfid/shape')
+        self.sensor_reliability = rospy.get_param('rfid/reliability')
+        self.min_distance = rospy.get_param('min_distance')
+
         # Flag to wait ogm subscriber to finish
         self.ogm_compute = False
 
@@ -61,6 +70,8 @@ class Navigation:
         self.room_type = []
         self.room_sequence = []
         self.wall_follow_nodes = []
+        self.wall_follow_sequence = []
+        self.boustrophedon_sequence = []
 
         # Load nodes from json file
         map_name = rospy.get_param('map_name')
@@ -75,6 +86,8 @@ class Navigation:
         self.room_type = data['roomType']
         self.room_sequence = data['room_sequence']
         self.wall_follow_nodes = data['wall_follow_nodes']
+        self.wall_follow_sequence = data['wall_follow_sequence']
+        self.boustrophedon_sequence = data['boustrophedon_sequence']
 
         self.node_publisher = rospy.Publisher('/nodes', Marker, queue_size = 100)
         self.door_node_pub = rospy.Publisher('/nodes/doors', Marker, queue_size = 100)
@@ -165,7 +178,8 @@ class Navigation:
                 # find nodes of current room
                 nodes = self.wall_follow_nodes[current_room]
                 # navigate to all nodes
-                for node in nodes:
+                for i in range(len(nodes)):
+                    node = nodes[self.wall_follow_sequence[current_room][i]]
                     result = self.goToGoal(node['position'], node['yaw']-self.sensor_direction)
                     rospy.sleep(0.1)
                 current_room_index = (current_room_index + 1) % len(self.room_sequence)
@@ -179,7 +193,8 @@ class Navigation:
                 # find nodes of current room
                 nodes = sorted(self.wall_follow_nodes[current_room], key=itemgetter('position'))
                 # navigate to all nodes
-                for node in nodes:
+                for i in range(len(nodes)):
+                    node = nodes[self.boustrophedon_sequence[current_room][i]]
                     result = self.goToGoal(node['position'], node['yaw']-self.sensor_direction)
                     rospy.sleep(0.1)
                 current_room_index = (current_room_index + 1) % len(self.room_sequence)
