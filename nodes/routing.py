@@ -102,7 +102,7 @@ class Routing:
 
     def random_restart_hillclimb(self, distances, epochs):
         '''
-        repeatedly hillclimb until max_evaluations is reached
+        repeatedly hillclimb until epochs is reached
         '''
         best = None
         best_score = 0
@@ -151,5 +151,38 @@ class Routing:
             # see if completely finished
             if done:
                  break
+
+        return best, best_score, iter
+
+
+    def step_hillclimb(self, distances, epochs, step):
+        '''
+        keep distances equal to step and minimize all others
+        until the sequence is found or epochs is reached
+        '''
+        length = distances.shape[0]
+        best = range(length)
+        best_score = self.route_length(distances, best)
+        iter = 0
+
+        for i in range(length-2):
+            print('At point {}/{}'.format(i, length))  # # DEBUG: 
+            if iter >= epochs:
+                break
+            min = distances[best[i]][best[i+1]]
+            if min <= step:
+                continue
+            else:
+                index = i+1
+                for j in range(i+2,length):
+                    dist = distances[best[i]][best[j]]
+                    if dist < min:
+                        min = dist
+                        index = j
+                        iter += 1
+                    if min <= step:
+                        break
+                best[i+1], best[index] = best[index], best[i+1]
+                best_score = self.route_length(distances, best)
 
         return best, best_score, iter
