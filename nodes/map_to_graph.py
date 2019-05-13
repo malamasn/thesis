@@ -3,6 +3,8 @@ import rospy, json
 import numpy as np
 import time, math
 from dijkstar import Graph, find_path
+from operator import itemgetter
+from scipy.spatial.distance import cdist
 
 from geometry_msgs.msg import Point
 from visualization_msgs.msg import Marker
@@ -64,6 +66,8 @@ class Map_To_Graph:
         self.room_type = []
         self.room_sequence = []
         self.wall_follow_nodes = []
+        self.wall_follow_sequence = []
+        self.boustrophedon_sequence = []
 
         # Load nodes from json file
         map_name = rospy.get_param('map_name')
@@ -82,6 +86,9 @@ class Map_To_Graph:
 
         if 'wall_follow_nodes' in self.data:
             self.wall_follow_nodes = self.data['wall_follow_nodes']
+
+        if 'wall_follow_sequence' in self.data:
+            self.wall_follow_sequence = self.data['wall_follow_sequence']
 
         self.node_publisher = rospy.Publisher('/nodes', Marker, queue_size = 100)
         self.candidate_door_node_pub = rospy.Publisher('/nodes/candidateDoors', Marker, queue_size = 100)
@@ -178,6 +185,8 @@ class Map_To_Graph:
                     if self.brush[x][y] > safety_offset and self.brush[x][y] <= 2 * step:
                         nodes.append((x,y))
 
+            self.print_markers(nodes, [1., 0., 0.], self.node_publisher)
+            rospy.sleep(2)
 
             # Find rooms of nodes
             # Fill door holes with "wall"
@@ -191,33 +200,29 @@ class Map_To_Graph:
                     if brush[n] > 0:
                         found_nodes.append(n)
                 found_nodes.sort()  # Optimize path finding
+                print("Found {} nodes in room {}.".format(len(found_nodes), i))  # # DEBUG
+                # # Calculate boustrophedon sequence
+                # self.boustrophedon_sequence.append(self.boustrophedon(found_nodes, step))
 
-                # Create graph
-                graph = Graph()
-                for n in found_nodes:
-                    for i in range(len(found_nodes)):
-                        for j in range(i+1, len(found_nodes)):
-                            dist = np.linalg.norm(np.array(found_nodes[i])- np.array(found_nodes[j]))
-                            graph.add_edge(i, j, dist)
-                            graph.add_edge(j, i, dist)
-
-                # Calculate graph's distances between all nodes
+                if self.wall_follow_sequence != []:
+                    continue
+                
                 nodes_length = len(found_nodes)
-                distances = np.zeros((nodes_length, nodes_length), dtype=np.float64)
-                for i in range(nodes_length):
-                    for j in range(i+1, nodes_length):
-                        _, _, _, dist = find_path(graph, i, j)
-                        distances[i][j] = dist
-                        distances[j][i] = distances[i][j]
+                distances = cdist(np.array(found_nodes), np.array(found_nodes), 'euclidean')
+                print('Distances of nodes done.')    # DEBUG:
 
                 # Call hill climb algorithm
-                max_iterations = 200 * nodes_length
-                node_route, cost, iter = self.routing.anneal(distances, max_iterations, 1.0, 0.95)
+                max_iterations = 150 * nodes_length
+                # node_route, cost, iter = self.routing.anneal(distances, max_iterations, 1.0, 0.95)
+                node_route, cost, iter = self.routing.step_hillclimb(distances, max_iterations, step)
+                print('Route of wall follow nodes found.')
 
                 found_nodes_with_yaw = []
-                for index in node_route:
+                k = 0   # DEBUG:
+                for node in found_nodes:
+                    print('Closest obstacles process: {}/{}'.format(k, nodes_length))
                     # Find closest obstacle to get best yaw
-                    x, y = found_nodes[index]
+                    x, y = node
                     obstacles = self.brushfire_cffi.closestObstacleBrushfireCffi((x,y), self.ogm)
                     for point in obstacles:
                         # Calculate yaw for each obstacle
@@ -228,17 +233,24 @@ class Map_To_Graph:
                         # Add dictionary to right room
                         temp_dict = {'position': (x,y), 'yaw': yaw}
                         found_nodes_with_yaw.append(temp_dict)
+                    k += 1
+
                 # print(found_nodes_with_yaw)
                 self.wall_follow_nodes.append(found_nodes_with_yaw)
+                self.wall_follow_sequence.append(node_route)
 
-                # # Print found_nodes
-                # self.print_markers(found_nodes, [0., 1., 0.], self.room_node_pub)
+                for i in range(len(found_nodes)):
+                    node = found_nodes[node_route[i]]
+                    self.print_markers([node], [0., 0., 1.], self.room_node_pub)
+                    rospy.sleep(0.5)
                 # rospy.sleep(2)
 
 
 
             # Save wall nodes to json
             self.data['wall_follow_nodes'] = self.wall_follow_nodes
+            self.data['wall_follow_sequence'] = self.wall_follow_sequence
+            self.data['boustrophedon_sequence'] = self.boustrophedon_sequence
             map_name = rospy.get_param('map_name')
             filename = '/home/mal/catkin_ws/src/topology_finder/data/' + map_name +'.json'
             with open(filename, 'w') as outfile:
@@ -247,6 +259,68 @@ class Map_To_Graph:
 
         return
 
+    # def boustrophedon(self, nodes, step):
+    #
+    #     min_y = min(nodes, key=itemgetter(1))[1]
+    #     max_y = max(nodes, key=itemgetter(1))[1]
+    #     # in = False
+    #     # out = False
+    #     reverse = False
+    #     final_nodes = []
+    #     # in_nodes = []
+    #
+    #     for y in range(min_y, max_y+step, step):
+    #         slice = [item for item in nodes if item[1] == y]
+    #         slice.sort()
+    #         occupied = np.any(self.ogm[slice[0][0]:slice[-1][0], y] > 49)
+    #         if reverse:
+    #             slice.reverse()
+    #         # out event
+    #         if not occupied:
+    #             final_nodes.extend(slice)
+    #             # if in:
+    #                 # Go to previous unvisited
+    #         else:
+    #             # # if hits obstacle
+    #             # in = True
+    #             # hit = False
+    #             # if reverse:
+    #             #     hit_index = len(in_nodes)
+    #             # else:
+    #             #     hit_index = 0
+    #             final_nodes.append(slice[0])
+    #             for i in range(len(slice)-1):
+    #                 min_x = min(slice[i:i+1], key=itemgetter(0))[0]
+    #                 max_x = max(slice[i:i+1], key=itemgetter(0))[0]
+    #                 occupied = np.any(self.ogm[min_x:max_x, y] > 49)
+    #                 if not occupied: # and not hit:
+    #                     final_nodes.append(slice[i+1])
+    #                 else:
+    #                     break
+    #                 # elif not occupied and hit:
+    #                 #     pass
+    #                 # else:
+    #                 #     hit = True
+    #
+    #
+    #         reverse = not reverse
+    #     sequence = []
+    #     for node in final_nodes:
+    #         sequence.append(nodes.index(node))
+    #     return sequence
+
+        # size = len(found_nodes)
+        # temp = []
+        # temp.append(found_nodes[0])
+        # for ii in range(size-1):
+        #     node_1 = found_nodes[ii]
+        #     node_2 = found_nodes[ii+1]
+        #     dist = np.linalg.norm(np.array(node_1)- np.array(node_2))
+        #     if dist <= step:
+        #         temp.append(node_2)
+        #         continue
+        #     else:
+        #         pass
 
 
 
