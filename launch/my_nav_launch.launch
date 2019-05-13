@@ -1,13 +1,13 @@
 <launch>
 
-
-
+  <arg name='map_name' value='rooms_3'/>
+  <!-- <arg name='map_name' value='indoor_with_rooms'/> -->
+  <!-- <arg name='map_name' value='indoors_with_nothing'/> -->
+  <!-- <arg name='map_name' value='indoor_with_distance_features'/> -->
   <!-- Launch gazebo -->
   <!-- Make the world name a parameter to load from terminal -->
-  <!-- <arg name="world" default="$(find maps_package)/worlds/indoor_with_distance_features.world"/> -->
-  <!-- <arg name="world" default="$(find maps_package)/worlds/indoors_with_nothing.world"/> -->
-  <!-- <arg name="world" default="$(find maps_package)/worlds/indoor_with_rooms.world"/> -->
-  <arg name="world" default="$(find maps_package)/worlds/rooms_3.world"/>
+
+  <arg name="world" default="$(find maps_package)/worlds/$(arg map_name).world"/>
   <arg name="gui" default="false"/>
   <!-- <arg name="verbose" default="true"/>
   <arg name="paused" default="false"/> -->
@@ -21,11 +21,7 @@
   </include>
 
   <!-- Load map server -->
-  <!-- <arg name="map" default="$(find maps_package)/maps/gmapping/indoor_with_distance_features.yaml"/> -->
-  <!-- <arg name="map" default="$(find maps_package)/maps/gmapping/indoors_with_nothing.pgm 0.05"/> -->
-  <!-- <arg name="map" default="$(find maps_package)/maps/gmapping/indoors_with_nothing_correct.yaml"/> -->
-  <!-- <arg name="map" default="$(find maps_package)/maps/gmapping/indoor_with_rooms.yaml"/> -->
-  <arg name="map" default="$(find maps_package)/maps/gmapping/rooms_3.yaml"/>
+  <arg name="map" default="$(find maps_package)/maps/gmapping/$(arg map_name).yaml"/>
   <!-- <arg name="map" default="$(find maps_package)/maps/manos/hospital_section_90.png 0.05"/> -->
   <!-- <arg name="map" default="$(find maps_package)/maps/gmapping/willow.pgm 0.1"/> -->
   <!-- <arg name="map" default="$(find maps_package)/maps/karto/vergina_3.pgm 0.025"/> -->
@@ -44,6 +40,7 @@
 
   <!-- Move base -->
   <include file="$(find my_navigation)/launch/includes/move_base.launch.xml"/>
+
 
   <!--  Used for visualising the turtlebot while building a map or navigating with the ros navistack. -->
   <node name="rviz" pkg="rviz" type="rviz" args="-d $(find my_navigation)/launch/includes/rviz/navigation.rviz"/>
