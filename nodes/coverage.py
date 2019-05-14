@@ -6,7 +6,7 @@ from scipy.spatial import distance
 from nav_msgs.msg import Odometry, OccupancyGrid
 from geometry_msgs.msg import Pose
 
-
+from utilities import Cffi
 
 class Coverage:
     def __init__(self):
@@ -101,54 +101,65 @@ class Coverage:
             pass
 
         cover_length = int(self.sensor_range / self.resolution)
-        xx = self.robot_pose['x']
-        yy = self.robot_pose['y']
+        xx = int(self.robot_pose['x'])
+        yy = int(self.robot_pose['y'])
         th = self.robot_pose['th']
         th_deg = math.degrees(th)
 
         # updates = 0
         if self.sensor_shape == 'rectangular':
-            for i in range(-cover_length, cover_length):
-                for j in range(-cover_length, cover_length):
-                    x = int(xx + i)
-                    y = int(yy + j)
-                    if x < 0 or y < 0 or x >= self.ogm_width or y >= self.ogm_height:
-                        continue
-                    if self.ogm[x, y] > 49 or self.ogm[x, y] == -1:
-                        continue
-                    # Check if point inside fov of sensor
-                    angle_rads = np.arctan2(j,i)
-                    angle = math.degrees(angle_rads)
-                    if angle - self.sensor_direction  >  th_deg + self.sensor_fov / 2 or \
-                            angle - self.sensor_direction  < th_deg - self.sensor_fov / 2:
-                        continue
-                    self.coverage[x, y] = 100 * self.sensor_reliability
-                    index = int(x + self.ogm_width * y)
-                    self.coverage_ogm.data[index] = 100
-                    # updates += 1
+            indexes = Cffi.rectangularCoverageCffi((xx,yy), self.ogm, cover_length, self.sensor_fov, th_deg, self.sensor_direction)
+            for x,y in indexes:
+                self.coverage[x, y] = 100 * self.sensor_reliability
+                i = int(x + self.ogm_width * y)
+                self.coverage_ogm.data[i] = 100
+            # for i in range(-cover_length, cover_length):
+            #     for j in range(-cover_length, cover_length):
+            #         x = int(xx + i)
+            #         y = int(yy + j)
+            #         if x < 0 or y < 0 or x >= self.ogm_width or y >= self.ogm_height:
+            #             continue
+            #         if self.ogm[x, y] > 49 or self.ogm[x, y] == -1:
+            #             continue
+            #         # Check if point inside fov of sensor
+            #         angle_rads = np.arctan2(j,i)
+            #         angle = math.degrees(angle_rads)
+            #         if angle - self.sensor_direction  >  th_deg + self.sensor_fov / 2 or \
+            #                 angle - self.sensor_direction  < th_deg - self.sensor_fov / 2:
+            #             continue
+            #         self.coverage[x, y] = 100 * self.sensor_reliability
+            #         index = int(x + self.ogm_width * y)
+            #         self.coverage_ogm.data[index] = 100
+            #         # updates += 1
         elif self.sensor_shape == 'circular':
+            indexes = Cffi.circularCoverageCffi((xx,yy), self.ogm, cover_length, self.sensor_fov, th_deg, self.sensor_direction)
+            for x,y in indexes:
+                self.coverage[x, y] = 100 * self.sensor_reliability
+                i = int(x + self.ogm_width * y)
+                self.coverage_ogm.data[i] = 100
 
-            for i in range(-cover_length, cover_length):
-                for j in range(-cover_length, cover_length):
-                    x = int(xx + i)
-                    y = int(yy + j)
-                    if x < 0 or y < 0 or x >= self.ogm_width or y >= self.ogm_height:
-                        continue
-                    if self.ogm[x, y] > 49 or self.ogm[x, y] == -1:
-                        continue
-                    # Check if point inside cover circle
-                    if distance.euclidean([xx, yy], [x, y]) >= cover_length:
-                        continue
-                    # Check if point inside fov of sensor
-                    angle_rads = np.arctan2(j,i)
-                    angle = math.degrees(angle_rads)
-                    if angle - self.sensor_direction  >  th_deg + self.sensor_fov / 2 or \
-                            angle - self.sensor_direction  < th_deg - self.sensor_fov / 2:
-                        continue
-                    self.coverage[x][y] = 100 * self.sensor_reliability
-                    index = int(x + self.ogm_width * y)
-                    self.coverage_ogm.data[index] = 100
-                    # updates += 1
+
+            # for i in range(-cover_length, cover_length):
+            #     for j in range(-cover_length, cover_length):
+            #         x = int(xx + i)
+            #         y = int(yy + j)
+            #         if x < 0 or y < 0 or x >= self.ogm_width or y >= self.ogm_height:
+            #             continue
+            #         if self.ogm[x, y] > 49 or self.ogm[x, y] == -1:
+            #             continue
+            #         # Check if point inside cover circle
+            #         if distance.euclidean([xx, yy], [x, y]) >= cover_length:
+            #             continue
+            #         # Check if point inside fov of sensor
+            #         angle_rads = np.arctan2(j,i)
+            #         angle = math.degrees(angle_rads)
+            #         if angle - self.sensor_direction  >  th_deg + self.sensor_fov / 2 or \
+            #                 angle - self.sensor_direction  < th_deg - self.sensor_fov / 2:
+            #             continue
+            #         self.coverage[x][y] = 100 * self.sensor_reliability
+            #         index = int(x + self.ogm_width * y)
+            #         self.coverage_ogm.data[index] = 100
+            #         # updates += 1
         else:
             rospy.loginfo("Error!Sensor's shape not found!")
             return
