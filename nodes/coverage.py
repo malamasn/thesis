@@ -119,6 +119,9 @@ class Coverage:
                     # Check if point inside fov of sensor
                     angle_rads = np.arctan2(j,i)
                     angle = math.degrees(angle_rads)
+                    if angle - self.sensor_direction  >  th_deg + self.sensor_fov / 2 or \
+                            angle - self.sensor_direction  < th_deg - self.sensor_fov / 2:
+                        continue
                     self.coverage[x, y] = 100 * self.sensor_reliability
                     index = int(x + self.ogm_width * y)
                     self.coverage_ogm.data[index] = 100
