@@ -90,6 +90,9 @@ class Map_To_Graph:
         if 'wall_follow_sequence' in self.data:
             self.wall_follow_sequence = self.data['wall_follow_sequence']
 
+        if 'boustrophedon_sequence' in self.data:
+            self.boustrophedon_sequence = self.data['boustrophedon_sequence']
+
         self.node_publisher = rospy.Publisher('/nodes', Marker, queue_size = 100)
         self.candidate_door_node_pub = rospy.Publisher('/nodes/candidateDoors', Marker, queue_size = 100)
         self.door_node_pub = rospy.Publisher('/nodes/doors', Marker, queue_size = 100)
@@ -170,7 +173,8 @@ class Map_To_Graph:
         #         time.sleep(3)
 
         # Find nodes for wall following coverage
-        if self.wall_follow_nodes == []:
+        if self.wall_follow_nodes == [] or self.wall_follow_sequence == [] \
+                or self.boustrophedon_sequence == []:
             rospy.loginfo("Finding wall follow nodes...")
 
             # Uniform sampling on map
@@ -201,12 +205,10 @@ class Map_To_Graph:
                         found_nodes.append(n)
                 found_nodes.sort()  # Optimize path finding
                 print("Found {} nodes in room {}.".format(len(found_nodes), i))  # # DEBUG
+
                 # # Calculate boustrophedon sequence
                 # self.boustrophedon_sequence.append(self.boustrophedon(found_nodes, step))
 
-                if self.wall_follow_sequence != []:
-                    continue
-                
                 nodes_length = len(found_nodes)
                 distances = cdist(np.array(found_nodes), np.array(found_nodes), 'euclidean')
                 print('Distances of nodes done.')    # DEBUG:
@@ -218,11 +220,11 @@ class Map_To_Graph:
                 print('Route of wall follow nodes found.')
 
                 found_nodes_with_yaw = []
-                k = 0   # DEBUG:
-                for node in found_nodes:
+                k = 1   # DEBUG:
+                for i in range(len(found_nodes)):
                     print('Closest obstacles process: {}/{}'.format(k, nodes_length))
                     # Find closest obstacle to get best yaw
-                    x, y = node
+                    x, y = found_nodes[node_route[i]]
                     obstacles = self.brushfire_cffi.closestObstacleBrushfireCffi((x,y), self.ogm)
                     for point in obstacles:
                         # Calculate yaw for each obstacle
@@ -236,13 +238,13 @@ class Map_To_Graph:
                     k += 1
 
                 # print(found_nodes_with_yaw)
-                self.wall_follow_nodes.append(found_nodes_with_yaw)
-                self.wall_follow_sequence.append(node_route)
+                self.wall_follow_nodes.append(found_nodes)
+                self.wall_follow_sequence.append(found_nodes_with_yaw)
 
-                for i in range(len(found_nodes)):
-                    node = found_nodes[node_route[i]]
-                    self.print_markers([node], [0., 0., 1.], self.room_node_pub)
-                    rospy.sleep(0.5)
+                # for i in range(len(found_nodes)):
+                #     node = found_nodes[node_route[i]]
+                #     self.print_markers([node], [0., 0., 1.], self.room_node_pub)
+                #     rospy.sleep(0.5)
                 # rospy.sleep(2)
 
 
