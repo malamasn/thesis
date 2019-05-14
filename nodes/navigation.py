@@ -170,36 +170,40 @@ class Navigation:
                 current_room = self.room_sequence[current_room_index]
 
         elif self.navigation_pattern == 'wall_follow':
+            if self.wall_follow_sequence == []:
+                rospy.loginfo("This navigation pattern has not been calculated for this map!")
+                return
 
             for i in range(len(self.room_sequence)):
                 # print nodes
-                nodes = [k['position'] for k in self.wall_follow_nodes[current_room]]
+                nodes = self.wall_follow_nodes[current_room]
                 self.print_markers(nodes)
                 # find nodes of current room
-                nodes = self.wall_follow_nodes[current_room]
+                nodes = self.wall_follow_sequence[current_room]
                 # navigate to all nodes
-                for i in range(len(nodes)):
-                    node = nodes[self.wall_follow_sequence[current_room][i]]
+                for node in nodes:
                     result = self.goToGoal(node['position'], node['yaw']-self.sensor_direction)
                     rospy.sleep(0.1)
                 current_room_index = (current_room_index + 1) % len(self.room_sequence)
                 current_room = self.room_sequence[current_room_index]
 
         elif self.navigation_pattern == 'boustrophedon':
+            if self.boustrophedon_sequence == []:
+                rospy.loginfo("This navigation pattern has not been calculated for this map!")
+                return
+
             for i in range(len(self.room_sequence)):
                 # print nodes
-                nodes = [k['position'] for k in self.wall_follow_nodes[current_room]]
+                nodes = self.wall_follow_nodes[current_room]
                 self.print_markers(nodes)
                 # find nodes of current room
-                nodes = sorted(self.wall_follow_nodes[current_room], key=itemgetter('position'))
+                nodes = self.boustrophedon_sequence[current_room]
                 # navigate to all nodes
-                for i in range(len(nodes)):
-                    node = nodes[self.boustrophedon_sequence[current_room][i]]
+                for node in nodes:
                     result = self.goToGoal(node['position'], node['yaw']-self.sensor_direction)
                     rospy.sleep(0.1)
                 current_room_index = (current_room_index + 1) % len(self.room_sequence)
                 current_room = self.room_sequence[current_room_index]
-
 
         return
 
