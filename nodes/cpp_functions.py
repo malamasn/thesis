@@ -11,10 +11,14 @@ ffi.cdef("static void closestObstacleBrushfire(int ** brushfire, int width, int 
 ffi.cdef("static void pointToGvdBrushfire(int ** brushfire, int width, int height);")
 ffi.cdef("static void pointToPointBrushfire(int ** brushfire, int width, int height, int iterations);")
 ffi.cdef("static void pointBrushfire(int ** brushfire, int width, int height);")
+ffi.cdef("static void rectangularCoverage(int ** brushfire, int width, int height, int xi, int yi, float th_deg, int cover_length, float fov, float direction);")
+ffi.cdef("static void circularCoverage(int ** brushfire, int width, int height, int xi, int yi, float th_deg, int cover_length, float fov, float direction);")
 
 ffi.set_source("_cpp_functions",
     """
     #include <stdio.h>
+    #include <stdlib.h>
+    #include <math.h>
     static void obstacleBrushfire(int ** input, int ** output, int width, int height)
     {
         int i = 0;
@@ -377,6 +381,97 @@ ffi.set_source("_cpp_functions",
                         {
                             brushfire[i][j] = step + 1;
                             changed = 1;
+                        }
+                    }
+
+                }
+            }
+            step = step + 1;
+            iters_made++;
+        }
+    }
+    static void rectangularCoverage(int ** brushfire, int width, int height, int xi, int yi, float th_deg, int cover_length, float fov, float direction)
+    {
+        int i = 0;
+        int j = 0;
+        int xx, yy;
+        double angle;
+        int step = 2;
+        int iters_made = 0;
+        while(iters_made < cover_length)
+        {
+            for(i = 1 ; i < width - 2 ; i = i + 1)
+            {
+                for(j = 1 ; j < height - 2 ; j = j + 1)
+                {
+                    if(brushfire[i][j] == 0) // Free space
+                    {
+                        if(
+                            brushfire[i - 1][j] == step ||
+                            brushfire[i + 1][j] == step ||
+                            brushfire[i - 1][j - 1] == step ||
+                            brushfire[i + 1][j - 1] == step ||
+                            brushfire[i - 1][j + 1] == step ||
+                            brushfire[i + 1][j + 1] == step ||
+                            brushfire[i][j - 1] == step ||
+                            brushfire[i][j + 1] == step
+                        )
+                        {
+                            xx = i - xi;
+                            yy = j - yi;
+                            angle = atan2(yy, xx) * 180.0 / M_PI;
+                            if(
+                                abs(angle - direction - th_deg) < fov / 2
+                            )
+                            {
+                                brushfire[i][j] = step + 1;
+                            }
+                        }
+                    }
+
+                }
+            }
+            step = step + 1;
+            iters_made++;
+        }
+    }
+    static void circularCoverage(int ** brushfire, int width, int height, int xi, int yi, float th_deg, int cover_length, float fov, float direction)
+    {
+        int i = 0;
+        int j = 0;
+        int xx, yy;
+        double angle;
+        int step = 2;
+        int iters_made = 0;
+        while(iters_made < cover_length)
+        {
+            for(i = 1 ; i < width - 2 ; i = i + 1)
+            {
+                for(j = 1 ; j < height - 2 ; j = j + 1)
+                {
+                    if(brushfire[i][j] == 0) // Free space
+                    {
+                        if(
+                            brushfire[i - 1][j] == step ||
+                            brushfire[i + 1][j] == step ||
+                            brushfire[i - 1][j - 1] == step ||
+                            brushfire[i + 1][j - 1] == step ||
+                            brushfire[i - 1][j + 1] == step ||
+                            brushfire[i + 1][j + 1] == step ||
+                            brushfire[i][j - 1] == step ||
+                            brushfire[i][j + 1] == step
+                        )
+                        {
+                            xx = i - xi;
+                            yy = j - yi;
+                            angle = atan2(yy, xx) * 180.0 / M_PI;
+                            if(
+                                (xx * xx + yy * yy) < cover_length * cover_length &&
+                                abs(angle - direction - th_deg) < fov / 2
+                            )
+                            {
+                                brushfire[i][j] = step + 1;
+                            }
                         }
                     }
 

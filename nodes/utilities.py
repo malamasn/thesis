@@ -213,3 +213,41 @@ class Cffi:
         else:
             iter_made = -1
         return iter_made
+
+    @staticmethod
+    def rectangularCoverageCffi(start, ogm, cover_range, fov, theta, sensor_direction):
+        brushfire = np.zeros(ogm.shape, np.dtype('int32'))
+        brushfire[ogm > 49] = 1
+        brushfire[ogm == -1] = -1
+        brushfire[start] = 2
+
+        y = [np.array(v, dtype='int32') for v in brushfire]
+        yi = ffi.new(("int* [%d]") % (len(y)))
+        for i in range(len(y)):
+            yi[i] = ffi.cast("int *", y[i].ctypes.data)
+
+        br_c = lib.rectangularCoverage(yi, len(y), len(y[0]), start[0], start[1], \
+                theta, cover_range + 2, fov, sensor_direction)
+        brushfire[0:,0:] = np.array(y)
+
+        indexes = zip(*np.where(brushfire > 0))
+        return indexes
+
+    @staticmethod
+    def circularCoverageCffi(start, ogm, cover_range, fov, theta, sensor_direction):
+        brushfire = np.zeros(ogm.shape, np.dtype('int32'))
+        brushfire[ogm > 49] = 1
+        brushfire[ogm == -1] = -1
+        brushfire[start] = 2
+
+        y = [np.array(v, dtype='int32') for v in brushfire]
+        yi = ffi.new(("int* [%d]") % (len(y)))
+        for i in range(len(y)):
+            yi[i] = ffi.cast("int *", y[i].ctypes.data)
+
+        br_c = lib.circularCoverage(yi, len(y), len(y[0]), start[0], start[1], \
+                theta, cover_range + 2, fov, sensor_direction)
+        brushfire[0:,0:] = np.array(y)
+
+        indexes = zip(*np.where(brushfire > 0))
+        return indexes

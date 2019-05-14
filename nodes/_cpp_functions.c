@@ -491,6 +491,8 @@ static void (*_cffi_call_python_org)(struct _cffi_externpy_s *, char *);
 
 
     #include <stdio.h>
+    #include <stdlib.h>
+    #include <math.h>
     static void obstacleBrushfire(int ** input, int ** output, int width, int height)
     {
         int i = 0;
@@ -862,31 +864,221 @@ static void (*_cffi_call_python_org)(struct _cffi_externpy_s *, char *);
             iters_made++;
         }
     }
+    static void rectangularCoverage(int ** brushfire, int width, int height, int xi, int yi, float th_deg, int cover_length, float fov, float direction)
+    {
+        int i = 0;
+        int j = 0;
+        int xx, yy;
+        double angle;
+        int step = 2;
+        int iters_made = 0;
+        while(iters_made < cover_length)
+        {
+            for(i = 1 ; i < width - 2 ; i = i + 1)
+            {
+                for(j = 1 ; j < height - 2 ; j = j + 1)
+                {
+                    if(brushfire[i][j] == 0) // Free space
+                    {
+                        if(
+                            brushfire[i - 1][j] == step ||
+                            brushfire[i + 1][j] == step ||
+                            brushfire[i - 1][j - 1] == step ||
+                            brushfire[i + 1][j - 1] == step ||
+                            brushfire[i - 1][j + 1] == step ||
+                            brushfire[i + 1][j + 1] == step ||
+                            brushfire[i][j - 1] == step ||
+                            brushfire[i][j + 1] == step
+                        )
+                        {
+                            xx = i - xi;
+                            yy = j - yi;
+                            angle = atan2(yy, xx) * 180.0 / M_PI;
+                            if(
+                                abs(angle - direction - th_deg) < fov / 2
+                            )
+                            {
+                                brushfire[i][j] = step + 1;
+                            }
+                        }
+                    }
+
+                }
+            }
+            step = step + 1;
+            iters_made++;
+        }
+    }
+    static void circularCoverage(int ** brushfire, int width, int height, int xi, int yi, float th_deg, int cover_length, float fov, float direction)
+    {
+        int i = 0;
+        int j = 0;
+        int xx, yy;
+        double angle;
+        int step = 2;
+        int iters_made = 0;
+        while(iters_made < cover_length)
+        {
+            for(i = 1 ; i < width - 2 ; i = i + 1)
+            {
+                for(j = 1 ; j < height - 2 ; j = j + 1)
+                {
+                    if(brushfire[i][j] == 0) // Free space
+                    {
+                        if(
+                            brushfire[i - 1][j] == step ||
+                            brushfire[i + 1][j] == step ||
+                            brushfire[i - 1][j - 1] == step ||
+                            brushfire[i + 1][j - 1] == step ||
+                            brushfire[i - 1][j + 1] == step ||
+                            brushfire[i + 1][j + 1] == step ||
+                            brushfire[i][j - 1] == step ||
+                            brushfire[i][j + 1] == step
+                        )
+                        {
+                            xx = i - xi;
+                            yy = j - yi;
+                            angle = atan2(yy, xx) * 180.0 / M_PI;
+                            if(
+                                (xx * xx + yy * yy) < cover_length * cover_length &&
+                                abs(angle - direction - th_deg) < fov / 2
+                            )
+                            {
+                                brushfire[i][j] = step + 1;
+                            }
+                        }
+                    }
+
+                }
+            }
+            step = step + 1;
+            iters_made++;
+        }
+    }
     
 
 /************************************************************/
 
 static void *_cffi_types[] = {
-/*  0 */ _CFFI_OP(_CFFI_OP_FUNCTION, 18), // void()(int * *, int * *, int, int)
-/*  1 */ _CFFI_OP(_CFFI_OP_POINTER, 17), // int * *
+/*  0 */ _CFFI_OP(_CFFI_OP_FUNCTION, 29), // void()(int * *, int * *, int, int)
+/*  1 */ _CFFI_OP(_CFFI_OP_POINTER, 28), // int * *
 /*  2 */ _CFFI_OP(_CFFI_OP_NOOP, 1),
 /*  3 */ _CFFI_OP(_CFFI_OP_PRIMITIVE, 7), // int
 /*  4 */ _CFFI_OP(_CFFI_OP_PRIMITIVE, 7),
 /*  5 */ _CFFI_OP(_CFFI_OP_FUNCTION_END, 0),
-/*  6 */ _CFFI_OP(_CFFI_OP_FUNCTION, 18), // void()(int * *, int, int)
+/*  6 */ _CFFI_OP(_CFFI_OP_FUNCTION, 29), // void()(int * *, int, int)
 /*  7 */ _CFFI_OP(_CFFI_OP_NOOP, 1),
 /*  8 */ _CFFI_OP(_CFFI_OP_PRIMITIVE, 7),
 /*  9 */ _CFFI_OP(_CFFI_OP_PRIMITIVE, 7),
 /* 10 */ _CFFI_OP(_CFFI_OP_FUNCTION_END, 0),
-/* 11 */ _CFFI_OP(_CFFI_OP_FUNCTION, 18), // void()(int * *, int, int, int)
+/* 11 */ _CFFI_OP(_CFFI_OP_FUNCTION, 29), // void()(int * *, int, int, int)
 /* 12 */ _CFFI_OP(_CFFI_OP_NOOP, 1),
 /* 13 */ _CFFI_OP(_CFFI_OP_PRIMITIVE, 7),
 /* 14 */ _CFFI_OP(_CFFI_OP_PRIMITIVE, 7),
 /* 15 */ _CFFI_OP(_CFFI_OP_PRIMITIVE, 7),
 /* 16 */ _CFFI_OP(_CFFI_OP_FUNCTION_END, 0),
-/* 17 */ _CFFI_OP(_CFFI_OP_POINTER, 3), // int *
-/* 18 */ _CFFI_OP(_CFFI_OP_PRIMITIVE, 0), // void
+/* 17 */ _CFFI_OP(_CFFI_OP_FUNCTION, 29), // void()(int * *, int, int, int, int, float, int, float, float)
+/* 18 */ _CFFI_OP(_CFFI_OP_NOOP, 1),
+/* 19 */ _CFFI_OP(_CFFI_OP_PRIMITIVE, 7),
+/* 20 */ _CFFI_OP(_CFFI_OP_PRIMITIVE, 7),
+/* 21 */ _CFFI_OP(_CFFI_OP_PRIMITIVE, 7),
+/* 22 */ _CFFI_OP(_CFFI_OP_PRIMITIVE, 7),
+/* 23 */ _CFFI_OP(_CFFI_OP_PRIMITIVE, 13), // float
+/* 24 */ _CFFI_OP(_CFFI_OP_PRIMITIVE, 7),
+/* 25 */ _CFFI_OP(_CFFI_OP_PRIMITIVE, 13),
+/* 26 */ _CFFI_OP(_CFFI_OP_PRIMITIVE, 13),
+/* 27 */ _CFFI_OP(_CFFI_OP_FUNCTION_END, 0),
+/* 28 */ _CFFI_OP(_CFFI_OP_POINTER, 3), // int *
+/* 29 */ _CFFI_OP(_CFFI_OP_PRIMITIVE, 0), // void
 };
+
+static void _cffi_d_circularCoverage(int * * x0, int x1, int x2, int x3, int x4, float x5, int x6, float x7, float x8)
+{
+  circularCoverage(x0, x1, x2, x3, x4, x5, x6, x7, x8);
+}
+#ifndef PYPY_VERSION
+static PyObject *
+_cffi_f_circularCoverage(PyObject *self, PyObject *args)
+{
+  int * * x0;
+  int x1;
+  int x2;
+  int x3;
+  int x4;
+  float x5;
+  int x6;
+  float x7;
+  float x8;
+  Py_ssize_t datasize;
+  PyObject *arg0;
+  PyObject *arg1;
+  PyObject *arg2;
+  PyObject *arg3;
+  PyObject *arg4;
+  PyObject *arg5;
+  PyObject *arg6;
+  PyObject *arg7;
+  PyObject *arg8;
+
+  if (!PyArg_UnpackTuple(args, "circularCoverage", 9, 9, &arg0, &arg1, &arg2, &arg3, &arg4, &arg5, &arg6, &arg7, &arg8))
+    return NULL;
+
+  datasize = _cffi_prepare_pointer_call_argument(
+      _cffi_type(1), arg0, (char **)&x0);
+  if (datasize != 0) {
+    if (datasize < 0)
+      return NULL;
+    x0 = (int * *)alloca((size_t)datasize);
+    memset((void *)x0, 0, (size_t)datasize);
+    if (_cffi_convert_array_from_object((char *)x0, _cffi_type(1), arg0) < 0)
+      return NULL;
+  }
+
+  x1 = _cffi_to_c_int(arg1, int);
+  if (x1 == (int)-1 && PyErr_Occurred())
+    return NULL;
+
+  x2 = _cffi_to_c_int(arg2, int);
+  if (x2 == (int)-1 && PyErr_Occurred())
+    return NULL;
+
+  x3 = _cffi_to_c_int(arg3, int);
+  if (x3 == (int)-1 && PyErr_Occurred())
+    return NULL;
+
+  x4 = _cffi_to_c_int(arg4, int);
+  if (x4 == (int)-1 && PyErr_Occurred())
+    return NULL;
+
+  x5 = (float)_cffi_to_c_float(arg5);
+  if (x5 == (float)-1 && PyErr_Occurred())
+    return NULL;
+
+  x6 = _cffi_to_c_int(arg6, int);
+  if (x6 == (int)-1 && PyErr_Occurred())
+    return NULL;
+
+  x7 = (float)_cffi_to_c_float(arg7);
+  if (x7 == (float)-1 && PyErr_Occurred())
+    return NULL;
+
+  x8 = (float)_cffi_to_c_float(arg8);
+  if (x8 == (float)-1 && PyErr_Occurred())
+    return NULL;
+
+  Py_BEGIN_ALLOW_THREADS
+  _cffi_restore_errno();
+  { circularCoverage(x0, x1, x2, x3, x4, x5, x6, x7, x8); }
+  _cffi_save_errno();
+  Py_END_ALLOW_THREADS
+
+  (void)self; /* unused */
+  Py_INCREF(Py_None);
+  return Py_None;
+}
+#else
+#  define _cffi_f_circularCoverage _cffi_d_circularCoverage
+#endif
 
 static void _cffi_d_closestObstacleBrushfire(int * * x0, int x1, int x2)
 {
@@ -1284,7 +1476,96 @@ _cffi_f_pointToPointBrushfire(PyObject *self, PyObject *args)
 #  define _cffi_f_pointToPointBrushfire _cffi_d_pointToPointBrushfire
 #endif
 
+static void _cffi_d_rectangularCoverage(int * * x0, int x1, int x2, int x3, int x4, float x5, int x6, float x7, float x8)
+{
+  rectangularCoverage(x0, x1, x2, x3, x4, x5, x6, x7, x8);
+}
+#ifndef PYPY_VERSION
+static PyObject *
+_cffi_f_rectangularCoverage(PyObject *self, PyObject *args)
+{
+  int * * x0;
+  int x1;
+  int x2;
+  int x3;
+  int x4;
+  float x5;
+  int x6;
+  float x7;
+  float x8;
+  Py_ssize_t datasize;
+  PyObject *arg0;
+  PyObject *arg1;
+  PyObject *arg2;
+  PyObject *arg3;
+  PyObject *arg4;
+  PyObject *arg5;
+  PyObject *arg6;
+  PyObject *arg7;
+  PyObject *arg8;
+
+  if (!PyArg_UnpackTuple(args, "rectangularCoverage", 9, 9, &arg0, &arg1, &arg2, &arg3, &arg4, &arg5, &arg6, &arg7, &arg8))
+    return NULL;
+
+  datasize = _cffi_prepare_pointer_call_argument(
+      _cffi_type(1), arg0, (char **)&x0);
+  if (datasize != 0) {
+    if (datasize < 0)
+      return NULL;
+    x0 = (int * *)alloca((size_t)datasize);
+    memset((void *)x0, 0, (size_t)datasize);
+    if (_cffi_convert_array_from_object((char *)x0, _cffi_type(1), arg0) < 0)
+      return NULL;
+  }
+
+  x1 = _cffi_to_c_int(arg1, int);
+  if (x1 == (int)-1 && PyErr_Occurred())
+    return NULL;
+
+  x2 = _cffi_to_c_int(arg2, int);
+  if (x2 == (int)-1 && PyErr_Occurred())
+    return NULL;
+
+  x3 = _cffi_to_c_int(arg3, int);
+  if (x3 == (int)-1 && PyErr_Occurred())
+    return NULL;
+
+  x4 = _cffi_to_c_int(arg4, int);
+  if (x4 == (int)-1 && PyErr_Occurred())
+    return NULL;
+
+  x5 = (float)_cffi_to_c_float(arg5);
+  if (x5 == (float)-1 && PyErr_Occurred())
+    return NULL;
+
+  x6 = _cffi_to_c_int(arg6, int);
+  if (x6 == (int)-1 && PyErr_Occurred())
+    return NULL;
+
+  x7 = (float)_cffi_to_c_float(arg7);
+  if (x7 == (float)-1 && PyErr_Occurred())
+    return NULL;
+
+  x8 = (float)_cffi_to_c_float(arg8);
+  if (x8 == (float)-1 && PyErr_Occurred())
+    return NULL;
+
+  Py_BEGIN_ALLOW_THREADS
+  _cffi_restore_errno();
+  { rectangularCoverage(x0, x1, x2, x3, x4, x5, x6, x7, x8); }
+  _cffi_save_errno();
+  Py_END_ALLOW_THREADS
+
+  (void)self; /* unused */
+  Py_INCREF(Py_None);
+  return Py_None;
+}
+#else
+#  define _cffi_f_rectangularCoverage _cffi_d_rectangularCoverage
+#endif
+
 static const struct _cffi_global_s _cffi_globals[] = {
+  { "circularCoverage", (void *)_cffi_f_circularCoverage, _CFFI_OP(_CFFI_OP_CPYTHON_BLTN_V, 17), (void *)_cffi_d_circularCoverage },
   { "closestObstacleBrushfire", (void *)_cffi_f_closestObstacleBrushfire, _CFFI_OP(_CFFI_OP_CPYTHON_BLTN_V, 6), (void *)_cffi_d_closestObstacleBrushfire },
   { "gvdNeighborBrushfire", (void *)_cffi_f_gvdNeighborBrushfire, _CFFI_OP(_CFFI_OP_CPYTHON_BLTN_V, 6), (void *)_cffi_d_gvdNeighborBrushfire },
   { "gvdNeighborSplitBrushfire", (void *)_cffi_f_gvdNeighborSplitBrushfire, _CFFI_OP(_CFFI_OP_CPYTHON_BLTN_V, 0), (void *)_cffi_d_gvdNeighborSplitBrushfire },
@@ -1292,6 +1573,7 @@ static const struct _cffi_global_s _cffi_globals[] = {
   { "pointBrushfire", (void *)_cffi_f_pointBrushfire, _CFFI_OP(_CFFI_OP_CPYTHON_BLTN_V, 6), (void *)_cffi_d_pointBrushfire },
   { "pointToGvdBrushfire", (void *)_cffi_f_pointToGvdBrushfire, _CFFI_OP(_CFFI_OP_CPYTHON_BLTN_V, 6), (void *)_cffi_d_pointToGvdBrushfire },
   { "pointToPointBrushfire", (void *)_cffi_f_pointToPointBrushfire, _CFFI_OP(_CFFI_OP_CPYTHON_BLTN_V, 11), (void *)_cffi_d_pointToPointBrushfire },
+  { "rectangularCoverage", (void *)_cffi_f_rectangularCoverage, _CFFI_OP(_CFFI_OP_CPYTHON_BLTN_V, 17), (void *)_cffi_d_rectangularCoverage },
 };
 
 static const struct _cffi_type_context_s _cffi_type_context = {
@@ -1301,12 +1583,12 @@ static const struct _cffi_type_context_s _cffi_type_context = {
   NULL,  /* no struct_unions */
   NULL,  /* no enums */
   NULL,  /* no typenames */
-  7,  /* num_globals */
+  9,  /* num_globals */
   0,  /* num_struct_unions */
   0,  /* num_enums */
   0,  /* num_typenames */
   NULL,  /* no includes */
-  19,  /* num_types */
+  30,  /* num_types */
   0,  /* flags */
 };
 
