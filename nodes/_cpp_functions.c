@@ -914,7 +914,7 @@ static void (*_cffi_call_python_org)(struct _cffi_externpy_s *, char *);
         int i = 0;
         int j = 0;
         int xx, yy;
-        double angle;
+        double angle, theta;
         int step = 2;
         int iters_made = 0;
         while(iters_made < cover_length)
@@ -939,9 +939,18 @@ static void (*_cffi_call_python_org)(struct _cffi_externpy_s *, char *);
                             xx = i - xi;
                             yy = j - yi;
                             angle = atan2(yy, xx) * 180.0 / M_PI;
+                            theta = angle - direction - th_deg;
+                            if (theta < -180)
+                            {
+                                theta += 360;
+                            }
+                            else if (theta > 180)
+                            {
+                                theta -= 360;
+                            }
                             if(
                                 (xx * xx + yy * yy) < cover_length * cover_length &&
-                                abs(angle - direction - th_deg) < fov / 2
+                                abs(theta) < fov / 2
                             )
                             {
                                 brushfire[i][j] = step + 1;
