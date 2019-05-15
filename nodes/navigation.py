@@ -34,14 +34,23 @@ class Navigation:
         self.origin['y'] = translation[1]
         self.resolution = rospy.get_param('resolution')
 
+        # Initilize sensor's specs
+        self.sensor_names = []
+        self.sensor_direction = []
+        self.sensor_fov = []
+        self.sensor_range = []
+        self.sensor_shape = []
+        self.sensor_reliability = []
+
         # Read sensor's specs
-        self.sensor_name = rospy.get_param('rfid/sensor_name')
-        self.sensor_direction = rospy.get_param('rfid/sensor_direction')
-        self.sensor_fov = rospy.get_param('rfid/fov')
-        self.sensor_range = rospy.get_param('rfid/range')
-        self.sensor_shape = rospy.get_param('rfid/shape')
-        self.sensor_reliability = rospy.get_param('rfid/reliability')
-        self.min_distance = rospy.get_param('min_distance')
+        self.sensor_names = rospy.get_param('sensor_names')
+        self.sensor_number = rospy.get_param('number_of_sensors')
+        for name in self.sensor_names:
+            self.sensor_direction.append(rospy.get_param(name + '/sensor_direction'))
+            self.sensor_fov.append(rospy.get_param(name + '/fov'))
+            self.sensor_range.append(rospy.get_param(name + '/range'))
+            self.sensor_shape.append(rospy.get_param(name + '/shape'))
+            self.sensor_reliability.append(rospy.get_param(name + '/reliability'))
 
         # Flag to wait ogm subscriber to finish
         self.ogm_compute = False
@@ -182,28 +191,28 @@ class Navigation:
                 nodes = self.wall_follow_sequence[current_room]
                 # navigate to all nodes
                 for node in nodes:
-                    result = self.goToGoal(node['position'], node['yaw']-self.sensor_direction)
+                    result = self.goToGoal(node['position'], node['yaw'])
                     rospy.sleep(0.1)
                 current_room_index = (current_room_index + 1) % len(self.room_sequence)
                 current_room = self.room_sequence[current_room_index]
-
-        elif self.navigation_pattern == 'boustrophedon':
-            if self.boustrophedon_sequence == []:
-                rospy.loginfo("This navigation pattern has not been calculated for this map!")
-                return
-
-            for i in range(len(self.room_sequence)):
-                # print nodes
-                nodes = self.wall_follow_nodes[current_room]
-                self.print_markers(nodes)
-                # find nodes of current room
-                nodes = self.boustrophedon_sequence[current_room]
-                # navigate to all nodes
-                for node in nodes:
-                    result = self.goToGoal(node['position'], node['yaw']-self.sensor_direction)
-                    rospy.sleep(0.1)
-                current_room_index = (current_room_index + 1) % len(self.room_sequence)
-                current_room = self.room_sequence[current_room_index]
+        #
+        # elif self.navigation_pattern == 'boustrophedon':
+        #     if self.boustrophedon_sequence == []:
+        #         rospy.loginfo("This navigation pattern has not been calculated for this map!")
+        #         return
+        #
+        #     for i in range(len(self.room_sequence)):
+        #         # print nodes
+        #         nodes = self.wall_follow_nodes[current_room]
+        #         self.print_markers(nodes)
+        #         # find nodes of current room
+        #         nodes = self.boustrophedon_sequence[current_room]
+        #         # navigate to all nodes
+        #         for node in nodes:
+        #             result = self.goToGoal(node['position'], node['yaw'])
+        #             rospy.sleep(0.1)
+        #         current_room_index = (current_room_index + 1) % len(self.room_sequence)
+        #         current_room = self.room_sequence[current_room_index]
 
         return
 

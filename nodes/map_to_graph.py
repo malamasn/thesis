@@ -38,14 +38,23 @@ class Map_To_Graph:
         self.origin['y'] = translation[1]
         self.resolution = rospy.get_param('resolution')
 
+        # Initilize sensor's specs
+        self.sensor_names = []
+        self.sensor_direction = []
+        self.sensor_fov = []
+        self.sensor_range = []
+        self.sensor_shape = []
+        self.sensor_reliability = []
+
         # Read sensor's specs
-        self.sensor_name = rospy.get_param('rfid/sensor_name')
-        self.sensor_direction = rospy.get_param('rfid/sensor_direction')
-        self.sensor_fov = rospy.get_param('rfid/fov')
-        self.sensor_range = rospy.get_param('rfid/range')
-        self.sensor_shape = rospy.get_param('rfid/shape')
-        self.sensor_reliability = rospy.get_param('rfid/reliability')
-        self.min_distance = rospy.get_param('min_distance')
+        self.sensor_names = rospy.get_param('sensor_names')
+        self.sensor_number = rospy.get_param('number_of_sensors')
+        for name in self.sensor_names:
+            self.sensor_direction.append(rospy.get_param(name + '/sensor_direction'))
+            self.sensor_fov.append(rospy.get_param(name + '/fov'))
+            self.sensor_range.append(rospy.get_param(name + '/range'))
+            self.sensor_shape.append(rospy.get_param(name + '/shape'))
+            self.sensor_reliability.append(rospy.get_param(name + '/reliability'))
 
         self.ogm_topic = '/map'
         self.ogm = 0
@@ -214,7 +223,8 @@ class Map_To_Graph:
         # Uniform sampling on map
         nodes = []
         # Sampling step is half the sensor's range
-        step = int(self.sensor_range /(self.resolution * 2))
+        min_range = min(self.sensor_range)
+        step = int(min_range /(self.resolution * 2))
         safety_offset = self.min_distance / self.resolution
 
         for x in range(0, self.ogm_width, step):
@@ -264,7 +274,9 @@ class Map_To_Graph:
                     yaw = math.atan2(y_diff, x_diff)
 
                     # Add dictionary to right room
-                    temp_dict = {'position': (x,y), 'yaw': yaw}
+                    # # TODO: find best sensor directon on top of yaw
+                    dir = self.sensor_direction[0]
+                    temp_dict = {'position': (x,y), 'yaw': yaw - dir}
                     found_nodes_with_yaw.append(temp_dict)
                 k += 1
 
@@ -283,7 +295,7 @@ class Map_To_Graph:
             # Save wall nodes to json
             self.data['wall_follow_nodes'] = self.wall_follow_nodes
             self.data['wall_follow_sequence'] = self.wall_follow_sequence
-            self.data['boustrophedon_sequence'] = self.boustrophedon_sequence
+            # self.data['boustrophedon_sequence'] = self.boustrophedon_sequence
             map_name = rospy.get_param('map_name')
             filename = '/home/mal/catkin_ws/src/topology_finder/data/' + map_name +'.json'
             with open(filename, 'w') as outfile:
