@@ -45,8 +45,10 @@ class Map_To_Graph:
         self.sensor_range = []
         self.sensor_shape = []
         self.sensor_reliability = []
+        self.min_distance = 0
 
         # Read sensor's specs
+        self.min_distance = rospy.get_param('min_distance')
         self.sensor_names = rospy.get_param('sensor_names')
         self.sensor_number = rospy.get_param('number_of_sensors')
         for name in self.sensor_names:
@@ -224,13 +226,17 @@ class Map_To_Graph:
         nodes = []
         # Sampling step is half the sensor's range
         min_range = min(self.sensor_range)
+        # step = int(min_range /(self.resolution * 2))
         step = int(min_range /(self.resolution * 2))
-        safety_offset = self.min_distance / self.resolution
+
+        if step < self.min_distance:
+            loginfo("Error. Uniform sampling step size too small!")
+            return
 
         for x in range(0, self.ogm_width, step):
             for y in range(0, self.ogm_height, step):
                 # Node should be close to obstacle, but not too close to avoid collision
-                if self.brush[x][y] > safety_offset and self.brush[x][y] <= 2 * step:
+                if self.brush[x][y] > step and self.brush[x][y] <= 2 * step:
                     nodes.append((x,y))
 
         self.print_markers(nodes, [1., 0., 0.], self.node_publisher)
