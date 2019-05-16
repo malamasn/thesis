@@ -146,7 +146,8 @@ class Map_To_Graph:
 #
         # Find nodes for wall following coverage
         if self.wall_follow_nodes == [] or self.wall_follow_sequence == []:
-            self.find_all_wall_nodes(False)
+        # self.find_all_wall_nodes(True)
+            self.find_half_wall_nodes(True)
 
         self.visualise_node_sequence(self.wall_follow_sequence)
 
@@ -226,7 +227,6 @@ class Map_To_Graph:
         nodes = []
         # Sampling step is half the sensor's range
         min_range = min(self.sensor_range)
-        # step = int(min_range /(self.resolution * 2))
         step = int(min_range /(self.resolution * 2))
 
         if step < self.min_distance:
@@ -236,7 +236,7 @@ class Map_To_Graph:
         for x in range(0, self.ogm_width, step):
             for y in range(0, self.ogm_height, step):
                 # Node should be close to obstacle, but not too close to avoid collision
-                if self.brush[x][y] > step and self.brush[x][y] <= 2 * step:
+                if self.brush[x][y] > step and self.brush[x][y] <= 2*step:
                     nodes.append((x,y))
 
         self.print_markers(nodes, [1., 0., 0.], self.node_publisher)
@@ -309,6 +309,120 @@ class Map_To_Graph:
 
         return
 
+    # Find nodes for wall following coverage and eliminate unnecessary (NN) onces
+    def find_half_wall_nodes(self, save_result):
+        rospy.loginfo("Finding wall follow nodes...")
+        self.wall_follow_nodes = []
+        self.wall_follow_sequence = []
+
+        # Uniform sampling on map
+        nodes = []
+        # Sampling step is half the sensor's range
+        min_range = min(self.sensor_range)
+        min_range_res = min_range / (self.resolution * 2)
+        # max_range = max(self.sensor_range)
+        # max_range_res = max_range / (self.resolution * 2)
+
+        step = int(min_range /(self.resolution * 2))
+        # step = int(min_range /(self.resolution * 1))
+
+        if step < self.min_distance:
+            loginfo("Error. Uniform sampling step size too small!")
+            return
+
+        for x in range(0, self.ogm_width, step):
+            for y in range(0, self.ogm_height, step):
+                # Node should be close to obstacle, but not too close to avoid collision
+                if self.brush[x][y] > min_range_res and self.brush[x][y] <= 2*min_range_res:
+                    nodes.append((x,y))
+
+        self.print_markers(nodes, [1., 0., 0.], self.node_publisher)
+        rospy.sleep(2)
+
+        # Find rooms of nodes
+        # Fill door holes with "wall"
+        filled_ogm = self.topology.doorClosure(self.door_nodes, self.ogm, self.brushfire_cffi)
+
+        for i in range(len(self.rooms)):
+            # Brushfire inside each room and gather brushed wall_follow_nodes
+            found_nodes = []
+            brush = self.brushfire_cffi.pointBrushfireCffi(self.rooms[i], filled_ogm)
+            for n in nodes:
+                if brush[n] > 0:
+                    found_nodes.append(n)
+            found_nodes.sort()  # Optimize path finding
+            print("Found {} nodes in room {}.".format(len(found_nodes), i))  # # DEBUG
+
+            nodes_length = len(found_nodes)
+            distances = cdist(np.array(found_nodes), np.array(found_nodes), 'euclidean')
+            print('Distances of nodes done.')    # DEBUG:
+
+            # Call hill climb algorithm
+            max_iterations = 150 * nodes_length
+            # node_route, cost, iter = self.routing.anneal(distances, max_iterations, 1.0, 0.95)
+            node_route, cost, iter = self.routing.step_hillclimb(distances, max_iterations, step)
+            print('Route of wall follow nodes found.')
+
+            found_nodes_with_yaw = []
+            k = 1   # DEBUG:
+            eliminate = True
+            full_found_nodes = found_nodes
+            found_nodes = []
+            for i in range(len(full_found_nodes)):
+                print('Closest obstacles process: {}/{}'.format(k, nodes_length))
+                # Find closest obstacle to get best yaw
+                x, y = full_found_nodes[node_route[i]]
+                if eliminate:
+                    if i == 0:
+                        pass
+                    elif i == len(full_found_nodes) - 1:
+                        pass
+                    else:
+                        x_prev, y_prev = full_found_nodes[node_route[i-1]]
+                        x_next, y_next = full_found_nodes[node_route[i+1]]
+                        if np.abs(x-x_prev) == step and np.abs(x-x_next) == step and y == y_prev and y == y_next \
+                                or np.abs(y-y_prev) == step and np.abs(y-y_next) == step and x == x_prev and x == x_next:
+                            eliminate = False
+                            continue
+                else:
+                    eliminate = True
+                found_nodes.append((x,y))
+                obstacles = self.brushfire_cffi.closestObstacleBrushfireCffi((x,y), self.ogm)
+                for point in obstacles:
+                    # Calculate yaw for each obstacle
+                    x_diff = point[0] - x
+                    y_diff = point[1] - y
+                    yaw = math.atan2(y_diff, x_diff)
+
+                    # Add dictionary to right room
+                    # # TODO: find best sensor directon on top of yaw
+                    dir = self.sensor_direction[0]
+                    temp_dict = {'position': (x,y), 'yaw': yaw - dir}
+                    found_nodes_with_yaw.append(temp_dict)
+                k += 1
+
+            # print(found_nodes_with_yaw)
+            self.wall_follow_nodes.append(found_nodes)
+            self.wall_follow_sequence.append(found_nodes_with_yaw)
+
+            # for i in range(len(found_nodes)):
+            #     node = found_nodes[node_route[i]]
+            #     self.print_markers([node], [0., 0., 1.], self.room_node_pub)
+            #     rospy.sleep(0.5)
+            # rospy.sleep(2)
+
+
+        if save_result:
+            # Save wall nodes to json
+            self.data['wall_follow_nodes'] = self.wall_follow_nodes
+            self.data['wall_follow_sequence'] = self.wall_follow_sequence
+            # self.data['boustrophedon_sequence'] = self.boustrophedon_sequence
+            map_name = rospy.get_param('map_name')
+            filename = '/home/mal/catkin_ws/src/topology_finder/data/' + map_name +'.json'
+            with open(filename, 'w') as outfile:
+                data_to_json = json.dump(self.data, outfile)
+
+        return
 
     def read_ogm(self, data):
         # OGM is a 2D array of size width x height
