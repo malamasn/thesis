@@ -30,7 +30,7 @@ class Coverage:
 
         # Read sensor's specs
         self.sensor_names = rospy.get_param('sensor_names')
-        self.sensor_number = rospy.get_param('number_of_sensors')
+        self.sensor_number = len(self.sensor_names)
         for name in self.sensor_names:
             self.sensor_direction.append(rospy.get_param(name + '/sensor_direction'))
             self.sensor_fov.append(rospy.get_param(name + '/fov'))

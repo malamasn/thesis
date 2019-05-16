@@ -1,24 +1,23 @@
 # RFID antenna specs
-number_of_sensors: 2
 sensor_names:
   - 'rfid1'
   - 'rfid2'
 rfid1:
   # sensor_name: 'rfid_antenna'
-  sensor_direction: 90
+  sensor_direction: 0
   fov: 60
   range: 1
   shape: 'circular'
   reliability: 1
 rfid2:
   # sensor_name: 'rfid_antenna'
-  sensor_direction: -90
+  sensor_direction: -180
   fov: 60
   range: 1
   shape: 'circular'
   reliability: 1
 
 
-min_distance: 0.5
+min_distance: 0.2
 navigation_pattern: 'wall_follow'
 # navigation_pattern: 'boustrophedon'

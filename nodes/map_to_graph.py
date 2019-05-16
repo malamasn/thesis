@@ -50,7 +50,7 @@ class Map_To_Graph:
         # Read sensor's specs
         self.min_distance = rospy.get_param('min_distance')
         self.sensor_names = rospy.get_param('sensor_names')
-        self.sensor_number = rospy.get_param('number_of_sensors')
+        self.sensor_number = len(self.sensor_names)
         for name in self.sensor_names:
             self.sensor_direction.append(rospy.get_param(name + '/sensor_direction'))
             self.sensor_fov.append(rospy.get_param(name + '/fov'))
