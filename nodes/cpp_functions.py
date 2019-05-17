@@ -11,8 +11,8 @@ ffi.cdef("static void closestObstacleBrushfire(int ** brushfire, int width, int 
 ffi.cdef("static void pointToGvdBrushfire(int ** brushfire, int width, int height);")
 ffi.cdef("static void pointToPointBrushfire(int ** brushfire, int width, int height, int iterations);")
 ffi.cdef("static void pointBrushfire(int ** brushfire, int width, int height);")
-ffi.cdef("static void rectangularCoverage(int ** brushfire, int width, int height, int xi, int yi, float th_deg, int cover_length, float fov, float direction);")
-ffi.cdef("static void circularCoverage(int ** brushfire, int width, int height, int xi, int yi, float th_deg, int cover_length, float fov, float direction);")
+ffi.cdef("static void rectangularBrushfireCoverage(int ** brushfire, int width, int height, int xi, int yi, float th_deg, int cover_length, float fov, float direction);")
+ffi.cdef("static void circularBrushfireCoverage(int ** brushfire, int width, int height, int xi, int yi, float th_deg, int cover_length, float fov, float direction);")
 
 ffi.set_source("_cpp_functions",
     """
@@ -390,7 +390,7 @@ ffi.set_source("_cpp_functions",
             iters_made++;
         }
     }
-    static void rectangularCoverage(int ** brushfire, int width, int height, int xi, int yi, float th_deg, int cover_length, float fov, float direction)
+    static void rectangularBrushfireCoverage(int ** brushfire, int width, int height, int xi, int yi, float th_deg, int cover_length, float fov, float direction)
     {
         int i = 0;
         int j = 0;
@@ -444,7 +444,7 @@ ffi.set_source("_cpp_functions",
             iters_made++;
         }
     }
-    static void circularCoverage(int ** brushfire, int width, int height, int xi, int yi, float th_deg, int cover_length, float fov, float direction)
+    static void circularBrushfireCoverage(int ** brushfire, int width, int height, int xi, int yi, float th_deg, int cover_length, float fov, float direction)
     {
         int i = 0;
         int j = 0;

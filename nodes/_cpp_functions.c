@@ -864,7 +864,7 @@ static void (*_cffi_call_python_org)(struct _cffi_externpy_s *, char *);
             iters_made++;
         }
     }
-    static void rectangularCoverage(int ** brushfire, int width, int height, int xi, int yi, float th_deg, int cover_length, float fov, float direction)
+    static void rectangularBrushfireCoverage(int ** brushfire, int width, int height, int xi, int yi, float th_deg, int cover_length, float fov, float direction)
     {
         int i = 0;
         int j = 0;
@@ -918,7 +918,7 @@ static void (*_cffi_call_python_org)(struct _cffi_externpy_s *, char *);
             iters_made++;
         }
     }
-    static void circularCoverage(int ** brushfire, int width, int height, int xi, int yi, float th_deg, int cover_length, float fov, float direction)
+    static void circularBrushfireCoverage(int ** brushfire, int width, int height, int xi, int yi, float th_deg, int cover_length, float fov, float direction)
     {
         int i = 0;
         int j = 0;
@@ -1010,13 +1010,13 @@ static void *_cffi_types[] = {
 /* 29 */ _CFFI_OP(_CFFI_OP_PRIMITIVE, 0), // void
 };
 
-static void _cffi_d_circularCoverage(int * * x0, int x1, int x2, int x3, int x4, float x5, int x6, float x7, float x8)
+static void _cffi_d_circularBrushfireCoverage(int * * x0, int x1, int x2, int x3, int x4, float x5, int x6, float x7, float x8)
 {
-  circularCoverage(x0, x1, x2, x3, x4, x5, x6, x7, x8);
+  circularBrushfireCoverage(x0, x1, x2, x3, x4, x5, x6, x7, x8);
 }
 #ifndef PYPY_VERSION
 static PyObject *
-_cffi_f_circularCoverage(PyObject *self, PyObject *args)
+_cffi_f_circularBrushfireCoverage(PyObject *self, PyObject *args)
 {
   int * * x0;
   int x1;
@@ -1038,7 +1038,7 @@ _cffi_f_circularCoverage(PyObject *self, PyObject *args)
   PyObject *arg7;
   PyObject *arg8;
 
-  if (!PyArg_UnpackTuple(args, "circularCoverage", 9, 9, &arg0, &arg1, &arg2, &arg3, &arg4, &arg5, &arg6, &arg7, &arg8))
+  if (!PyArg_UnpackTuple(args, "circularBrushfireCoverage", 9, 9, &arg0, &arg1, &arg2, &arg3, &arg4, &arg5, &arg6, &arg7, &arg8))
     return NULL;
 
   datasize = _cffi_prepare_pointer_call_argument(
@@ -1086,7 +1086,7 @@ _cffi_f_circularCoverage(PyObject *self, PyObject *args)
 
   Py_BEGIN_ALLOW_THREADS
   _cffi_restore_errno();
-  { circularCoverage(x0, x1, x2, x3, x4, x5, x6, x7, x8); }
+  { circularBrushfireCoverage(x0, x1, x2, x3, x4, x5, x6, x7, x8); }
   _cffi_save_errno();
   Py_END_ALLOW_THREADS
 
@@ -1095,7 +1095,7 @@ _cffi_f_circularCoverage(PyObject *self, PyObject *args)
   return Py_None;
 }
 #else
-#  define _cffi_f_circularCoverage _cffi_d_circularCoverage
+#  define _cffi_f_circularBrushfireCoverage _cffi_d_circularBrushfireCoverage
 #endif
 
 static void _cffi_d_closestObstacleBrushfire(int * * x0, int x1, int x2)
@@ -1494,13 +1494,13 @@ _cffi_f_pointToPointBrushfire(PyObject *self, PyObject *args)
 #  define _cffi_f_pointToPointBrushfire _cffi_d_pointToPointBrushfire
 #endif
 
-static void _cffi_d_rectangularCoverage(int * * x0, int x1, int x2, int x3, int x4, float x5, int x6, float x7, float x8)
+static void _cffi_d_rectangularBrushfireCoverage(int * * x0, int x1, int x2, int x3, int x4, float x5, int x6, float x7, float x8)
 {
-  rectangularCoverage(x0, x1, x2, x3, x4, x5, x6, x7, x8);
+  rectangularBrushfireCoverage(x0, x1, x2, x3, x4, x5, x6, x7, x8);
 }
 #ifndef PYPY_VERSION
 static PyObject *
-_cffi_f_rectangularCoverage(PyObject *self, PyObject *args)
+_cffi_f_rectangularBrushfireCoverage(PyObject *self, PyObject *args)
 {
   int * * x0;
   int x1;
@@ -1522,7 +1522,7 @@ _cffi_f_rectangularCoverage(PyObject *self, PyObject *args)
   PyObject *arg7;
   PyObject *arg8;
 
-  if (!PyArg_UnpackTuple(args, "rectangularCoverage", 9, 9, &arg0, &arg1, &arg2, &arg3, &arg4, &arg5, &arg6, &arg7, &arg8))
+  if (!PyArg_UnpackTuple(args, "rectangularBrushfireCoverage", 9, 9, &arg0, &arg1, &arg2, &arg3, &arg4, &arg5, &arg6, &arg7, &arg8))
     return NULL;
 
   datasize = _cffi_prepare_pointer_call_argument(
@@ -1570,7 +1570,7 @@ _cffi_f_rectangularCoverage(PyObject *self, PyObject *args)
 
   Py_BEGIN_ALLOW_THREADS
   _cffi_restore_errno();
-  { rectangularCoverage(x0, x1, x2, x3, x4, x5, x6, x7, x8); }
+  { rectangularBrushfireCoverage(x0, x1, x2, x3, x4, x5, x6, x7, x8); }
   _cffi_save_errno();
   Py_END_ALLOW_THREADS
 
@@ -1579,11 +1579,11 @@ _cffi_f_rectangularCoverage(PyObject *self, PyObject *args)
   return Py_None;
 }
 #else
-#  define _cffi_f_rectangularCoverage _cffi_d_rectangularCoverage
+#  define _cffi_f_rectangularBrushfireCoverage _cffi_d_rectangularBrushfireCoverage
 #endif
 
 static const struct _cffi_global_s _cffi_globals[] = {
-  { "circularCoverage", (void *)_cffi_f_circularCoverage, _CFFI_OP(_CFFI_OP_CPYTHON_BLTN_V, 17), (void *)_cffi_d_circularCoverage },
+  { "circularBrushfireCoverage", (void *)_cffi_f_circularBrushfireCoverage, _CFFI_OP(_CFFI_OP_CPYTHON_BLTN_V, 17), (void *)_cffi_d_circularBrushfireCoverage },
   { "closestObstacleBrushfire", (void *)_cffi_f_closestObstacleBrushfire, _CFFI_OP(_CFFI_OP_CPYTHON_BLTN_V, 6), (void *)_cffi_d_closestObstacleBrushfire },
   { "gvdNeighborBrushfire", (void *)_cffi_f_gvdNeighborBrushfire, _CFFI_OP(_CFFI_OP_CPYTHON_BLTN_V, 6), (void *)_cffi_d_gvdNeighborBrushfire },
   { "gvdNeighborSplitBrushfire", (void *)_cffi_f_gvdNeighborSplitBrushfire, _CFFI_OP(_CFFI_OP_CPYTHON_BLTN_V, 0), (void *)_cffi_d_gvdNeighborSplitBrushfire },
@@ -1591,7 +1591,7 @@ static const struct _cffi_global_s _cffi_globals[] = {
   { "pointBrushfire", (void *)_cffi_f_pointBrushfire, _CFFI_OP(_CFFI_OP_CPYTHON_BLTN_V, 6), (void *)_cffi_d_pointBrushfire },
   { "pointToGvdBrushfire", (void *)_cffi_f_pointToGvdBrushfire, _CFFI_OP(_CFFI_OP_CPYTHON_BLTN_V, 6), (void *)_cffi_d_pointToGvdBrushfire },
   { "pointToPointBrushfire", (void *)_cffi_f_pointToPointBrushfire, _CFFI_OP(_CFFI_OP_CPYTHON_BLTN_V, 11), (void *)_cffi_d_pointToPointBrushfire },
-  { "rectangularCoverage", (void *)_cffi_f_rectangularCoverage, _CFFI_OP(_CFFI_OP_CPYTHON_BLTN_V, 17), (void *)_cffi_d_rectangularCoverage },
+  { "rectangularBrushfireCoverage", (void *)_cffi_f_rectangularBrushfireCoverage, _CFFI_OP(_CFFI_OP_CPYTHON_BLTN_V, 17), (void *)_cffi_d_rectangularBrushfireCoverage },
 };
 
 static const struct _cffi_type_context_s _cffi_type_context = {
