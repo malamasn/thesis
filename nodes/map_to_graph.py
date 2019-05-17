@@ -165,6 +165,7 @@ class Map_To_Graph:
                 rgb[1] = min(2*i,len(nodes))/len(nodes)
                 rgb[2] = min(3*i,len(nodes))/len(nodes)
                 self.print_markers([node['position']],rgb, self.room_node_pub, id)
+                rospy.sleep(0.01)
                 i += 1
                 id += 1
             print("Printed entire room")
