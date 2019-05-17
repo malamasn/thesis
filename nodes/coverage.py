@@ -124,7 +124,7 @@ class Coverage:
                     i = int(x + self.ogm_width * y)
                     self.coverage_ogm.data[i] = 100
             elif self.sensor_shape[s] == 'circular':
-                indexes = Cffi.circularBrushfireCoverageCffi((xx,yy), self.ogm, cover_length, self.sensor_fov[s], th_deg, self.sensor_direction[s])
+                indexes = Cffi.circularRayCastCoverageCffi((xx,yy), self.ogm, cover_length, self.sensor_fov[s], th_deg, self.sensor_direction[s])
                 for x,y in indexes:
                     self.coverage[x, y] = 100 * self.sensor_reliability[s]
                     i = int(x + self.ogm_width * y)

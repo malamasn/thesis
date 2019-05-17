@@ -973,6 +973,31 @@ static void (*_cffi_call_python_org)(struct _cffi_externpy_s *, char *);
             iters_made++;
         }
     }
+    static void circularRayCastCoverage(int ** brushfire, int width, int height, int xi, int yi, float th_deg, int cover_length, float fov, float direction)
+    {
+        int xx, yy;
+        double angle;
+        int step;
+        for(double theta = -fov/2; theta <= fov/2; theta += 1)
+            {
+            step = 2;
+            angle = (th_deg + direction + theta) *  M_PI / 180.0;
+
+            for(int iters = 1; iters <= cover_length; iters++)
+            {
+                xx = (int) round(xi + cos(angle) * iters);
+                yy = (int) round(yi + sin(angle) * iters);
+                if (brushfire[xx][yy] == 0){
+                    brushfire[xx][yy] = step;
+                    step++;
+                }
+                else if (brushfire[xx][yy] == 1 || brushfire[xx][yy] == -1)
+                {
+                    break;
+                }
+            }
+        }
+    }
     
 
 /************************************************************/
@@ -1096,6 +1121,94 @@ _cffi_f_circularBrushfireCoverage(PyObject *self, PyObject *args)
 }
 #else
 #  define _cffi_f_circularBrushfireCoverage _cffi_d_circularBrushfireCoverage
+#endif
+
+static void _cffi_d_circularRayCastCoverage(int * * x0, int x1, int x2, int x3, int x4, float x5, int x6, float x7, float x8)
+{
+  circularRayCastCoverage(x0, x1, x2, x3, x4, x5, x6, x7, x8);
+}
+#ifndef PYPY_VERSION
+static PyObject *
+_cffi_f_circularRayCastCoverage(PyObject *self, PyObject *args)
+{
+  int * * x0;
+  int x1;
+  int x2;
+  int x3;
+  int x4;
+  float x5;
+  int x6;
+  float x7;
+  float x8;
+  Py_ssize_t datasize;
+  PyObject *arg0;
+  PyObject *arg1;
+  PyObject *arg2;
+  PyObject *arg3;
+  PyObject *arg4;
+  PyObject *arg5;
+  PyObject *arg6;
+  PyObject *arg7;
+  PyObject *arg8;
+
+  if (!PyArg_UnpackTuple(args, "circularRayCastCoverage", 9, 9, &arg0, &arg1, &arg2, &arg3, &arg4, &arg5, &arg6, &arg7, &arg8))
+    return NULL;
+
+  datasize = _cffi_prepare_pointer_call_argument(
+      _cffi_type(1), arg0, (char **)&x0);
+  if (datasize != 0) {
+    if (datasize < 0)
+      return NULL;
+    x0 = (int * *)alloca((size_t)datasize);
+    memset((void *)x0, 0, (size_t)datasize);
+    if (_cffi_convert_array_from_object((char *)x0, _cffi_type(1), arg0) < 0)
+      return NULL;
+  }
+
+  x1 = _cffi_to_c_int(arg1, int);
+  if (x1 == (int)-1 && PyErr_Occurred())
+    return NULL;
+
+  x2 = _cffi_to_c_int(arg2, int);
+  if (x2 == (int)-1 && PyErr_Occurred())
+    return NULL;
+
+  x3 = _cffi_to_c_int(arg3, int);
+  if (x3 == (int)-1 && PyErr_Occurred())
+    return NULL;
+
+  x4 = _cffi_to_c_int(arg4, int);
+  if (x4 == (int)-1 && PyErr_Occurred())
+    return NULL;
+
+  x5 = (float)_cffi_to_c_float(arg5);
+  if (x5 == (float)-1 && PyErr_Occurred())
+    return NULL;
+
+  x6 = _cffi_to_c_int(arg6, int);
+  if (x6 == (int)-1 && PyErr_Occurred())
+    return NULL;
+
+  x7 = (float)_cffi_to_c_float(arg7);
+  if (x7 == (float)-1 && PyErr_Occurred())
+    return NULL;
+
+  x8 = (float)_cffi_to_c_float(arg8);
+  if (x8 == (float)-1 && PyErr_Occurred())
+    return NULL;
+
+  Py_BEGIN_ALLOW_THREADS
+  _cffi_restore_errno();
+  { circularRayCastCoverage(x0, x1, x2, x3, x4, x5, x6, x7, x8); }
+  _cffi_save_errno();
+  Py_END_ALLOW_THREADS
+
+  (void)self; /* unused */
+  Py_INCREF(Py_None);
+  return Py_None;
+}
+#else
+#  define _cffi_f_circularRayCastCoverage _cffi_d_circularRayCastCoverage
 #endif
 
 static void _cffi_d_closestObstacleBrushfire(int * * x0, int x1, int x2)
@@ -1584,6 +1697,7 @@ _cffi_f_rectangularBrushfireCoverage(PyObject *self, PyObject *args)
 
 static const struct _cffi_global_s _cffi_globals[] = {
   { "circularBrushfireCoverage", (void *)_cffi_f_circularBrushfireCoverage, _CFFI_OP(_CFFI_OP_CPYTHON_BLTN_V, 17), (void *)_cffi_d_circularBrushfireCoverage },
+  { "circularRayCastCoverage", (void *)_cffi_f_circularRayCastCoverage, _CFFI_OP(_CFFI_OP_CPYTHON_BLTN_V, 17), (void *)_cffi_d_circularRayCastCoverage },
   { "closestObstacleBrushfire", (void *)_cffi_f_closestObstacleBrushfire, _CFFI_OP(_CFFI_OP_CPYTHON_BLTN_V, 6), (void *)_cffi_d_closestObstacleBrushfire },
   { "gvdNeighborBrushfire", (void *)_cffi_f_gvdNeighborBrushfire, _CFFI_OP(_CFFI_OP_CPYTHON_BLTN_V, 6), (void *)_cffi_d_gvdNeighborBrushfire },
   { "gvdNeighborSplitBrushfire", (void *)_cffi_f_gvdNeighborSplitBrushfire, _CFFI_OP(_CFFI_OP_CPYTHON_BLTN_V, 0), (void *)_cffi_d_gvdNeighborSplitBrushfire },
@@ -1601,7 +1715,7 @@ static const struct _cffi_type_context_s _cffi_type_context = {
   NULL,  /* no struct_unions */
   NULL,  /* no enums */
   NULL,  /* no typenames */
-  9,  /* num_globals */
+  10,  /* num_globals */
   0,  /* num_struct_unions */
   0,  /* num_enums */
   0,  /* num_typenames */

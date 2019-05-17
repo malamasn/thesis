@@ -13,6 +13,7 @@ ffi.cdef("static void pointToPointBrushfire(int ** brushfire, int width, int hei
 ffi.cdef("static void pointBrushfire(int ** brushfire, int width, int height);")
 ffi.cdef("static void rectangularBrushfireCoverage(int ** brushfire, int width, int height, int xi, int yi, float th_deg, int cover_length, float fov, float direction);")
 ffi.cdef("static void circularBrushfireCoverage(int ** brushfire, int width, int height, int xi, int yi, float th_deg, int cover_length, float fov, float direction);")
+ffi.cdef("static void circularRayCastCoverage(int ** brushfire, int width, int height, int xi, int yi, float th_deg, int cover_length, float fov, float direction);")
 
 ffi.set_source("_cpp_functions",
     """
@@ -497,6 +498,31 @@ ffi.set_source("_cpp_functions",
             }
             step = step + 1;
             iters_made++;
+        }
+    }
+    static void circularRayCastCoverage(int ** brushfire, int width, int height, int xi, int yi, float th_deg, int cover_length, float fov, float direction)
+    {
+        int xx, yy;
+        double angle;
+        int step;
+        for(double theta = -fov/2; theta <= fov/2; theta += 1)
+            {
+            step = 2;
+            angle = (th_deg + direction + theta) *  M_PI / 180.0;
+
+            for(int iters = 1; iters <= cover_length; iters++)
+            {
+                xx = (int) round(xi + cos(angle) * iters);
+                yy = (int) round(yi + sin(angle) * iters);
+                if (brushfire[xx][yy] == 0){
+                    brushfire[xx][yy] = step;
+                    step++;
+                }
+                else if (brushfire[xx][yy] == 1 || brushfire[xx][yy] == -1)
+                {
+                    break;
+                }
+            }
         }
     }
     """)
