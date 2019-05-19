@@ -364,6 +364,10 @@ class Map_To_Graph:
             found_nodes.sort()  # Optimize path finding
             print("Found {} nodes in room {}.".format(len(found_nodes), i))  # # DEBUG
 
+            if len(found_nodes) == 0:
+                print("ERROR!")
+                continue
+
             nodes_length = len(found_nodes)
             distances = cdist(np.array(found_nodes), np.array(found_nodes), 'euclidean')
             print('Distances of nodes done.')    # DEBUG:
@@ -412,7 +416,28 @@ class Map_To_Graph:
                     i += 1
                 splited_node_route.append(segment)
             # visualize results
+
+            list_to_pop = []
+            for i in range(len(splited_node_route)):
+                segment = splited_node_route[i]
+                if len(segment) <= 2:
+                    point = segment[0]
+                    list_to_pop.append(i)
+                    temp_nodes = found_nodes[:]
+                    for n in segment:
+                        temp_nodes.remove(n)
+                    dist = cdist([point], np.array(temp_nodes), 'euclidean')
+                    min = temp_nodes[dist.argmin()]
+                    for s in splited_node_route:
+                        if min in s:
+                            s.extend(segment)
+                            break
+            list_to_pop.reverse()
+            for i in list_to_pop:
+                del splited_node_route[i]
+
             # id = self.visualise_node_segments(splited_node_route, id)
+
 
             # Calculate distances of segments
             start_node = []
@@ -424,10 +449,10 @@ class Map_To_Graph:
             np.fill_diagonal(segment_dist, 0)
 
             # Call hill climb algorithm on segments
-            max_iterations = 1000 * len(splited_node_route)
-            segment_route, cost, iter = self.routing.anneal(segment_dist, max_iterations, 1.0, 0.9)
+            max_iterations = 2000 * len(splited_node_route)
+            # segment_route, cost, iter = self.routing.anneal(segment_dist, max_iterations, 1.0, 0.9)
             # segment_route, cost, iter = self.routing.random_restart_hillclimb(segment_dist, max_iterations)
-            # segment_route, cost, iter = self.routing.step_hillclimb(segment_dist, max_iterations, step)
+            segment_route, cost, iter = self.routing.step_hillclimb(segment_dist, max_iterations, step)
 
             # Reverse segments if make route shorter
             final_route = []
