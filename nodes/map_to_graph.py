@@ -429,6 +429,7 @@ class Map_To_Graph:
             # segment_route, cost, iter = self.routing.random_restart_hillclimb(segment_dist, max_iterations)
             # segment_route, cost, iter = self.routing.step_hillclimb(segment_dist, max_iterations, step)
 
+            # Reverse segments if make route shorter
             final_route = []
             for i in range(len(segment_route)):
                 segment = splited_node_route[segment_route[i]]
@@ -442,10 +443,10 @@ class Map_To_Graph:
                         segment.reverse()
                         final_route.extend(segment)
 
+            # Calculate final route length
             distances = cdist(np.array(final_route), np.array(final_route), 'euclidean')
             cost = self.routing.route_length(distances, range(len(final_route)))
             print('Final route length', cost)
-
 
 
             found_nodes_with_yaw = []
