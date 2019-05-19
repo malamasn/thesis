@@ -367,11 +367,14 @@ class Map_To_Graph:
             nodes_length = len(found_nodes)
             distances = cdist(np.array(found_nodes), np.array(found_nodes), 'euclidean')
             print('Distances of nodes done.')    # DEBUG:
+            cost = self.routing.route_length(distances, range(nodes_length))
+            print('Sorted route length', cost)
 
             # Call hill climb algorithm
             max_iterations = 150 * nodes_length
             node_route, cost, iter = self.routing.step_hillclimb(distances, max_iterations, step)
             print('Route of wall follow nodes found.')
+            print('First HC route length', cost)
 
             # Split route into straight segments
             splited_node_route = []
@@ -409,14 +412,48 @@ class Map_To_Graph:
                     i += 1
                 splited_node_route.append(segment)
             # visualize results
-            id = self.visualise_node_segments(splited_node_route, id)
+            # id = self.visualise_node_segments(splited_node_route, id)
 
-            # found_nodes_with_yaw = []
+            # Calculate distances of segments
+            start_node = []
+            finish_node = []
+            for segment in splited_node_route:
+                start_node.append(segment[0])
+                finish_node.append(segment[-1])
+            segment_dist = cdist(np.array(start_node), np.array(finish_node), 'euclidean')
+            np.fill_diagonal(segment_dist, 0)
+
+            # Call hill climb algorithm on segments
+            max_iterations = 1000 * len(splited_node_route)
+            segment_route, cost, iter = self.routing.anneal(segment_dist, max_iterations, 1.0, 0.9)
+            # segment_route, cost, iter = self.routing.random_restart_hillclimb(segment_dist, max_iterations)
+            # segment_route, cost, iter = self.routing.step_hillclimb(segment_dist, max_iterations, step)
+
+            final_route = []
+            for i in range(len(segment_route)):
+                segment = splited_node_route[segment_route[i]]
+                if i == 0 or len(segment) == 1:
+                    final_route.extend(segment)
+                else:
+                    if np.linalg.norm(np.array(segment[0]) - np.array(final_route[-1])) < \
+                            np.linalg.norm(np.array(segment[-1]) - np.array(final_route[-1])):
+                        final_route.extend(segment)
+                    else:
+                        segment.reverse()
+                        final_route.extend(segment)
+
+            distances = cdist(np.array(final_route), np.array(final_route), 'euclidean')
+            cost = self.routing.route_length(distances, range(len(final_route)))
+            print('Final route length', cost)
+
+
+
+            found_nodes_with_yaw = []
             # k = 1   # DEBUG:
-            # for i in range(len(found_nodes)):
+            for i in range(len(final_route)):
                 # print('Closest obstacles process: {}/{}'.format(k, nodes_length))
                 # # Find closest obstacle to get best yaw
-                # x, y = found_nodes[node_route[i]]
+                x, y = final_route[i]
                 # obstacles = self.brushfire_cffi.closestObstacleBrushfireCffi((x,y), self.ogm)
                 # for point in obstacles:
                 #     # Calculate yaw for each obstacle
@@ -427,13 +464,13 @@ class Map_To_Graph:
                 #     # Add dictionary to right room
                 #     # # TODO: find best sensor directon on top of yaw
                 #     dir = self.sensor_direction[0]
-                #     temp_dict = {'position': (x,y), 'yaw': yaw - dir}
-                #     found_nodes_with_yaw.append(temp_dict)
+                temp_dict = {'position': (x,y), 'yaw': 0}
+                found_nodes_with_yaw.append(temp_dict)
                 # k += 1
 
             # print(found_nodes_with_yaw)
-            # self.wall_follow_nodes.append(found_nodes)
-            # self.wall_follow_sequence.append(found_nodes_with_yaw)
+            self.wall_follow_nodes.append(found_nodes)
+            self.wall_follow_sequence.append(found_nodes_with_yaw)
 
             # for i in range(len(found_nodes)):
             #     node = found_nodes[node_route[i]]
