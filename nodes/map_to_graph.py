@@ -261,10 +261,11 @@ class Map_To_Graph:
 
     # Find the yaw that maximizes the covered walls of a given node
     def find_best_yaw(self, node, next_node):
-        steps = int(math.ceil(max(self.sensor_range) * self.resolution))
+        steps = int(max(self.sensor_range) / self.resolution)
         # Find reachable obstacles
-        # obstacles = self.brushfire_cffi.inRangeObstacleBrushfireCffi(node, self.ogm, steps)
-        obstacles = self.brushfire_cffi.closestObstacleBrushfireCffi(node, self.ogm)
+        obstacles = self.brushfire_cffi.inRangeObstacleBrushfireCffi(node, self.ogm, steps)
+        if len(obstacles) == 0:
+            continue
         # Find obstacles' angle in map's frame and distance to node
         obstacle_angles = []
         # dist = []
@@ -275,7 +276,8 @@ class Map_To_Graph:
         yaw_between_nodes = math.degrees(math.atan2(next_node[1]-node[1], next_node[0]-node[0]))
 
         yaw = []
-        found = 0
+
+        # found = 0
         # Check all posible angles with a step
         # steps = int(min(self.sensor_fov) / 2)
         # while found < len(obstacles):
@@ -332,6 +334,7 @@ class Map_To_Graph:
         filled_ogm = self.topology.doorClosure(self.door_nodes, self.ogm, self.brushfire_cffi)
 
         for i in range(len(self.rooms)):
+        # for i in range(2):
             # Brushfire inside each room and gather brushed wall_follow_nodes
             found_nodes = []
             brush = self.brushfire_cffi.pointBrushfireCffi(self.rooms[i], filled_ogm)
@@ -354,11 +357,12 @@ class Map_To_Graph:
             found_nodes_with_yaw = []
             k = 1   # DEBUG:
 
-            for i in range(len(found_nodes)):
+            for n in range(len(found_nodes)):
+            # for n in range(2):
                 print('Closest obstacles process: {}/{}'.format(k, nodes_length))
                 # Find closest obstacle to get best yaw
-                x, y = found_nodes[node_route[i]]
-                x2, y2 = found_nodes[node_route[(i+1)%len(node_route)]]
+                x, y = found_nodes[node_route[n]]
+                x2, y2 = found_nodes[node_route[(n+1)%len(node_route)]]
                 obstacles = self.brushfire_cffi.closestObstacleBrushfireCffi((x,y), self.ogm)
                 yaw = self.find_best_yaw((x,y), (x2,y2))
                 for point in yaw:
