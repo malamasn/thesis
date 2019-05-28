@@ -146,8 +146,8 @@ class Map_To_Graph:
 #
         # Find nodes for wall following coverage
         # if self.wall_follow_nodes == [] or self.wall_follow_sequence == []:
-        # self.find_all_wall_nodes(True)
-        self.find_best_path_wall_nodes(False)
+        self.find_all_wall_nodes(True)
+        # self.find_best_path_wall_nodes(False)
         # self.find_half_wall_nodes(True)
         # self.find_half_no_double_wall_nodes(True)
 
@@ -259,6 +259,62 @@ class Map_To_Graph:
 
         return
 
+    # Find the yaw that maximizes the covered walls of a given node
+    def find_best_yaw(self, node, next_node):
+        steps = int(math.ceil(max(self.sensor_range) * self.resolution))
+        # Find reachable obstacles
+        # obstacles = self.brushfire_cffi.inRangeObstacleBrushfireCffi(node, self.ogm, steps)
+        obstacles = self.brushfire_cffi.closestObstacleBrushfireCffi(node, self.ogm)
+        # Find obstacles' angle in map's frame and distance to node
+        obstacle_angles = []
+        # dist = []
+        for point in obstacles:
+            obstacle_angles.append(math.degrees(math.atan2(point[1]-node[1], point[0]-node[0])))
+            # dist.append(np.linalg.norm(np.array(node) - np.array(point)))
+
+        yaw_between_nodes = math.degrees(math.atan2(next_node[1]-node[1], next_node[0]-node[0]))
+
+        yaw = []
+        found = 0
+        # Check all posible angles with a step
+        # steps = int(min(self.sensor_fov) / 2)
+        # while found < len(obstacles):
+        best = 0
+        best_eval = 360 * self.sensor_number
+        best_rotation = 360
+        for angle in range(-180, 180, 10):
+            sensor_angles = np.array(self.sensor_direction) + angle
+            # Flag to check if robot sees obstacle with this angle
+            sensor_sees_obstacle = False
+            # Evaluate candidate angle
+            eval = 0
+            for i in range(len(sensor_angles)):
+                a = min(np.abs(np.array(obstacle_angles - sensor_angles[i])))
+                if a < self.sensor_fov[i] / 2:
+                    sensor_sees_obstacle = True
+                    eval += a
+            # eval += self.sensor_number * np.abs(best - yaw_between_nodes)
+            next_rotation = np.abs(angle - yaw_between_nodes)
+            if sensor_sees_obstacle and eval <= best_eval:
+                if next_rotation < best_rotation:
+                    best, best_eval, best_rotation = angle, eval, next_rotation
+                    # print('best, best_eval, best_rotation, yaw_between_nodes', best, best_eval, best_rotation, yaw_between_nodes)
+
+        # # Check best
+        yaw.append(best)
+            # sensor_angles = np.array(self.sensor_direction) + best
+            # for sensor in sensor_angles:
+            #     for i in range(len(obstacles)):
+            #         if np.abs(sensor - obstacle_angles[i]) < self.sensor_fov[i] / 2:
+            #             # Discard checked obstacles
+            #             found += 1
+            #             del obstacles[i]
+            #             del obstacle_angles[i]
+            #             break
+
+
+        return yaw
+
     # Find nodes for wall following coverage
     def find_all_wall_nodes(self, save_result):
         rospy.loginfo("Finding wall follow nodes...")
@@ -284,7 +340,7 @@ class Map_To_Graph:
                     found_nodes.append(n)
             found_nodes.sort()  # Optimize path finding
             print("Found {} nodes in room {}.".format(len(found_nodes), i))  # # DEBUG
-
+            # found_nodes.reverse()
             nodes_length = len(found_nodes)
             distances = cdist(np.array(found_nodes), np.array(found_nodes), 'euclidean')
             print('Distances of nodes done.')    # DEBUG:
@@ -297,21 +353,26 @@ class Map_To_Graph:
 
             found_nodes_with_yaw = []
             k = 1   # DEBUG:
+
             for i in range(len(found_nodes)):
                 print('Closest obstacles process: {}/{}'.format(k, nodes_length))
                 # Find closest obstacle to get best yaw
                 x, y = found_nodes[node_route[i]]
+                x2, y2 = found_nodes[node_route[(i+1)%len(node_route)]]
                 obstacles = self.brushfire_cffi.closestObstacleBrushfireCffi((x,y), self.ogm)
-                for point in obstacles:
+                yaw = self.find_best_yaw((x,y), (x2,y2))
+                for point in yaw:
+                # for point in obstacles:
                     # Calculate yaw for each obstacle
-                    x_diff = point[0] - x
-                    y_diff = point[1] - y
-                    yaw = math.atan2(y_diff, x_diff)
-
-                    # Add dictionary to right room
-                    # # TODO: find best sensor directon on top of yaw
-                    dir = self.sensor_direction[0]
-                    temp_dict = {'position': (x,y), 'yaw': yaw - dir}
+                    # x_diff = point[0] - x
+                    # y_diff = point[1] - y
+                    # yaw = math.atan2(y_diff, x_diff)
+                    #
+                    # # Add dictionary to right room
+                    # # # TODO: find best sensor directon on top of yaw
+                    # dir = self.sensor_direction[0]
+                    # temp_dict = {'position': (x,y), 'yaw': yaw - dir}
+                    temp_dict = {'position': (x,y), 'yaw': point}
                     found_nodes_with_yaw.append(temp_dict)
                 k += 1
 
@@ -378,7 +439,7 @@ class Map_To_Graph:
             max_iterations = 150 * nodes_length
             node_route, cost, iter = self.routing.step_hillclimb(distances, max_iterations, step)
             print('Route of wall follow nodes found.')
-            print('First HC route length', cost)
+            print('First step HC route length', cost)
 
             # Split route into straight segments
             splited_node_route = []
@@ -417,6 +478,7 @@ class Map_To_Graph:
                 splited_node_route.append(segment)
             # visualize results
 
+            # Find segments with 1 or 2 points and insert them in closest segment
             list_to_pop = []
             for i in range(len(splited_node_route)):
                 segment = splited_node_route[i]
@@ -432,6 +494,7 @@ class Map_To_Graph:
                         if min in s:
                             s.extend(segment)
                             break
+            # Delete these small segments
             list_to_pop.reverse()
             for i in list_to_pop:
                 del splited_node_route[i]
