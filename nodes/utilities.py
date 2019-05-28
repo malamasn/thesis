@@ -176,6 +176,61 @@ class Cffi:
         return final_obstacles
 
     @staticmethod
+    def inRangeObstacleBrushfireCffi(start, ogm, steps):
+        brushfire = np.zeros(ogm.shape, np.dtype('int32'))
+        brushfire[ogm > 49] = 1
+        brushfire[ogm == -1] = -1
+        brushfire[start] = 2
+
+        x = [np.array(v, dtype='int32') for v in brushfire]
+        xi = ffi.new(("int* [%d]") % (len(x)))
+        for i in range(len(x)):
+            xi[i] = ffi.cast("int *", x[i].ctypes.data)
+
+        br_c = lib.inRangeObstacleBrushfire(xi, len(x), len(x[0]), steps)
+        brushfire[:] = np.array(x)
+        index = np.where(brushfire == -2)
+        obstacles = zip(index[0], index[1])
+
+        neighbor_obstacles = []
+        final_obstacles = []
+        visited = []
+        # Cluster obstacle points to neighborhoods
+        while len(visited) < len(obstacles):
+            for i in obstacles:
+                if i not in visited:
+                    first = i
+                    break
+
+            temp_neighbor_obstacles = [first]
+            current = [first]
+            next = []
+            while current != []:
+                for x,y in current:
+                    for i in range(-3,4):
+                        for j in range(-3,4):
+                            xx = x + i
+                            yy = y + j
+                            if (xx,yy) in obstacles and (xx,yy) not in visited:
+                                temp_neighbor_obstacles.append((xx,yy))
+                                visited.append((xx,yy))
+                                next.append((xx,yy))
+                current = next
+                next = []
+            neighbor_obstacles.append(temp_neighbor_obstacles)
+
+        # Calculate distances for each cluster and return closest to start
+        for i in range(len(neighbor_obstacles)):
+            obstacle_array = np.array(neighbor_obstacles[i])
+            start_array = np.array(start)
+            distances = np.linalg.norm(obstacle_array-start_array, axis=1)
+            index = distances.argmin()
+            min = neighbor_obstacles[i][index]
+            final_obstacles.append(min)
+
+        return final_obstacles
+
+    @staticmethod
     def pointToGvdBrushfireCffi(start, ogm, gvd):
         brushfire = np.zeros(ogm.shape, np.dtype('int32'))
         brushfire[ogm > 49] = 1

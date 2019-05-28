@@ -8,6 +8,7 @@ ffi.cdef("void obstacleBrushfire(int ** input, int ** output, int width, int hei
 ffi.cdef("void gvdNeighborBrushfire(int ** brushfire, int width, int height);")
 ffi.cdef("static void gvdNeighborSplitBrushfire(int ** brush_first, int ** brush_second, int width, int height);")
 ffi.cdef("static void closestObstacleBrushfire(int ** brushfire, int width, int height);")
+ffi.cdef("static void inRangeObstacleBrushfire(int ** brushfire, int width, int height, int range);")
 ffi.cdef("static void pointToGvdBrushfire(int ** brushfire, int width, int height);")
 ffi.cdef("static void pointToPointBrushfire(int ** brushfire, int width, int height, int iterations);")
 ffi.cdef("static void pointBrushfire(int ** brushfire, int width, int height);")
@@ -298,6 +299,59 @@ ffi.set_source("_cpp_functions",
                 }
             }
             step = step + 1;
+        }
+    }
+    static void inRangeObstacleBrushfire(int ** brushfire, int width, int height, int range)
+    {
+        int i = 0;
+        int j = 0;
+        int step = 2;
+        int iters = 0;
+        char changed = 1;
+        while(changed == 1 && iters < range)
+        {
+            changed = 0;
+            for(i = 1 ; i < width - 2 ; i = i + 1)
+            {
+                for(j = 1 ; j < height - 2 ; j = j + 1)
+                {
+                    if(brushfire[i][j] == 0) // Free space
+                    {
+                        if(
+                            brushfire[i - 1][j] == step ||
+                            brushfire[i + 1][j] == step ||
+                            brushfire[i - 1][j - 1] == step ||
+                            brushfire[i + 1][j - 1] == step ||
+                            brushfire[i - 1][j + 1] == step ||
+                            brushfire[i + 1][j + 1] == step ||
+                            brushfire[i][j - 1] == step ||
+                            brushfire[i][j + 1] == step
+                        )
+                        {
+                            brushfire[i][j] = step + 1;
+                            changed = 1;
+                        }
+                    }
+                    else if(brushfire[i][j] == 1)   // Obstacles
+                    {
+                        if(
+                            brushfire[i - 1][j] == step ||
+                            brushfire[i + 1][j] == step ||
+                            brushfire[i - 1][j - 1] == step ||
+                            brushfire[i + 1][j - 1] == step ||
+                            brushfire[i - 1][j + 1] == step ||
+                            brushfire[i + 1][j + 1] == step ||
+                            brushfire[i][j - 1] == step ||
+                            brushfire[i][j + 1] == step
+                        )
+                        {
+                            brushfire[i][j] = -2;
+                        }
+                    }
+                }
+            }
+            step = step + 1;
+            iters++;
         }
     }
     static void pointToGvdBrushfire(int ** brushfire, int width, int height)
