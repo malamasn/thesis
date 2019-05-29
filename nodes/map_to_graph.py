@@ -265,7 +265,7 @@ class Map_To_Graph:
         # Find reachable obstacles
         obstacles = self.brushfire_cffi.inRangeObstacleBrushfireCffi(node, self.ogm, steps)
         if len(obstacles) == 0:
-            continue
+            return []
         # Find obstacles' angle in map's frame and distance to node
         obstacle_angles = []
         # dist = []
@@ -274,45 +274,86 @@ class Map_To_Graph:
             # dist.append(np.linalg.norm(np.array(node) - np.array(point)))
 
         yaw_between_nodes = math.degrees(math.atan2(next_node[1]-node[1], next_node[0]-node[0]))
-
         yaw = []
 
-        # found = 0
-        # Check all posible angles with a step
-        # steps = int(min(self.sensor_fov) / 2)
-        # while found < len(obstacles):
-        best = 0
-        best_eval = 360 * self.sensor_number
-        best_rotation = 360
-        for angle in range(-180, 180, 10):
-            sensor_angles = np.array(self.sensor_direction) + angle
-            # Flag to check if robot sees obstacle with this angle
-            sensor_sees_obstacle = False
-            # Evaluate candidate angle
-            eval = 0
-            for i in range(len(sensor_angles)):
-                a = min(np.abs(np.array(obstacle_angles - sensor_angles[i])))
-                if a < self.sensor_fov[i] / 2:
-                    sensor_sees_obstacle = True
-                    eval += a
-            # eval += self.sensor_number * np.abs(best - yaw_between_nodes)
-            next_rotation = np.abs(angle - yaw_between_nodes)
-            if sensor_sees_obstacle and eval <= best_eval:
-                if next_rotation < best_rotation:
-                    best, best_eval, best_rotation = angle, eval, next_rotation
-                    # print('best, best_eval, best_rotation, yaw_between_nodes', best, best_eval, best_rotation, yaw_between_nodes)
+        if len(obstacles) == 1:
+            best = 0
+            best_eval = 360 * self.sensor_number
+            best_rotation = 360
+            for angle in range(-180, 180, 10):
+                sensor_angles = np.array(self.sensor_direction) + angle
+                # Flag to check if robot sees obstacle with this angle
+                sensor_sees_obstacle = False
+                # Evaluate candidate angle
+                eval = 0
+                for i in range(len(sensor_angles)):
+                    # if dist[i] > int(self.sensor_range[i] / self.resolution):
+                    #     continue
+                    a = min(np.abs(np.array(obstacle_angles - sensor_angles[i])))
+                    if a < self.sensor_fov[i] / 2:
+                        sensor_sees_obstacle = True
+                        eval += a
+                # Absolute yaw of current and next node in [0,180]
+                next_rotation = np.abs(angle - yaw_between_nodes)
+                while next_rotation >= 360:
+                    next_rotation -= 360
+                if next_rotation > 180:
+                    next_rotation = 360 - next_rotation
+                if sensor_sees_obstacle and eval <= best_eval:
+                    if next_rotation < best_rotation:
+                        best, best_eval, best_rotation = angle, eval, next_rotation
+            # print('angle, eval, next_rotation', angle, eval, next_rotation)
+            # print('best, best_eval, best_rotation, yaw_between_nodes', best, best_eval, best_rotation, yaw_between_nodes)
+            yaw.append(best)
+        else:
+            # In case of many obstacles more poses are needed for full coverage
+            found = 0
+            while found < len(obstacles):
+                best = 0
+                best_eval = 360 * self.sensor_number
+                best_rotation = 360
+                best_covered = 0
+                for angle in range(-180, 180, 10):
+                    sensor_angles = np.array(self.sensor_direction) + angle
+                    # Flag to check if robot sees obstacle with this angle
+                    sensor_sees_obstacle = False
+                    # Evaluate candidate angle
+                    eval = 0
+                    covered = 0
+                    for i in range(len(sensor_angles)):
+                        # if dist[i] > int(self.sensor_range[i] / self.resolution):
+                        #     continue
+                        a = min(np.abs(np.array(obstacle_angles - sensor_angles[i])))
+                        if a < self.sensor_fov[i] / 2:
+                            sensor_sees_obstacle = True
+                            covered += 1
+                            eval += a
+                    # Absolute yaw of current and next node in [0,180]
+                    next_rotation = np.abs(angle - yaw_between_nodes)
+                    while next_rotation >= 360:
+                        next_rotation -= 360
+                    if next_rotation > 180:
+                        next_rotation = 360 - next_rotation
+                    if sensor_sees_obstacle and covered >= best_covered:
+                        if covered > best_covered:
+                            best, best_eval, best_rotation, best_covered = angle, eval, next_rotation, covered
+                        elif eval < best_eval:
+                            best, best_eval, best_rotation, best_covered = angle, eval, next_rotation, covered
+                        elif next_rotation < best_rotation:
+                            best, best_eval, best_rotation, best_covered = angle, eval, next_rotation, covered
+                # print('best, best_eval, best_rotation, yaw_between_nodes, covered', best, best_eval, best_rotation, yaw_between_nodes, best_covered)
+                yaw.append(best)
 
-        # # Check best
-        yaw.append(best)
-            # sensor_angles = np.array(self.sensor_direction) + best
-            # for sensor in sensor_angles:
-            #     for i in range(len(obstacles)):
-            #         if np.abs(sensor - obstacle_angles[i]) < self.sensor_fov[i] / 2:
-            #             # Discard checked obstacles
-            #             found += 1
-            #             del obstacles[i]
-            #             del obstacle_angles[i]
-            #             break
+                found += best_covered
+                # Check best
+                sensor_angles = np.array(self.sensor_direction) + best
+                for j in range(self.sensor_number):
+                    for i in range(len(obstacle_angles)-1,-1,-1):
+                        if np.abs(sensor_angles[j] - obstacle_angles[i]) < self.sensor_fov[j] / 2:
+                            # Discard checked obstacles
+                            del obstacle_angles[i]
+                            break
+            # print('Break found in total {}/{}'.format(found, len(obstacles)))
 
 
         return yaw
@@ -334,7 +375,6 @@ class Map_To_Graph:
         filled_ogm = self.topology.doorClosure(self.door_nodes, self.ogm, self.brushfire_cffi)
 
         for i in range(len(self.rooms)):
-        # for i in range(2):
             # Brushfire inside each room and gather brushed wall_follow_nodes
             found_nodes = []
             brush = self.brushfire_cffi.pointBrushfireCffi(self.rooms[i], filled_ogm)
@@ -365,6 +405,8 @@ class Map_To_Graph:
                 x2, y2 = found_nodes[node_route[(n+1)%len(node_route)]]
                 obstacles = self.brushfire_cffi.closestObstacleBrushfireCffi((x,y), self.ogm)
                 yaw = self.find_best_yaw((x,y), (x2,y2))
+                if yaw == []:
+                    continue
                 for point in yaw:
                 # for point in obstacles:
                     # Calculate yaw for each obstacle
