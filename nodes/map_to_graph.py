@@ -349,7 +349,7 @@ class Map_To_Graph:
         # Find rooms of nodes
         # Fill door holes with "wall"
         filled_ogm = self.topology.doorClosure(self.door_nodes, self.ogm, self.brushfire_cffi)
-        # for i in range(2):
+
         for i in range(len(self.rooms)):
             # Brushfire inside each room and gather brushed wall_follow_nodes
             found_nodes = []
@@ -374,26 +374,15 @@ class Map_To_Graph:
             k = 1   # DEBUG:
 
             for n in range(len(found_nodes)):
-            # for n in range(2):
+
                 print('Closest obstacles process: {}/{}'.format(k, nodes_length))
                 # Find closest obstacle to get best yaw
                 x, y = found_nodes[node_route[n]]
                 x2, y2 = found_nodes[node_route[(n+1)%len(node_route)]]
-                obstacles = self.brushfire_cffi.closestObstacleBrushfireCffi((x,y), self.ogm)
                 yaw = self.find_best_yaw((x,y), (x2,y2))
                 if yaw == []:
                     continue
                 for point in yaw:
-                # for point in obstacles:
-                    # Calculate yaw for each obstacle
-                    # x_diff = point[0] - x
-                    # y_diff = point[1] - y
-                    # yaw = math.atan2(y_diff, x_diff)
-                    #
-                    # # Add dictionary to right room
-                    # # # TODO: find best sensor directon on top of yaw
-                    # dir = self.sensor_direction[0]
-                    # temp_dict = {'position': (x,y), 'yaw': yaw - dir}
                     temp_dict = {'position': (x,y), 'yaw': point}
                     found_nodes_with_yaw.append(temp_dict)
                 k += 1
@@ -560,24 +549,19 @@ class Map_To_Graph:
 
 
             found_nodes_with_yaw = []
-            # k = 1   # DEBUG:
-            for i in range(len(final_route)):
-                # print('Closest obstacles process: {}/{}'.format(k, nodes_length))
-                # # Find closest obstacle to get best yaw
-                x, y = final_route[i]
-                # obstacles = self.brushfire_cffi.closestObstacleBrushfireCffi((x,y), self.ogm)
-                # for point in obstacles:
-                #     # Calculate yaw for each obstacle
-                #     x_diff = point[0] - x
-                #     y_diff = point[1] - y
-                #     yaw = math.atan2(y_diff, x_diff)
-                #
-                #     # Add dictionary to right room
-                #     # # TODO: find best sensor directon on top of yaw
-                #     dir = self.sensor_direction[0]
-                temp_dict = {'position': (x,y), 'yaw': 0}
-                found_nodes_with_yaw.append(temp_dict)
-                # k += 1
+            k = 1   # DEBUG:
+            for n in range(len(final_nodes)):
+                print('Closest obstacles process: {}/{}'.format(k, nodes_length))
+                # Find closest obstacle to get best yaw
+                x, y = final_route[n]
+                x2, y2 = final_route[(n+1)%len(final_route)]
+                yaw = self.find_best_yaw((x,y), (x2,y2))
+                if yaw == []:
+                    continue
+                for point in yaw:
+                    temp_dict = {'position': (x,y), 'yaw': point}
+                    found_nodes_with_yaw.append(temp_dict)
+                k += 1
 
             # print(found_nodes_with_yaw)
             self.wall_follow_nodes.append(found_nodes)
@@ -645,19 +629,19 @@ class Map_To_Graph:
             eliminate = True
             full_found_nodes = found_nodes
             found_nodes = []
-            for i in range(len(full_found_nodes)):
+            for n in range(len(full_found_nodes)):
                 print('Closest obstacles process: {}/{}'.format(k, nodes_length))
                 # Find closest obstacle to get best yaw
-                x, y = full_found_nodes[node_route[i]]
+                x, y = full_found_nodes[node_route[n]]
                 # Eliminate unnecessary nodes
                 if eliminate:
-                    if i == 0:
+                    if n == 0:
                         pass
-                    elif i == len(full_found_nodes) - 1:
+                    elif n == len(full_found_nodes) - 1:
                         pass
                     else:
-                        x_prev, y_prev = full_found_nodes[node_route[i-1]]
-                        x_next, y_next = full_found_nodes[node_route[i+1]]
+                        x_prev, y_prev = full_found_nodes[node_route[n-1]]
+                        x_next, y_next = full_found_nodes[node_route[n+1]]
                         if np.abs(x-x_prev) == step and np.abs(x-x_next) == step and y == y_prev and y == y_next \
                                 or np.abs(y-y_prev) == step and np.abs(y-y_next) == step and x == x_prev and x == x_next:
                             eliminate = False
@@ -678,7 +662,6 @@ class Map_To_Graph:
                     temp_dict = {'position': (x,y), 'yaw': yaw - dir}
                     found_nodes_with_yaw.append(temp_dict)
                 k += 1
-
             # print(found_nodes_with_yaw)
             self.wall_follow_nodes.append(found_nodes)
             self.wall_follow_sequence.append(found_nodes_with_yaw)
