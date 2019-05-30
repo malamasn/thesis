@@ -261,20 +261,20 @@ class Map_To_Graph:
 
     # Find the yaw that maximizes the covered walls of a given node
     def find_best_yaw(self, node, next_node):
+        yaw_between_nodes = math.degrees(math.atan2(next_node[1]-node[1], next_node[0]-node[0]))
+        yaw = []
+
         steps = int(max(self.sensor_range) / self.resolution)
         # Find reachable obstacles
         obstacles = self.brushfire_cffi.inRangeObstacleBrushfireCffi(node, self.ogm, steps)
         if len(obstacles) == 0:
-            return []
-        # Find obstacles' angle in map's frame and distance to node
+            return yaw
+        # Find obstacles-node angle in map's frame and distance between them
         obstacle_angles = []
-        # dist = []
+        dist = []
         for point in obstacles:
             obstacle_angles.append(math.degrees(math.atan2(point[1]-node[1], point[0]-node[0])))
-            # dist.append(np.linalg.norm(np.array(node) - np.array(point)))
-
-        yaw_between_nodes = math.degrees(math.atan2(next_node[1]-node[1], next_node[0]-node[0]))
-        yaw = []
+            dist.append(np.linalg.norm(np.array(node) - np.array(point)))
 
         if len(obstacles) == 1:
             best = 0
@@ -287,10 +287,9 @@ class Map_To_Graph:
                 # Evaluate candidate angle
                 eval = 0
                 for i in range(len(sensor_angles)):
-                    # if dist[i] > int(self.sensor_range[i] / self.resolution):
-                    #     continue
                     a = min(np.abs(np.array(obstacle_angles - sensor_angles[i])))
-                    if a < self.sensor_fov[i] / 2:
+                    m = np.abs(np.array(obstacle_angles - sensor_angles[i])).argmin()
+                    if a < self.sensor_fov[i] / 2 and dist[m] <= self.sensor_range[i] / self.resolution:
                         sensor_sees_obstacle = True
                         eval += a
                 # Absolute yaw of current and next node in [0,180]
@@ -299,6 +298,7 @@ class Map_To_Graph:
                     next_rotation -= 360
                 if next_rotation > 180:
                     next_rotation = 360 - next_rotation
+                # Motor schema: 1. eval 2. rotation to next node
                 if sensor_sees_obstacle and eval <= best_eval:
                     if next_rotation < best_rotation:
                         best, best_eval, best_rotation = angle, eval, next_rotation
@@ -313,6 +313,8 @@ class Map_To_Graph:
                 best_eval = 360 * self.sensor_number
                 best_rotation = 360
                 best_covered = 0
+                if obstacle_angles == []:
+                    break
                 for angle in range(-180, 180, 10):
                     sensor_angles = np.array(self.sensor_direction) + angle
                     # Flag to check if robot sees obstacle with this angle
@@ -321,10 +323,9 @@ class Map_To_Graph:
                     eval = 0
                     covered = 0
                     for i in range(len(sensor_angles)):
-                        # if dist[i] > int(self.sensor_range[i] / self.resolution):
-                        #     continue
                         a = min(np.abs(np.array(obstacle_angles - sensor_angles[i])))
-                        if a < self.sensor_fov[i] / 2:
+                        m = np.abs(np.array(obstacle_angles - sensor_angles[i])).argmin()
+                        if a < self.sensor_fov[i] / 2 and dist[m] <= self.sensor_range[i] / self.resolution:
                             sensor_sees_obstacle = True
                             covered += 1
                             eval += a
@@ -334,6 +335,7 @@ class Map_To_Graph:
                         next_rotation -= 360
                     if next_rotation > 180:
                         next_rotation = 360 - next_rotation
+                    # Motor schema: 1. covered obstacles 2. eval 3. rotation to next node
                     if sensor_sees_obstacle and covered >= best_covered:
                         if covered > best_covered:
                             best, best_eval, best_rotation, best_covered = angle, eval, next_rotation, covered
@@ -342,20 +344,22 @@ class Map_To_Graph:
                         elif next_rotation < best_rotation:
                             best, best_eval, best_rotation, best_covered = angle, eval, next_rotation, covered
                 # print('best, best_eval, best_rotation, yaw_between_nodes, covered', best, best_eval, best_rotation, yaw_between_nodes, best_covered)
+                if not best_covered:
+                    break
                 yaw.append(best)
 
-                found += best_covered
-                # Check best
                 sensor_angles = np.array(self.sensor_direction) + best
+                found += best_covered
+                # Discard checked obstacles
                 for j in range(self.sensor_number):
                     for i in range(len(obstacle_angles)-1,-1,-1):
-                        if np.abs(sensor_angles[j] - obstacle_angles[i]) < self.sensor_fov[j] / 2:
-                            # Discard checked obstacles
+                        if np.abs(sensor_angles[j] - obstacle_angles[i]) < self.sensor_fov[j] / 2 \
+                                and dist[i] <= self.sensor_range[j] / self.resolution:
                             del obstacle_angles[i]
                             break
             # print('Break found in total {}/{}'.format(found, len(obstacles)))
 
-
+        # print(yaw)
         return yaw
 
     # Find nodes for wall following coverage
@@ -373,7 +377,7 @@ class Map_To_Graph:
         # Find rooms of nodes
         # Fill door holes with "wall"
         filled_ogm = self.topology.doorClosure(self.door_nodes, self.ogm, self.brushfire_cffi)
-
+        # for i in range(2):
         for i in range(len(self.rooms)):
             # Brushfire inside each room and gather brushed wall_follow_nodes
             found_nodes = []
