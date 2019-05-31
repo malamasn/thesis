@@ -88,7 +88,7 @@ class Routing:
                 # see if this move is better than the current
                 next_score = self.route_length(distances, next)
                 iter += 1
-                if next_score > best_score:
+                if next_score < best_score:
                     best = next
                     best_score = next_score
                     move_made = True
@@ -113,7 +113,7 @@ class Routing:
 
             sequence, score, iters_made = self.hillclimb(distances, iters_left)
             iter += iters_made
-            if score > best_score or best is None:
+            if score < best_score or best is None:
                 best_score = score
                 best = sequence
 
@@ -166,7 +166,6 @@ class Routing:
         iter = 0
 
         for i in range(length-2):
-            print('At point {}/{}'.format(i, length))  # # DEBUG: 
             if iter >= epochs:
                 break
             min = distances[best[i]][best[i+1]]
