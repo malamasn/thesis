@@ -146,8 +146,8 @@ class Map_To_Graph:
 #
         # Find nodes for wall following coverage
         # if self.wall_follow_nodes == [] or self.wall_follow_sequence == []:
-        self.find_all_wall_nodes(True)
-        # self.find_best_path_wall_nodes(False)
+        # self.find_all_wall_nodes(True)
+        self.find_best_path_wall_nodes(True)
         # self.find_half_wall_nodes(True)
         # self.find_half_no_double_wall_nodes(True)
 
@@ -306,7 +306,7 @@ class Map_To_Graph:
                     next_rotation -= 360
                 if next_rotation > 180:
                     next_rotation = 360 - next_rotation
-                # Motor schema: 1. covered obstacles 2. eval 3. rotation to next node
+                # Subsumption: 1. covered obstacles 2. eval 3. rotation to next node
                 if sensor_sees_obstacle and covered >= best_covered:
                     if covered > best_covered:
                         best, best_eval, best_rotation, best_covered = angle, eval, next_rotation, covered
@@ -452,6 +452,22 @@ class Map_To_Graph:
             print('Route of wall follow nodes found.')
             print('First step HC route length', cost)
 
+            # # Reorder according to step HC results
+            # first_route = []
+            # for n in node_route:
+            #     first_route.append(found_nodes[n])
+
+            # # Do another hillclimb to optimize path
+            # max_iterations = 2000 * len(first_route)
+            # distances = cdist(np.array(first_route), np.array(first_route), 'euclidean')
+            # # node_route, cost, iter = self.routing.hillclimb(distances, max_iterations)
+            # node_route, cost, iter = self.routing.random_restart_hillclimb(distances, max_iterations)
+            # print('Second HC route length', cost, 'made iters', iter, 'from', max_iterations)
+
+            # final_route = []
+            # for n in node_route:
+            #     final_route.append(first_route[node_route[n]])
+
             # Split route into straight segments
             splited_node_route = []
             i = 0
@@ -525,8 +541,9 @@ class Map_To_Graph:
             # Call hill climb algorithm on segments
             max_iterations = 2000 * len(splited_node_route)
             # segment_route, cost, iter = self.routing.anneal(segment_dist, max_iterations, 1.0, 0.9)
-            # segment_route, cost, iter = self.routing.random_restart_hillclimb(segment_dist, max_iterations)
-            segment_route, cost, iter = self.routing.step_hillclimb(segment_dist, max_iterations, step)
+            segment_route, cost, iter = self.routing.random_restart_hillclimb(segment_dist, max_iterations)
+            # segment_route, cost, iter = self.routing.step_hillclimb(segment_dist, max_iterations, step)
+
 
             # Reverse segments if make route shorter
             final_route = []
@@ -542,16 +559,29 @@ class Map_To_Graph:
                         segment.reverse()
                         final_route.extend(segment)
 
-            # Calculate final route length
+            # # Calculate final route length
             distances = cdist(np.array(final_route), np.array(final_route), 'euclidean')
             cost = self.routing.route_length(distances, range(len(final_route)))
-            print('Final route length', cost)
+            print('Segment HC route length', cost)
+
+            # # Reorder according to step HC results
+            # first_route = final_route[:]
+            #
+            # # Do another hillclimb to optimize path
+            # max_iterations = 2000 * len(first_route)
+            # # node_route, cost, iter = self.routing.hillclimb(distances, max_iterations)
+            # node_route, cost, iter = self.routing.random_restart_hillclimb(distances, max_iterations)
+            # print('Final HC route length', cost, 'made iters', iter, 'from', max_iterations)
+            #
+            # final_route = []
+            # for n in node_route:
+            #     final_route.append(first_route[node_route[n]])
 
 
             found_nodes_with_yaw = []
             k = 1   # DEBUG:
-            for n in range(len(final_nodes)):
-                print('Closest obstacles process: {}/{}'.format(k, nodes_length))
+            for n in range(len(final_route)):
+                # print('Closest obstacles process: {}/{}'.format(k, nodes_length))
                 # Find closest obstacle to get best yaw
                 x, y = final_route[n]
                 x2, y2 = final_route[(n+1)%len(final_route)]
