@@ -15,6 +15,7 @@ from brushfire import Brushfire
 from utilities import Cffi
 from topology import Topology
 from routing import Routing
+from coverage import Coverage
 from PIL import Image
 
 
@@ -24,6 +25,7 @@ class Map_To_Graph:
         self.brushfire_cffi = Cffi()
         self.topology = Topology()
         self.routing = Routing()
+        self.coverage = Coverage()
 
         # Origin is the translation between the (0,0) of the robot pose and the
         # (0,0) of the map
@@ -147,10 +149,12 @@ class Map_To_Graph:
         # Find nodes for wall following coverage
         # if self.wall_follow_nodes == [] or self.wall_follow_sequence == []:
         # self.find_all_wall_nodes(True)
-        self.find_best_path_wall_nodes(True)
+        self.find_best_path_wall_nodes(False)
         # self.find_half_wall_nodes(True)
         # self.find_half_no_double_wall_nodes(True)
 
+        # self.visualise_node_sequence(self.wall_follow_sequence)
+        self.a_priori_coverage(True)
         self.visualise_node_sequence(self.wall_follow_sequence)
 
         return
@@ -616,7 +620,32 @@ class Map_To_Graph:
 
         return
 
+    # Do an a priori coverage with found order of nodes to eliminate the not needed
+    def a_priori_coverage(self, save_result):
+        new_wall_follow = []
+        for room in self.wall_follow_sequence:
+            # i = 0
+            new_room = []
+            for node in room:
+                x, y = node['position']
+                yaw = node['yaw']
+                updated = self.coverage.checkAndUpdateCover(self.brush, [x,y,yaw], 0.95)
+                if updated:
+                    new_room.append(node)
 
+            self.coverage.coverage_pub.publish(self.coverage.coverage_ogm)
+            new_wall_follow.append(new_room)
+        self.wall_follow_sequence = new_wall_follow
+        if save_result:
+            # Save wall nodes to json
+            self.data['wall_follow_nodes'] = self.wall_follow_nodes
+            self.data['wall_follow_sequence'] = self.wall_follow_sequence
+            map_name = rospy.get_param('map_name')
+            filename = '/home/mal/catkin_ws/src/topology_finder/data/' + map_name +'.json'
+            with open(filename, 'w') as outfile:
+                data_to_json = json.dump(self.data, outfile)
+
+        return
 
     # Find nodes for wall following coverage and eliminate unnecessary (NN) onces
     def find_half_wall_nodes(self, save_result):
@@ -859,6 +888,17 @@ class Map_To_Graph:
         for x in range(0, data.info.width):
             for y in range(0, data.info.height):
                 self.ogm[x][y] = data.data[x + data.info.width * y]
+
+        # Initilize coverage OGM with same size width x height
+        self.coverage.coverage = np.zeros((self.ogm_width, self.ogm_height))
+        self.coverage.coverage_ogm.info = data.info
+        self.coverage.coverage_ogm.data = np.zeros(self.ogm_width * self.ogm_height)
+        self.coverage.ogm = self.ogm
+        self.coverage.ogm_raw = self.ogm_raw
+        self.coverage.ogm_width = self.ogm_width
+        self.coverage.ogm_height = self.ogm_height
+        self.coverage.ogm_header = self.ogm_header
+
         self.ogm_compute = False
         return
 
