@@ -455,122 +455,126 @@ class Map_To_Graph:
             node_route, cost, iter = self.routing.step_hillclimb(distances, max_iterations, step)
             print('Route of wall follow nodes found.')
             print('First step HC route length', cost)
-
-            # # Reorder according to step HC results
-            # first_route = []
-            # for n in node_route:
-            #     first_route.append(found_nodes[n])
-
-            # # Do another hillclimb to optimize path
-            # max_iterations = 2000 * len(first_route)
-            # distances = cdist(np.array(first_route), np.array(first_route), 'euclidean')
-            # # node_route, cost, iter = self.routing.hillclimb(distances, max_iterations)
-            # node_route, cost, iter = self.routing.random_restart_hillclimb(distances, max_iterations)
-            # print('Second HC route length', cost, 'made iters', iter, 'from', max_iterations)
-
+            #
             # final_route = []
             # for n in node_route:
-            #     final_route.append(first_route[node_route[n]])
+            #     final_route.append(found_nodes[n])
 
-            # Split route into straight segments
-            splited_node_route = []
-            i = 0
-            threshold = int(len(node_route) / 10)
-            while i < len(node_route):
-                segment = []
-                segment.append(found_nodes[node_route[i]])
-                i += 1
-                flag = False
-                while i < len(node_route) and not flag:
-                    x, y = found_nodes[node_route[i]]
-                    x_prev, y_prev = found_nodes[node_route[i-1]]
-                    # If node is far from previous, a new segment is needed
-                    if np.linalg.norm(np.array((x,y))- np.array((x_prev,y_prev))) > 3 * step:
-                        break
-                    segment.append((x,y))
-                    # Check in nearest neighbors if euclidean distance is far smaller than distance inside the route
-                    if (x+step, y) in found_nodes:
-                        num_in_seq = found_nodes.index((x+step,y))
-                        if node_route[num_in_seq] > i+threshold:
-                            flag = True
-                    if (x-step, y) in found_nodes:
-                        num_in_seq = found_nodes.index((x-step,y))
-                        if node_route[num_in_seq] > i+threshold:
-                            flag = True
-                    if (x, y+step) in found_nodes:
-                        num_in_seq = found_nodes.index((x,y+step))
-                        if node_route[num_in_seq] > i+threshold:
-                            flag = True
-                    if (x, y-step) in found_nodes:
-                        num_in_seq = found_nodes.index((x,y-step))
-                        if node_route[num_in_seq] > i+threshold:
-                            flag = True
-                    i += 1
-                splited_node_route.append(segment)
-            # visualize results
+            # Reorder according to step HC results
+            first_route = []
+            for n in node_route:
+                first_route.append(found_nodes[n])
 
-            # Find segments with 1 or 2 points and insert them in closest segment
-            list_to_pop = []
-            for i in range(len(splited_node_route)):
-                segment = splited_node_route[i]
-                if len(segment) <= 2:
-                    point = segment[0]
-                    list_to_pop.append(i)
-                    temp_nodes = found_nodes[:]
-                    for n in segment:
-                        temp_nodes.remove(n)
-                    dist = cdist([point], np.array(temp_nodes), 'euclidean')
-                    min = temp_nodes[dist.argmin()]
-                    for s in splited_node_route:
-                        if min in s:
-                            s.extend(segment)
-                            break
-            # Delete these small segments
-            list_to_pop.reverse()
-            for i in list_to_pop:
-                del splited_node_route[i]
+            # Do another hillclimb to optimize path
+            max_iterations = 1000 * len(first_route)
+            distances = cdist(np.array(first_route), np.array(first_route), 'euclidean')
+            # node_route, cost, iter = self.routing.hillclimb(distances, max_iterations)
+            node_route, cost, iter = self.routing.random_restart_hillclimb(distances, max_iterations)
+            print('Second HC route length', cost, 'made iters', iter, 'from', max_iterations)
 
-            # id = self.visualise_node_segments(splited_node_route, id)
-
-
-            # Calculate distances of segments
-            start_node = []
-            finish_node = []
-            for segment in splited_node_route:
-                start_node.append(segment[0])
-                finish_node.append(segment[-1])
-            segment_dist = cdist(np.array(start_node), np.array(finish_node), 'euclidean')
-            np.fill_diagonal(segment_dist, 0)
-
-            # Call hill climb algorithm on segments
-            max_iterations = 2000 * len(splited_node_route)
-            # segment_route, cost, iter = self.routing.anneal(segment_dist, max_iterations, 1.0, 0.9)
-            segment_route, cost, iter = self.routing.random_restart_hillclimb(segment_dist, max_iterations)
-            # segment_route, cost, iter = self.routing.step_hillclimb(segment_dist, max_iterations, step)
-
-
-            # Reverse segments if make route shorter
             final_route = []
-            for i in range(len(segment_route)):
-                segment = splited_node_route[segment_route[i]]
-                if i == 0 or len(segment) == 1:
-                    final_route.extend(segment)
-                else:
-                    if np.linalg.norm(np.array(segment[0]) - np.array(final_route[-1])) < \
-                            np.linalg.norm(np.array(segment[-1]) - np.array(final_route[-1])):
-                        final_route.extend(segment)
-                    else:
-                        segment.reverse()
-                        final_route.extend(segment)
+            for n in node_route:
+                final_route.append(first_route[n])
 
+            # # Split route into straight segments
+            # splited_node_route = []
+            # i = 0
+            # threshold = int(len(node_route) / 10)
+            # while i < len(node_route):
+            #     segment = []
+            #     segment.append(found_nodes[node_route[i]])
+            #     i += 1
+            #     flag = False
+            #     while i < len(node_route) and not flag:
+            #         x, y = found_nodes[node_route[i]]
+            #         x_prev, y_prev = found_nodes[node_route[i-1]]
+            #         # If node is far from previous, a new segment is needed
+            #         if np.linalg.norm(np.array((x,y))- np.array((x_prev,y_prev))) > 3 * step:
+            #             break
+            #         segment.append((x,y))
+            #         # Check in nearest neighbors if euclidean distance is far smaller than distance inside the route
+            #         if (x+step, y) in found_nodes:
+            #             num_in_seq = found_nodes.index((x+step,y))
+            #             if node_route[num_in_seq] > i+threshold:
+            #                 flag = True
+            #         if (x-step, y) in found_nodes:
+            #             num_in_seq = found_nodes.index((x-step,y))
+            #             if node_route[num_in_seq] > i+threshold:
+            #                 flag = True
+            #         if (x, y+step) in found_nodes:
+            #             num_in_seq = found_nodes.index((x,y+step))
+            #             if node_route[num_in_seq] > i+threshold:
+            #                 flag = True
+            #         if (x, y-step) in found_nodes:
+            #             num_in_seq = found_nodes.index((x,y-step))
+            #             if node_route[num_in_seq] > i+threshold:
+            #                 flag = True
+            #         i += 1
+            #     splited_node_route.append(segment)
+            # # visualize results
+            #
+            # # Find segments with 1 or 2 points and insert them in closest segment
+            # list_to_pop = []
+            # for i in range(len(splited_node_route)):
+            #     segment = splited_node_route[i]
+            #     if len(segment) <= 2:
+            #         point = segment[0]
+            #         list_to_pop.append(i)
+            #         temp_nodes = found_nodes[:]
+            #         for n in segment:
+            #             temp_nodes.remove(n)
+            #         dist = cdist([point], np.array(temp_nodes), 'euclidean')
+            #         min = temp_nodes[dist.argmin()]
+            #         for s in splited_node_route:
+            #             if min in s:
+            #                 s.extend(segment)
+            #                 break
+            # # Delete these small segments
+            # list_to_pop.reverse()
+            # for i in list_to_pop:
+            #     del splited_node_route[i]
+            #
+            # # id = self.visualise_node_segments(splited_node_route, id)
+            #
+            #
+            # # Calculate distances of segments
+            # start_node = []
+            # finish_node = []
+            # for segment in splited_node_route:
+            #     start_node.append(segment[0])
+            #     finish_node.append(segment[-1])
+            # segment_dist = cdist(np.array(start_node), np.array(finish_node), 'euclidean')
+            # np.fill_diagonal(segment_dist, 0)
+            #
+            # # Call hill climb algorithm on segments
+            # max_iterations = 2000 * len(splited_node_route)
+            # # # segment_route, cost, iter = self.routing.anneal(segment_dist, max_iterations, 1.0, 0.9)
+            # segment_route, cost, iter = self.routing.random_restart_hillclimb(segment_dist, max_iterations)
+            # # segment_route, cost, iter = self.routing.step_hillclimb(segment_dist, max_iterations, step)
+            # # segment_route = range(len(splited_node_route))
+            #
+            # # Reverse segments if make route shorter
+            # final_route = []
+            # for i in range(len(segment_route)):
+            #     segment = splited_node_route[segment_route[i]]
+            #     if i == 0 or len(segment) == 1:
+            #         final_route.extend(segment)
+            #     else:
+            #         if np.linalg.norm(np.array(segment[0]) - np.array(final_route[-1])) < \
+            #                 np.linalg.norm(np.array(segment[-1]) - np.array(final_route[-1])):
+            #             final_route.extend(segment)
+            #         else:
+            #             segment.reverse()
+            #             final_route.extend(segment)
+            #
             # # Calculate final route length
-            distances = cdist(np.array(final_route), np.array(final_route), 'euclidean')
-            cost = self.routing.route_length(distances, range(len(final_route)))
-            print('Segment HC route length', cost)
+            # distances = cdist(np.array(final_route), np.array(final_route), 'euclidean')
+            # cost = self.routing.route_length(distances, range(len(final_route)))
+            # print('Segment HC route length', cost)
 
             # # Reorder according to step HC results
             # first_route = final_route[:]
-            #
+
             # # Do another hillclimb to optimize path
             # max_iterations = 2000 * len(first_route)
             # # node_route, cost, iter = self.routing.hillclimb(distances, max_iterations)
@@ -579,7 +583,7 @@ class Map_To_Graph:
             #
             # final_route = []
             # for n in node_route:
-            #     final_route.append(first_route[node_route[n]])
+            #     final_route.append(first_route[n])
 
 
             found_nodes_with_yaw = []
