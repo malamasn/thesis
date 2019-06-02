@@ -4,16 +4,16 @@ sensor_names:
   - 'rfid2'
 rfid1:
   # sensor_name: 'rfid_antenna'
-  sensor_direction: 0
+  sensor_direction: 90
   fov: 60
   range: 1
   shape: 'circular'
   reliability: 1
 rfid2:
   # sensor_name: 'rfid_antenna'
-  sensor_direction: -180
+  sensor_direction: -90
   fov: 60
-  range: 1
+  range: 1.2
   shape: 'circular'
   reliability: 1
 
