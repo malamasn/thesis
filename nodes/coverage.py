@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import division
 import rospy, tf, time, math
 import numpy as np
 from scipy.spatial import distance
@@ -10,8 +11,6 @@ from utilities import Cffi
 
 class Coverage:
     def __init__(self):
-        rospy.init_node('coverage')
-        rospy.loginfo('Coverage node initialized.')
 
         # Origin is the translation between the (0,0) of the robot pose and the
         # (0,0) of the map
@@ -84,6 +83,9 @@ class Coverage:
 
 
     def server_start(self):
+        rospy.init_node('coverage')
+        rospy.loginfo('Coverage node initialized.')
+
         # Read ogm
         rospy.Subscriber(self.ogm_topic, OccupancyGrid, self.read_ogm)
         while self.ogm_compute:
@@ -104,16 +106,20 @@ class Coverage:
         return
 
 
-    def updateCover(self):
-        self.readPose = True
-        self.readRobotPose()
-        while self.readPose:
-            pass
-
-        xx = int(self.robot_pose['x'])
-        yy = int(self.robot_pose['y'])
-        th = self.robot_pose['th']
-        th_deg = math.degrees(th)
+    def updateCover(self, pose = None, publish = True):
+        if pose == None:
+            self.readPose = True
+            self.readRobotPose()
+            while self.readPose:
+                pass
+            xx = int(self.robot_pose['x'])
+            yy = int(self.robot_pose['y'])
+            th = self.robot_pose['th']
+            th_deg = math.degrees(th)
+        else:
+            xx = pose[0]
+            yy = pose[1]
+            th_deg = pose[2]
 
         for s in range(self.sensor_number):
             cover_length = int(self.sensor_range[s] / self.resolution)
@@ -136,6 +142,49 @@ class Coverage:
         self.coverage_pub.publish(self.coverage_ogm)
         rospy.loginfo("Update coverage ogm!")
         return
+
+    def checkAndUpdateCover(self, brushfire, pose = None, threshold = 1.):
+        if pose == None:
+            self.readPose = True
+            self.readRobotPose()
+            while self.readPose:
+                pass
+            xx = int(self.robot_pose['x'])
+            yy = int(self.robot_pose['y'])
+            th = self.robot_pose['th']
+            th_deg = math.degrees(th)
+        else:
+            xx = pose[0]
+            yy = pose[1]
+            th_deg = pose[2]
+        indexes = []
+        for s in range(self.sensor_number):
+            cover_length = int(self.sensor_range[s] / self.resolution)
+            if self.sensor_shape[s] == 'rectangular':
+                temp =  Cffi.rectangularBrushfireCoverageCffi((xx,yy), self.ogm, cover_length, self.sensor_fov[s], th_deg, self.sensor_direction[s])
+                indexes.extend(temp)
+            elif self.sensor_shape[s] == 'circular':
+                temp = Cffi.circularRayCastCoverageCffi((xx,yy), self.ogm, cover_length, self.sensor_fov[s], th_deg, self.sensor_direction[s])
+                indexes.extend(temp)
+            else:
+                rospy.loginfo("Error!Sensor's shape not found!")
+                return
+        covered_area = self.coverage[zip(*indexes)]
+        brushfire_area = brushfire[zip(*indexes)]
+        near_obstacles_len = len(np.where(brushfire_area == 2)[0])
+        if near_obstacles_len == 0:
+            return False
+        old_obstacles_len = len(np.where((brushfire_area == 2) & (covered_area > 80))[0])
+        th = old_obstacles_len / near_obstacles_len
+        if th < threshold:
+            for x,y in indexes:
+                self.coverage[x, y] = 100 * self.sensor_reliability[0]
+                i = int(x + self.ogm_width * y)
+                self.coverage_ogm.data[i] = 100
+            updated = True
+        else:
+            updated = False
+        return updated
 
 
     # Cb to read robot's pose
