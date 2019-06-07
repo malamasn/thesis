@@ -134,7 +134,7 @@ class Map_To_Graph:
 
         # Find sequence of rooms if not already exists
         if self.room_sequence == []:
-            self.find_room_sequence(False)
+            self.find_room_sequence(True)
 
         # time.sleep(1)
         # # i = 0
@@ -250,7 +250,7 @@ class Map_To_Graph:
         # Correspond door route to room route
         for door in door_route:
             for i in range(len(self.room_doors)):
-                if self.door_nodes[door] in self.room_doors[i] and i not in route:
+                if self.door_nodes[door] in self.room_doors[i] and i not in self.room_sequence:
                     self.room_sequence.append(i)
 
         if save_result:
