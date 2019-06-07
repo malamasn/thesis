@@ -186,6 +186,22 @@ class Coverage:
             updated = False
         return updated
 
+    def checkNearbyObstacleCover(self, pose):
+        xx = pose[0]
+        yy = pose[1]
+        th_deg = pose[2]
+        return_obstacles = True
+        indexes = []
+        for s in range(self.sensor_number):
+            cover_length = int(self.sensor_range[s] / self.resolution)
+            if self.sensor_shape[s] == 'circular':
+                temp = Cffi.circularRayCastCoverageCffi((xx,yy), self.ogm, cover_length, self.sensor_fov[s], th_deg, self.sensor_direction[s], return_obstacles)
+                indexes.extend(temp)
+            else:
+                rospy.loginfo("Error!Sensor's shape not found!")
+                return
+        indexes = list(set(indexes))
+        return indexes
 
     # Cb to read robot's pose
     def odom_callback(self, msg):
