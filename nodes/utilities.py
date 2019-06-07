@@ -176,7 +176,7 @@ class Cffi:
         return final_obstacles
 
     @staticmethod
-    def inRangeObstacleBrushfireCffi(start, ogm, steps):
+    def inRangeObstacleBrushfireCffi(start, ogm, steps, return_all = False):
         brushfire = np.zeros(ogm.shape, np.dtype('int32'))
         brushfire[ogm > 49] = 1
         brushfire[ogm == -1] = -1
@@ -191,6 +191,9 @@ class Cffi:
         brushfire[:] = np.array(x)
         index = np.where(brushfire == -2)
         obstacles = zip(index[0], index[1])
+
+        if return_all:
+            return obstacles
 
         neighbor_obstacles = []
         final_obstacles = []

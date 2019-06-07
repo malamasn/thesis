@@ -270,7 +270,7 @@ class Map_To_Graph:
 
         steps = int(max(self.sensor_range) / self.resolution)
         # Find reachable obstacles
-        obstacles = self.brushfire_cffi.inRangeObstacleBrushfireCffi(node, self.ogm, steps)
+        obstacles = self.brushfire_cffi.inRangeObstacleBrushfireCffi(node, self.ogm, steps, True)
         if len(obstacles) == 0:
             return yaw
         # Find obstacles-node angle in map's frame and distance between them
