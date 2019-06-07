@@ -87,34 +87,7 @@ class Map_To_Topology:
         # Give every node an ID number
         # self.nodes_with_ids[0] has the (x,y) and self.nodes_with_ids[1] the ID
 
-        # Create list of nodes as Point() values
-        rospy.loginfo("Start collecting markers")
-        points = []
-        for point in self.nodes:
-            p = Point()
-            p.x = point[0] * self.resolution + self.origin['x']
-            p.y = point[1] * self.resolution + self.origin['y']
-            p.z = 0
-            points.append(p)
-        rospy.loginfo("Markers ready!")
-
-        # Create Marker for nodes
-        marker = Marker()
-        marker.header.frame_id = "/map"
-        marker.type = marker.POINTS
-        marker.action = marker.ADD
-
-        marker.points = points
-        marker.pose.orientation.w = 1.0
-
-        marker.scale.x = 0.2
-        marker.scale.y = 0.2
-        marker.scale.z = 0.2
-        marker.color.a = 1.0
-        marker.color.r = 1.0
-
-        rospy.loginfo("Printing nodes!")
-        self.node_publisher.publish(marker)
+        self.print_markers(self.nodes, [1.,0.,0.], self.node_publisher)
 
 
 
@@ -128,33 +101,8 @@ class Map_To_Topology:
                 candidateDoors.append((x,y))
 
         # Send candidateDoors to rviz as Point() values with different color
-        points = []
-        for point in candidateDoors:
-            p = Point()
-            p.x = point[0] * self.resolution + self.origin['x']
-            p.y = point[1] * self.resolution + self.origin['y']
-            p.z = 0
-            points.append(p)
-        rospy.loginfo("Markers ready!")
+        self.print_markers(candidateDoors, [0.,1.,0.], self.candidate_door_node_pub)
 
-        # Create Marker for nodes
-        marker = Marker()
-        marker.header.frame_id = "/map"
-        marker.type = marker.POINTS
-        marker.action = marker.ADD
-
-        marker.points = points
-        marker.pose.orientation.w = 1.0
-
-        marker.scale.x = 0.2
-        marker.scale.y = 0.2
-        marker.scale.z = 0.2
-        marker.color.a = 1.0
-        marker.color.g = 1.0
-
-        rospy.loginfo("Printing candidate door nodes!")
-
-        self.candidate_door_node_pub.publish(marker)
         # print(candidateDoors)
         # for i in candidateDoors:
         #     print(self.brush[i])
@@ -164,33 +112,7 @@ class Map_To_Topology:
         # door_nodes = candidateDoors
         # print(door_nodes)
         # Send door nodes to rviz with different color
-        points = []
-        for point in door_nodes:
-            p = Point()
-            p.x = point[0] * self.resolution + self.origin['x']
-            p.y = point[1] * self.resolution + self.origin['y']
-            p.z = 0
-            points.append(p)
-        rospy.loginfo("Markers ready!")
-
-        # Create Marker for nodes
-        marker = Marker()
-        marker.header.frame_id = "/map"
-        marker.type = marker.POINTS
-        marker.action = marker.ADD
-
-        marker.points = points
-        marker.pose.orientation.w = 1.0
-
-        marker.scale.x = 0.2
-        marker.scale.y = 0.2
-        marker.scale.z = 0.2
-        marker.color.a = 1.0
-        marker.color.b = 1.0
-
-        rospy.loginfo("Printing door nodes!")
-        self.door_node_pub.publish(marker)
-
+        self.print_markers(door_nodes, [0.,0.,1.], self.door_node_pub)
 
         rooms, roomDoors, roomType = self.topology.findRooms(\
                 self.gvd, door_nodes, self.nodes, self.brush, \
@@ -209,41 +131,45 @@ class Map_To_Topology:
         # points = []
         i = 0
         for room in rooms:
-            # print('room', room)
-            points = []
-            for point in room:
-                p = Point()
-                p.x = point[0] * self.resolution + self.origin['x']
-                p.y = point[1] * self.resolution + self.origin['y']
-                p.z = 0
-                points.append(p)
-            rospy.loginfo("Markers ready!")
-            # print(p)
-            # Create Marker for nodes
-            marker = Marker()
-            marker.header.frame_id = "/map"
-            marker.type = marker.POINTS
-            marker.action = marker.ADD
-
-            marker.points = points
-            marker.pose.orientation.w = 1.0
-
-            marker.scale.x = 0.2
-            marker.scale.y = 0.2
-            marker.scale.z = 0.2
-            marker.color.a = 1.0
-            marker.color.b = 1.0
-            marker.color.r = 1.0
-
-            rospy.loginfo("Printing room nodes!")
-            self.room_node_pub.publish(marker)
+            self.print_markers(room, [1.,0.,1.], self.room_node_pub)
             print('room type: ', roomType[i])
             i += 1
             time.sleep(3)
         return
 
 
+    # Method to publish points to rviz
+    def print_markers(self, nodes, color, publisher, id = 0):
 
+        points = []
+        for point in nodes:
+            p = Point()
+            p.x = point[0] * self.resolution + self.origin['x']
+            p.y = point[1] * self.resolution + self.origin['y']
+            p.z = 0
+            points.append(p)
+
+        # Create Marker for nodes
+        marker = Marker()
+        marker.header.frame_id = "/map"
+        marker.id = id
+        marker.type = marker.POINTS
+        marker.action = marker.ADD
+
+        marker.points = points
+        marker.pose.orientation.w = 1.0
+
+        marker.scale.x = 0.2
+        marker.scale.y = 0.2
+        marker.scale.z = 0.2
+        marker.color.a = 1.0
+        marker.color.r = color[0]
+        marker.color.g = color[1]
+        marker.color.b = color[2]
+
+        # rospy.loginfo("Printing nodes!")
+        publisher.publish(marker)
+        return
 
     def read_ogm(self, data):
         # OGM is a 2D array of size width x height
