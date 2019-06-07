@@ -466,7 +466,7 @@ class Map_To_Graph:
                 first_route.append(found_nodes[n])
 
             # Do another hillclimb to optimize path
-            max_iterations = 1000 * len(first_route)
+            max_iterations = 2000 * len(first_route)
             distances = cdist(np.array(first_route), np.array(first_route), 'euclidean')
             # node_route, cost, iter = self.routing.hillclimb(distances, max_iterations)
             node_route, cost, iter = self.routing.random_restart_hillclimb(distances, max_iterations)
