@@ -1031,6 +1031,7 @@ static void (*_cffi_call_python_org)(struct _cffi_externpy_s *, char *);
         int xx, yy;
         double angle;
         int step;
+        cover_length += 2;
         for(double theta = -fov/2; theta <= fov/2; theta += 1)
             {
             step = 2;
@@ -1044,7 +1045,12 @@ static void (*_cffi_call_python_org)(struct _cffi_externpy_s *, char *);
                     brushfire[xx][yy] = step;
                     step++;
                 }
-                else if (brushfire[xx][yy] == 1 || brushfire[xx][yy] == -1)
+                else if (brushfire[xx][yy] == 1)
+                {
+                    brushfire[xx][yy] = -2;
+                    break;
+                }
+                else if (brushfire[xx][yy] < 0)
                 {
                     break;
                 }

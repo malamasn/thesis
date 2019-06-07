@@ -311,7 +311,7 @@ class Cffi:
         return indexes
 
     @staticmethod
-    def circularRayCastCoverageCffi(start, ogm, cover_range, fov, theta, sensor_direction):
+    def circularRayCastCoverageCffi(start, ogm, cover_range, fov, theta, sensor_direction, return_obstacles = False):
         brushfire = np.zeros(ogm.shape, np.dtype('int32'))
         brushfire[ogm > 49] = 1
         brushfire[ogm == -1] = -1
@@ -323,8 +323,11 @@ class Cffi:
             yi[i] = ffi.cast("int *", y[i].ctypes.data)
 
         br_c = lib.circularRayCastCoverage(yi, len(y), len(y[0]), start[0], start[1], \
-                theta, cover_range + 2, fov, sensor_direction)
+                theta, cover_range, fov, sensor_direction)
         brushfire[0:,0:] = np.array(y)
 
-        indexes = zip(*np.where(brushfire > 0))
+        if return_obstacles:
+            indexes = zip(*np.where(brushfire == -2))
+        else:
+            indexes = zip(*np.where(brushfire > 0))
         return indexes
