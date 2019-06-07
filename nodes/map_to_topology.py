@@ -119,13 +119,20 @@ class Map_To_Topology:
                 self.ogm, self.resolution, self.brushfire_cffi)
         # print('rooms',rooms,'roomDoors', roomDoors,'roomType', roomType)
 
+
+        # Keep as nodes only ones that correspond to a room
+        self.nodes = []
+        for room in rooms:
+            self.nodes.extend(room)
+        # self.print_markers(self.nodes, [1.,0.,0.], self.node_publisher)
+
         # Save data to json file
         data = {"nodes": self.nodes, "doors": door_nodes,
                 "rooms": rooms, "roomDoors": roomDoors, "roomType": roomType}
         map_name = rospy.get_param('map_name')
         filename = '/home/mal/catkin_ws/src/topology_finder/data/' + map_name +'.json'
         with open(filename, 'w') as outfile:
-                data_to_json = json.dump(data, outfile)
+            data_to_json = json.dump(data, outfile)
 
         # while not rospy.is_shutdown():
         # points = []
