@@ -286,7 +286,11 @@ class Map_To_Graph:
             best_covered_obstacles = []
             for angle in range(-180, 180, 10):
                 pose = [node[0], node[1], angle]
-                covered_obstacles = self.coverage.checkNearbyObstacleCover(pose)
+                all_covered_obstacles = self.coverage.checkNearbyObstacleCover(pose)
+                covered_obstacles = []
+                for ob in all_covered_obstacles:
+                    if ob in obstacles:
+                        covered_obstacles.append(ob)
                 if not len(covered_obstacles):
                     continue
 
@@ -307,9 +311,12 @@ class Map_To_Graph:
                     best_covered_obstacles = covered_obstacles
 
             found += best_found
+
             # Check if obstacle is coverable
             if best_evaluation:
                 yaw.append(best_yaw)
+            else:
+                break
 
             # Speed up process bypassing deletions if all obstacles are covered
             if found >= threshold * len(obstacles):
@@ -320,6 +327,7 @@ class Map_To_Graph:
                     if ob in obstacles:
                         obstacles.remove(ob)
 
+        yaw = list(set(yaw))
         return yaw
 
     # Find nodes for wall following coverage
@@ -450,7 +458,7 @@ class Map_To_Graph:
                 first_route.append(found_nodes[n])
 
             # Do another hillclimb to optimize path
-            max_iterations = 2000 * len(first_route)
+            max_iterations = 1000 * len(first_route)
             distances = cdist(np.array(first_route), np.array(first_route), 'euclidean')
             # node_route, cost, iter = self.routing.hillclimb(distances, max_iterations)
             node_route, cost, iter = self.routing.random_restart_hillclimb(distances, max_iterations)
