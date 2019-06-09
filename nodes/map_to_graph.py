@@ -233,19 +233,22 @@ class Map_To_Graph:
 
         # Calculate graph's distances between all nodes
         doors_length = len(self.door_nodes)
-        distances = np.zeros((doors_length, doors_length), dtype=np.float64)
-        for i in range(doors_length):
-            for j in range(i+1, doors_length):
-                _, _, _, dist = find_path(graph, i, j)
-                distances[i][j] = dist
-                distances[j][i] = distances[i][j]
+        if doors_length >= 2:
+            distances = np.zeros((doors_length, doors_length), dtype=np.float64)
+            for i in range(doors_length):
+                for j in range(i+1, doors_length):
+                    _, _, _, dist = find_path(graph, i, j)
+                    distances[i][j] = dist
+                    distances[j][i] = distances[i][j]
 
-        # Call hill climb algorithm
-        max_iterations = 500
-        # door_route, cost, iter = self.routing.hillclimb(distances, max_iterations)
-        # door_route, cost, iter = self.routing.random_restart_hillclimb(distances, max_iterations)
-        door_route, cost, iter = self.routing.anneal(distances, max_iterations, 1.0, 0.95)
-        # print(door_route, cost, iter)
+            # Call hill climb algorithm
+            max_iterations = 500
+            # door_route, cost, iter = self.routing.hillclimb(distances, max_iterations)
+            # door_route, cost, iter = self.routing.random_restart_hillclimb(distances, max_iterations)
+            door_route, cost, iter = self.routing.anneal(distances, max_iterations, 1.0, 0.95)
+            # print(door_route, cost, iter)
+        else:
+            door_route = [0]
 
         # Correspond door route to room route
         for door in door_route:
