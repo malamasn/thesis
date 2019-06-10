@@ -199,6 +199,11 @@ class Navigation:
                     rospy.sleep(0.1)
                 current_room_index = (current_room_index + 1) % len(self.room_sequence)
                 current_room = self.room_sequence[current_room_index]
+
+                near_obstacles = np.where(self.brush == 2)
+                near_obstacles_cover = self.coverage.coverage[near_obstacles]
+                covered_obstacles = len(np.where(near_obstacles_cover >= 80)[0])
+                rospy.loginfo("Estimated coverage percentage {} after room {}".format(covered_obstacles/len(near_obstacles_cover), i))
         #
         # elif self.navigation_pattern == 'boustrophedon':
         #     if self.boustrophedon_sequence == []:
