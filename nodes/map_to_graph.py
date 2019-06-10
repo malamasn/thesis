@@ -267,7 +267,7 @@ class Map_To_Graph:
         return
 
     # Find the yaw that maximizes the covered walls of a given node
-    def find_best_yaw(self, node, next_node):
+    def find_best_yaw(self, node, next_node, loop_threshold, obstacle_weight, rotation_weight):
         yaw_between_nodes = math.degrees(math.atan2(next_node[1]-node[1], next_node[0]-node[0]))
         yaw = []
 
@@ -280,8 +280,7 @@ class Map_To_Graph:
 
         # In case of many obstacles more poses are needed for full coverage
         found = 0
-        threshold = 0.6
-        while found < threshold * len(obstacles) or len(obstacles):
+        while found < loop_threshold * len(obstacles) or len(obstacles):
 
             best_evaluation = 0
             best_yaw = 0
@@ -306,7 +305,7 @@ class Map_To_Graph:
 
                 # Evaluate candidate angle
                 # Use Motor Schema with covered area and rotation to next node as parameters
-                evaluation = 2 * len(covered_obstacles)/len(obstacles) + 1 * (180 - next_rotation)/180
+                evaluation = obstacle_weight * len(covered_obstacles)/len(obstacles) + rotation_weight * (180 - next_rotation)/180
                 if evaluation > best_evaluation:
                     best_evaluation = evaluation
                     best_yaw = angle
@@ -588,7 +587,7 @@ class Map_To_Graph:
                 # Find closest obstacle to get best yaw
                 x, y = final_route[n]
                 x2, y2 = final_route[(n+1)%len(final_route)]
-                yaw = self.find_best_yaw((x,y), (x2,y2))
+                yaw = self.find_best_yaw((x,y), (x2,y2), 0.6, 2, 1)
                 if yaw == []:
                     continue
                 for point in yaw:
