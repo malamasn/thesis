@@ -167,8 +167,11 @@ class Map_To_Graph:
         with open(filename, 'w') as outfile:
             data_to_json = json.dump(self.data, outfile)
 
-
-        self.visualise_node_sequence(self.wall_follow_sequence)
+        rospy.loginfo("Visualize cover first node sequence")
+        self.visualise_node_sequence(self.wall_follow_sequence_cover_first)
+        rospy.sleep(5)
+        rospy.loginfo("Visualize fast first node sequence")
+        self.visualise_node_sequence(self.wall_follow_sequence_fast_first)
 
         return
 
@@ -334,7 +337,7 @@ class Map_To_Graph:
                 break
 
             # Speed up process bypassing deletions if all obstacles are covered
-            if found >= threshold * len(obstacles):
+            if found >= loop_threshold * len(obstacles):
                 break
             else:
                 # Discard checked obstacles
@@ -598,7 +601,7 @@ class Map_To_Graph:
             found_nodes_with_yaw_fast_first = []
             k = 1   # DEBUG:
             for n in range(len(final_route)):
-                # print('Closest obstacles process: {}/{}'.format(k, nodes_length))
+                print('Closest obstacles process: {}/{}'.format(k, nodes_length))
                 # Find closest obstacle to get best yaw
                 x, y = final_route[n]
                 x2, y2 = final_route[(n+1)%len(final_route)]
