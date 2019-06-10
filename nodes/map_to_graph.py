@@ -601,7 +601,7 @@ class Map_To_Graph:
             found_nodes_with_yaw_fast_first = []
             k = 1   # DEBUG:
             for n in range(len(final_route)):
-                print('Closest obstacles process: {}/{}'.format(k, nodes_length))
+                # print('Closest obstacles process: {}/{}'.format(k, nodes_length))
                 # Find closest obstacle to get best yaw
                 x, y = final_route[n]
                 x2, y2 = final_route[(n+1)%len(final_route)]
@@ -612,7 +612,7 @@ class Map_To_Graph:
                         temp_dict = {'position': (x,y), 'yaw': point}
                         found_nodes_with_yaw_cover_first.append(temp_dict)
                 # Find fast_first poses
-                yaw = self.find_best_yaw((x,y), (x2,y2), 0.6, 1, 2)
+                yaw = self.find_best_yaw((x,y), (x2,y2), 0.6, 1, 4)
                 if yaw != []:
                     for point in yaw:
                         temp_dict = {'position': (x,y), 'yaw': point}
