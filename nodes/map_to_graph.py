@@ -154,7 +154,20 @@ class Map_To_Graph:
         # self.find_half_no_double_wall_nodes(True)
 
         # self.visualise_node_sequence(self.wall_follow_sequence)
-        self.a_priori_coverage(True)
+        self.wall_follow_sequence_cover_first = self.a_priori_coverage(self.wall_follow_sequence_cover_first)
+        self.wall_follow_sequence_fast_first = self.a_priori_coverage(self.wall_follow_sequence_fast_first)
+
+        # Save wall nodes to json
+        self.data['wall_follow_nodes'] = self.wall_follow_nodes
+        self.data['wall_follow_sequence_cover_first'] = self.wall_follow_sequence_cover_first
+        self.data['wall_follow_sequence_fast_first'] = self.wall_follow_sequence_fast_first
+
+        map_name = rospy.get_param('map_name')
+        filename = '/home/mal/catkin_ws/src/topology_finder/data/' + map_name +'.json'
+        with open(filename, 'w') as outfile:
+            data_to_json = json.dump(self.data, outfile)
+
+
         self.visualise_node_sequence(self.wall_follow_sequence)
 
         return
@@ -412,7 +425,8 @@ class Map_To_Graph:
     def find_best_path_wall_nodes(self, save_result):
         rospy.loginfo("Finding wall follow nodes...")
         self.wall_follow_nodes = []
-        self.wall_follow_sequence = []
+        self.wall_follow_sequence_cover_first = []
+        self.wall_follow_sequence_fast_first = []
 
         # Uniform sampling on map
         nodes, step = self.uniform_sampling()
@@ -580,24 +594,32 @@ class Map_To_Graph:
             #     final_route.append(first_route[n])
 
 
-            found_nodes_with_yaw = []
+            found_nodes_with_yaw_cover_first = []
+            found_nodes_with_yaw_fast_first = []
             k = 1   # DEBUG:
             for n in range(len(final_route)):
                 # print('Closest obstacles process: {}/{}'.format(k, nodes_length))
                 # Find closest obstacle to get best yaw
                 x, y = final_route[n]
                 x2, y2 = final_route[(n+1)%len(final_route)]
+                # Find cover_first poses
                 yaw = self.find_best_yaw((x,y), (x2,y2), 0.6, 2, 1)
-                if yaw == []:
-                    continue
-                for point in yaw:
-                    temp_dict = {'position': (x,y), 'yaw': point}
-                    found_nodes_with_yaw.append(temp_dict)
+                if yaw != []:
+                    for point in yaw:
+                        temp_dict = {'position': (x,y), 'yaw': point}
+                        found_nodes_with_yaw_cover_first.append(temp_dict)
+                # Find fast_first poses
+                yaw = self.find_best_yaw((x,y), (x2,y2), 0.6, 1, 2)
+                if yaw != []:
+                    for point in yaw:
+                        temp_dict = {'position': (x,y), 'yaw': point}
+                        found_nodes_with_yaw_fast_first.append(temp_dict)
                 k += 1
 
             # print(found_nodes_with_yaw)
             self.wall_follow_nodes.append(found_nodes)
-            self.wall_follow_sequence.append(found_nodes_with_yaw)
+            self.wall_follow_sequence_cover_first.append(found_nodes_with_yaw_cover_first)
+            self.wall_follow_sequence_fast_first.append(found_nodes_with_yaw_fast_first)
 
             # for i in range(len(found_nodes)):
             #     node = found_nodes[node_route[i]]
@@ -609,7 +631,8 @@ class Map_To_Graph:
         if save_result:
             # Save wall nodes to json
             self.data['wall_follow_nodes'] = self.wall_follow_nodes
-            self.data['wall_follow_sequence'] = self.wall_follow_sequence
+            self.data['wall_follow_sequence_cover_first'] = self.wall_follow_sequence_cover_first
+            self.data['wall_follow_sequence_fast_first'] = self.wall_follow_sequence_fast_first
             # self.data['boustrophedon_sequence'] = self.boustrophedon_sequence
             map_name = rospy.get_param('map_name')
             filename = '/home/mal/catkin_ws/src/topology_finder/data/' + map_name +'.json'
@@ -619,10 +642,10 @@ class Map_To_Graph:
         return
 
     # Do an a priori coverage with found order of nodes to eliminate the not needed
-    def a_priori_coverage(self, save_result):
+    def a_priori_coverage(self, nodes):
         new_wall_follow = []
         i = 0
-        for room in self.wall_follow_sequence:
+        for room in nodes:
             # i = 0
             new_room = []
             for node in room:
@@ -642,17 +665,7 @@ class Map_To_Graph:
         covered_obstacles = len(np.where(near_obstacles_cover >= 80)[0])
         rospy.loginfo("Estimated coverage percentage {}".format(covered_obstacles/len(near_obstacles_cover)))
 
-        self.wall_follow_sequence = new_wall_follow
-        if save_result:
-            # Save wall nodes to json
-            self.data['wall_follow_nodes'] = self.wall_follow_nodes
-            self.data['wall_follow_sequence'] = self.wall_follow_sequence
-            map_name = rospy.get_param('map_name')
-            filename = '/home/mal/catkin_ws/src/topology_finder/data/' + map_name +'.json'
-            with open(filename, 'w') as outfile:
-                data_to_json = json.dump(self.data, outfile)
-
-        return
+        return new_wall_follow
 
     # Find nodes for wall following coverage and eliminate unnecessary (NN) onces
     def find_half_wall_nodes(self, save_result):

@@ -21,3 +21,5 @@ rfid2:
 min_distance: 0.2
 navigation_pattern: 'wall_follow'
 # navigation_pattern: 'boustrophedon'
+navigation_target: 'cover_first'
+# navigation_target: 'fast_first'
