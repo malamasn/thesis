@@ -79,6 +79,8 @@ class Map_To_Graph:
         self.room_doors = []
         self.room_type = []
         self.room_sequence = []
+        self.entering_doors = {}
+        self.exiting_doors = {}
         self.wall_follow_nodes = []
         self.wall_follow_sequence = []
         # self.boustrophedon_sequence = []
@@ -272,9 +274,66 @@ class Map_To_Graph:
                 if self.door_nodes[door] in self.room_doors[i] and i not in self.room_sequence:
                     self.room_sequence.append(i)
 
+        enter = {}
+        leave = {}
+        if doors_length >= 2:
+            # Compute enter & exit doors of each room according to found room_sequence
+            room_i = 1  # Start from 2nd room
+            room_idx = self.room_sequence[room_i]
+            entered = False
+            # Simulate door/room sequence on the graph
+            for i in range(len(door_route)):
+                # Find path from current to next door
+                door_idx = door_route[i]
+                next_door_idx = door_route[(i+1)%len(door_route)]
+                # print('Room', room_idx)
+                path = find_path(graph, door_idx, next_door_idx)
+                # print('Path',path.nodes)
+                if entered and len(path.nodes) > 1: # if already inside room, first node of path is already used
+                    ii = 1
+                else:
+                    ii = 0
+                # Transverse through path and check for corresponding rooms
+                while ii < len(path.nodes):
+                    node_idx = path.nodes[ii]
+                    door = self.door_nodes[node_idx]
+                    if door in self.room_doors[room_idx]:
+                        # print('Door',node_idx, door,'in room', room_idx)
+                        if not entered:
+                            enter[room_idx] = door
+                            entered = not entered
+                            if len(self.room_doors[room_idx]) == 1:
+                                ii -= 1     # To revisit this door
+                        else:
+                            leave[room_idx] = door
+                            entered = not entered
+                            room_i += 1
+                            room_idx = self.room_sequence[room_i%len(self.room_sequence)]
+                            # print('Room changed', room_idx)
+                            ii -= 1     # To revisit this door
+                    ii += 1
+        else:
+            for i in range(len(self.room_sequence)):
+                enter[i] = self.door_nodes[0]
+                leave[i] = self.door_nodes[0]
+
+        self.entering_doors = enter
+        self.exiting_doors = leave
+
+
+        # # Print results per room (blue - entering door, read - exiting door, green - room nodes)
+        # for room_idx in self.room_sequence:
+        #     print('Room',room_idx, 'all doors',self.room_doors[room_idx])
+        #     self.print_markers([enter[room_idx]], [0,0,1], self.node_publisher)
+        #     self.print_markers([leave[room_idx]], [1,0,0], self.door_node_pub)
+        #     self.print_markers(self.rooms[room_idx], [0,1,0], self.room_node_pub)
+        #     rospy.sleep(4)
+
         if save_result:
             # Save room sequence
             self.data['room_sequence'] = self.room_sequence
+            self.data['entering_doors'] = self.entering_doors
+            self.data['exiting_doors'] = self.exiting_doors
             map_name = rospy.get_param('map_name')
             filename = '/home/mal/catkin_ws/src/topology_finder/data/' + map_name +'.json'
             with open(filename, 'w') as outfile:
