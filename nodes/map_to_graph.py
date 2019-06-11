@@ -538,7 +538,8 @@ class Map_To_Graph:
             max_iterations = 1000 * len(first_route)
             distances = cdist(np.array(first_route), np.array(first_route), 'euclidean')
             # node_route, cost, iter = self.routing.hillclimb(distances, max_iterations)
-            node_route, cost, iter = self.routing.random_restart_hillclimb(distances, max_iterations)
+            fixed_edges = True
+            node_route, cost, iter = self.routing.random_restart_hillclimb(distances, max_iterations, fixed_edges)
             print('Second HC route length', cost, 'made iters', iter, 'from', max_iterations)
 
             final_route = []

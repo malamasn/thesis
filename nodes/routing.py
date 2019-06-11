@@ -40,10 +40,14 @@ class Routing:
                 copy[i],copy[j]=route[j],route[i]
                 yield copy
 
-    def reversed_sections(self, route):
+    def reversed_sections(self, route, fixed_edges = False):
         '''generator to return all possible variations
           where the section between two cities are swapped'''
         for i,j in self.all_pairs(len(route)):
+            # Skip iterations that change route edges if fixed_edges
+            if fixed_edges:
+                if not i or not j or i == len(route)-1 or j == len(route)-1:
+                    continue
             if i != j:
                 copy=route[:]
                 if i < j:
@@ -67,7 +71,7 @@ class Routing:
             T = alpha * T
 
 
-    def hillclimb(self, distances, epochs):
+    def hillclimb(self, distances, epochs, fixed_edges = False):
         '''
         hillclimb until either epochs
         is reached or we are at a local optima
@@ -82,7 +86,7 @@ class Routing:
         while iter < epochs:
             # examine moves around our current position
             move_made = False
-            for next in self.reversed_sections(best):
+            for next in self.reversed_sections(best, fixed_edges):
                 if iter >= epochs:
                     break
                 # see if this move is better than the current
@@ -100,7 +104,7 @@ class Routing:
 
         return best, best_score, iter
 
-    def random_restart_hillclimb(self, distances, epochs):
+    def random_restart_hillclimb(self, distances, epochs, fixed_edges = False):
         '''
         repeatedly hillclimb until epochs is reached
         '''
@@ -111,7 +115,7 @@ class Routing:
         while iter < epochs:
             iters_left = epochs - iter
 
-            sequence, score, iters_made = self.hillclimb(distances, iters_left)
+            sequence, score, iters_made = self.hillclimb(distances, iters_left, fixed_edges)
             iter += iters_made
             if score < best_score or best is None:
                 best_score = score
