@@ -522,21 +522,27 @@ class Map_To_Graph:
             node_route, cost, iter = self.routing.step_hillclimb(distances, max_iterations, step)
             print('Route of wall follow nodes found.')
             print('First step HC route length', cost)
-            #
-            # final_route = []
-            # for n in node_route:
-            #     final_route.append(found_nodes[n])
 
             # Reorder according to step HC results
-            first_route = []
-            first_route.append(self.entering_doors[i])
+            temp_route = []
             for n in node_route:
-                first_route.append(found_nodes[n])
+                temp_route.append(found_nodes[n])
+
+            # Add entering & exiting doors and rotate already found route
+            # so that 2nd point is the closest one to the entering door
+            first_route = []
+            enter = self.entering_doors[i]
+            first_route.append(enter)
+            closest_idx = cdist(np.array([enter]), np.array(temp_route)).argmin()
+            for ii in range(len(temp_route)):
+                first_route.append(temp_route[(ii + closest_idx) % nodes_length])
             first_route.append(self.exiting_doors[i])
 
             # Do another hillclimb to optimize path
             max_iterations = 1000 * len(first_route)
             distances = cdist(np.array(first_route), np.array(first_route), 'euclidean')
+            cost = self.routing.route_length(distances, range(len(first_route)))
+            print('Route length after adding doors and rotating sequence', cost)
             # node_route, cost, iter = self.routing.hillclimb(distances, max_iterations)
             fixed_edges = True
             node_route, cost, iter = self.routing.random_restart_hillclimb(distances, max_iterations, fixed_edges)
