@@ -98,6 +98,8 @@ class Map_To_Graph:
 
         if 'room_sequence' in self.data:
             self.room_sequence = self.data['room_sequence']
+            self.entering_doors = { int(k):v for k,v in self.data['entering_doors'].items() }
+            self.exiting_doors = { int(k):v for k,v in self.data['exiting_doors'].items() }
 
         if 'wall_follow_nodes' in self.data:
             self.wall_follow_nodes = self.data['wall_follow_nodes']
@@ -527,8 +529,10 @@ class Map_To_Graph:
 
             # Reorder according to step HC results
             first_route = []
+            first_route.append(self.entering_doors[i])
             for n in node_route:
                 first_route.append(found_nodes[n])
+            first_route.append(self.exiting_doors[i])
 
             # Do another hillclimb to optimize path
             max_iterations = 1000 * len(first_route)
