@@ -70,7 +70,6 @@ class Navigation:
 
         # Load path pattern for navigation
         self.navigation_pattern = rospy.get_param('navigation_pattern')
-        self.navigation_target = rospy.get_param('navigation_target')
 
         # Attributes read from json file
         self.nodes = []
@@ -95,12 +94,7 @@ class Navigation:
         self.room_type = data['roomType']
         self.room_sequence = data['room_sequence']
         self.wall_follow_nodes = data['wall_follow_nodes']
-        if self.navigation_target == 'cover_first':
-            self.wall_follow_sequence = data['wall_follow_sequence_cover_first']
-        elif self.navigation_target == 'fast_first':
-            self.wall_follow_sequence = data['wall_follow_sequence_fast_first']
-        else:
-            rospy.loginfo("Wrong navigation target parameter!")
+        self.wall_follow_sequence = data['wall_follow_sequence']
 
         self.node_publisher = rospy.Publisher('/nodes', Marker, queue_size = 100)
         self.door_node_pub = rospy.Publisher('/nodes/doors', Marker, queue_size = 100)
@@ -199,30 +193,6 @@ class Navigation:
                     rospy.sleep(0.1)
                 current_room_index = (current_room_index + 1) % len(self.room_sequence)
                 current_room = self.room_sequence[current_room_index]
-
-                near_obstacles = np.where(self.brush == 2)
-                near_obstacles_cover = self.coverage.coverage[near_obstacles]
-                covered_obstacles = len(np.where(near_obstacles_cover >= 80)[0])
-                rospy.loginfo("Estimated coverage percentage {} after room {}".format(covered_obstacles/len(near_obstacles_cover), i))
-        #
-        # elif self.navigation_pattern == 'boustrophedon':
-        #     if self.boustrophedon_sequence == []:
-        #         rospy.loginfo("This navigation pattern has not been calculated for this map!")
-        #         return
-        #
-        #     for i in range(len(self.room_sequence)):
-        #         # print nodes
-        #         nodes = self.wall_follow_nodes[current_room]
-        #         self.print_markers(nodes)
-        #         # find nodes of current room
-        #         nodes = self.boustrophedon_sequence[current_room]
-        #         # navigate to all nodes
-        #         for node in nodes:
-        #             result = self.goToGoal(node['position'], node['yaw'])
-        #             rospy.sleep(0.1)
-        #         current_room_index = (current_room_index + 1) % len(self.room_sequence)
-        #         current_room = self.room_sequence[current_room_index]
-
         return
 
     # Gets target pose, sends it to move_base and waits for the result
