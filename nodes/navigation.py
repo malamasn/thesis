@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import division
 import rospy, json, actionlib
 import numpy as np
 import time, tf
@@ -120,8 +121,8 @@ class Navigation:
             pass
 
         # Calculate current x,y in map's frame
-        current_x = (self.current_pose.position.x - self.origin['x'])/self.resolution
-        current_y = (self.current_pose.position.y - self.origin['y'])/self.resolution
+        current_x = int((self.current_pose.position.x - self.origin['x'])/self.resolution)
+        current_y = int((self.current_pose.position.y - self.origin['y'])/self.resolution)
 
         # Calculate brushfire field
         self.brush = self.brushfire_cffi.obstacleBrushfireCffi(self.ogm)
@@ -157,7 +158,7 @@ class Navigation:
 
 
         current_room_index = self.room_sequence.index(current_room)
-
+        start_time = rospy.get_time()
         if self.navigation_pattern == 'random':
             self.print_markers(self.nodes)
             # Navigate in all rooms with given sequence
@@ -191,8 +192,11 @@ class Navigation:
                 for node in nodes:
                     result = self.goToGoal(node['position'], node['yaw'])
                     rospy.sleep(0.1)
+
                 current_room_index = (current_room_index + 1) % len(self.room_sequence)
                 current_room = self.room_sequence[current_room_index]
+        finish_time = rospy.get_time()
+        print('Start time', start_time, 'Finish time', finish_time, 'Duration', finish_time-start_time)
         return
 
     # Gets target pose, sends it to move_base and waits for the result
