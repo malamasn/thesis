@@ -12,6 +12,8 @@ from utilities import Cffi
 class Coverage:
     def __init__(self):
 
+        self.brushfire_cffi = Cffi()
+
         # Origin is the translation between the (0,0) of the robot pose and the
         # (0,0) of the map
         self.origin = {}
@@ -59,6 +61,7 @@ class Coverage:
         # If a cell has the value of 0 it is uncovered
         # In the opposite case the cell's value will be 100
         self.coverage = []
+        self.brush = 0
         # coverage_ogm will be published in the coverage_topic
         self.coverage_ogm = OccupancyGrid()
         self.coverage_ogm.header.frame_id = "map"
@@ -91,12 +94,21 @@ class Coverage:
         while self.ogm_compute:
             pass
 
+        # Calculate brushfire field
+        self.brush = self.brushfire_cffi.obstacleBrushfireCffi(self.ogm)
+        near_obstacles = np.where(self.brush == 2)
+
+        iter = 0
         while not rospy.is_shutdown():
-            self.updateCover()
-            # if not iter % 10:
-            # self.coverage_pub.publish(self.coverage_ogm)
-            #     rospy.loginfo("Update coverage ogm!")
-            # iter += 1
+            self.updateCover(publish = False)
+            if not iter % 500:
+                self.coverage_pub.publish(self.coverage_ogm)
+                rospy.loginfo("Update coverage ogm!")
+                near_obstacles_cover = self.coverage[near_obstacles]
+                covered_obstacles = len(np.where(near_obstacles_cover >= 80)[0])
+                rospy.loginfo("Estimated coverage percentage {}".format(covered_obstacles/len(near_obstacles_cover)))
+                iter = 0
+            iter += 1
             rospy.sleep(0.1)
         return
 
@@ -138,8 +150,8 @@ class Coverage:
             else:
                 rospy.loginfo("Error!Sensor's shape not found!")
                 return
-
-        self.coverage_pub.publish(self.coverage_ogm)
+        if publish:
+            self.coverage_pub.publish(self.coverage_ogm)
         rospy.loginfo("Update coverage ogm!")
         return
 
