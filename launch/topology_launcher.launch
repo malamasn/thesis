@@ -1,6 +1,6 @@
 <launch>
 
-  <arg name='map' value='warehouse_2'/>
+  <arg name='map' value='warehouse_4'/>
 
   <!-- Load map_server with rviz -->
   <include file="$(find my_navigation)/launch/my_map_launch.launch">
