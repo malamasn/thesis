@@ -5,7 +5,7 @@ import numpy as np
 from scipy.spatial import distance
 
 from nav_msgs.msg import Odometry, OccupancyGrid
-from geometry_msgs.msg import Pose
+from geometry_msgs.msg import Pose, PoseWithCovarianceStamped
 
 from utilities import Cffi
 
@@ -102,7 +102,7 @@ class Coverage:
 
     # Read current pose of robot from odometry
     def readRobotPose(self):
-        rospy.Subscriber('/odom', Odometry, self.odom_callback, queue_size = 1)
+        rospy.Subscriber('/amcl_pose', PoseWithCovarianceStamped, self.odom_callback, queue_size = 1)
         return
 
 
@@ -207,8 +207,8 @@ class Coverage:
     def odom_callback(self, msg):
         self.current_pose =  msg.pose.pose
         # Calculate current x,y in map's frame (aka in pixels)
-        self.robot_pose['x'] = (self.current_pose.position.x - self.origin['x'])/self.resolution
-        self.robot_pose['y'] = (self.current_pose.position.y - self.origin['y'])/self.resolution
+        self.robot_pose['x'] = int((self.current_pose.position.x - self.origin['x'])/self.resolution)
+        self.robot_pose['y'] = int((self.current_pose.position.y - self.origin['y'])/self.resolution)
 
         # Getting the Euler angles
         q = (msg.pose.pose.orientation.x,
@@ -217,6 +217,7 @@ class Coverage:
              msg.pose.pose.orientation.w)
         angles = tf.transformations.euler_from_quaternion(q)
         self.robot_pose['th'] = angles[2]   # yaw
+
         self.readPose = False
         return
 
