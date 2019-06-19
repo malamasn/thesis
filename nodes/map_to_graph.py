@@ -682,6 +682,43 @@ class Map_To_Graph:
                         found_nodes_with_yaw.append(temp_dict)
                 k += 1
 
+
+            # Split route into straight segments
+            splited_node_route = []
+            n = 0
+            while n < len(found_nodes_with_yaw):
+                segment = []
+                segment.append(found_nodes_with_yaw[n])
+                n += 1
+                flag = False
+                while n < len(found_nodes_with_yaw) and not flag:
+                    x, y = found_nodes_with_yaw[n]['position']
+                    x_prev, y_prev = found_nodes_with_yaw[n-1]['position']
+                    # If node is far from previous, a new segment is needed
+                    if np.linalg.norm(np.array((x,y))- np.array((x_prev,y_prev))) > step:
+                        break
+                    if len(segment) > 2:
+                        # If 3 nodes not in one line (straight segment) don't add it
+                        x_prev_2, y_prev_2 = found_nodes_with_yaw[n-2]['position']
+                        if x_prev_2 == x_prev and x != x_prev:
+                            flag = True
+                            break
+                        if y_prev_2 == y_prev and y != y_prev:
+                            flag = True
+                            break
+                        # Case 2 previous are the same position
+                        if y_prev_2 == y_prev and x_prev_2 == x_prev:
+                            flag = False
+                            break
+
+                    if not flag:
+                        segment.append(found_nodes_with_yaw[n])
+                        n += 1
+                splited_node_route.append(segment)
+
+            
+
+
             # print(found_nodes_with_yaw)
             self.wall_follow_nodes.append(found_nodes)
             self.wall_follow_sequence.append(found_nodes_with_yaw)
