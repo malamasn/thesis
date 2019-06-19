@@ -705,19 +705,27 @@ class Map_To_Graph:
     # Do an a priori coverage with found order of nodes to eliminate the not needed
     def a_priori_coverage(self, nodes):
         new_wall_follow = []
-        i = 0
+        new_wall_follow_nodes = []
         for room in nodes:
             # i = 0
             new_room = []
-            for node in room:
+            new_room_nodes = []
+            for i in range(len(room)):
+                node = room[i]
                 x, y = node['position']
                 yaw = node['yaw']
-                updated = self.coverage.checkAndUpdateCover(self.brush, [x,y,yaw], 0.85)
+                if not i or i == len(room)-1:
+                    self.coverage.updateCover([x,y,yaw], publish = False)
+                    updated = True
+                else:
+                    updated = self.coverage.checkAndUpdateCover(self.brush, [x,y,yaw], 0.85)
                 if updated:
                     new_room.append(node)
+                    new_room_nodes.append(node['position'])
 
             self.coverage.coverage_pub.publish(self.coverage.coverage_ogm)
             new_wall_follow.append(new_room)
+            new_wall_follow_nodes.append(new_room_nodes)
             rospy.loginfo("A-priori coverage done at room {0}, room nodes size changed from {1} to {2}".format(i, len(room), len(new_room)))
             i += 1
 
