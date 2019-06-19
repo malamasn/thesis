@@ -241,7 +241,12 @@ class Map_To_Graph:
                     for j in range(i+1, len(room)):
                         node_id_1 = self.door_nodes.index(room[i])
                         node_id_2 = self.door_nodes.index(room[j])
-                        dist = np.linalg.norm(np.array(room[i])- np.array(room[j]))
+                        # Find brushfire distance (closest to real dist) between doors
+                        dist = self.brushfire_cffi.pointToPointBrushfireCffi(tuple(room[i]), \
+                                tuple(room[j]), self.ogm)
+                        if dist < 0:
+                            rospy.loginfo("Error computing door distance!")
+                            return
                         graph.add_edge(node_id_1, node_id_2, dist)
                         graph.add_edge(node_id_2, node_id_1, dist)
 

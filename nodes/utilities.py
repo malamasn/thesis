@@ -253,21 +253,24 @@ class Cffi:
         return gvd_nodes
 
     @staticmethod
-    def pointToPointBrushfireCffi(start, finish, ogm, iterations):
+    def pointToPointBrushfireCffi(start, finish, ogm):
+        starting_step = 2   # it has to be >= 2
         brushfire = np.zeros(ogm.shape, np.dtype('int32'))
         brushfire[ogm > 49] = 1
         brushfire[ogm == -1] = 1
-        brushfire[start] = 2
+        brushfire[start] = starting_step
+        brushfire[finish] = -1
 
         x = [np.array(v, dtype='int32') for v in brushfire]
         xi = ffi.new(("int* [%d]") % (len(x)))
         for i in range(len(x)):
             xi[i] = ffi.cast("int *", x[i].ctypes.data)
 
-        br_c = lib.pointToPointBrushfire(xi, len(x), len(x[0]), iterations)
+        br_c = lib.pointToPointBrushfire(xi, len(x), len(x[0]))
         brushfire[:] = np.array(x)
-        if brushfire[finish]:
-            iter_made = brushfire[finish] - 2
+
+        if brushfire[finish] > 0:
+            iter_made = brushfire[finish] - starting_step
         else:
             iter_made = -1
         return iter_made

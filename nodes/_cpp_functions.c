@@ -879,21 +879,22 @@ static void (*_cffi_call_python_org)(struct _cffi_externpy_s *, char *);
             step = step + 1;
         }
     }
-    static void pointToPointBrushfire(int ** brushfire, int width, int height, int iterations)
+    static void pointToPointBrushfire(int ** brushfire, int width, int height)
     {
         int i = 0;
         int j = 0;
         int step = 2;
         char changed = 1;
         int iters_made = 0;
-        while(changed == 1 && iters_made < iterations)
+        int found = 0;
+        while(changed == 1 && found == 0)
         {
             changed = 0;
             for(i = 1 ; i < width - 2 ; i = i + 1)
             {
                 for(j = 1 ; j < height - 2 ; j = j + 1)
                 {
-                    if(brushfire[i][j] == 0) // Free space
+                    if(brushfire[i][j] <= 0) // Free space & target point (==-1)
                     {
                         if(
                             brushfire[i - 1][j] == step ||
@@ -906,6 +907,7 @@ static void (*_cffi_call_python_org)(struct _cffi_externpy_s *, char *);
                             brushfire[i][j + 1] == step
                         )
                         {
+                            if (brushfire[i][j] == -1) found = 1;
                             brushfire[i][j] = step + 1;
                             changed = 1;
                         }
@@ -1666,9 +1668,9 @@ _cffi_f_pointToGvdBrushfire(PyObject *self, PyObject *args)
 #  define _cffi_f_pointToGvdBrushfire _cffi_d_pointToGvdBrushfire
 #endif
 
-static void _cffi_d_pointToPointBrushfire(int * * x0, int x1, int x2, int x3)
+static void _cffi_d_pointToPointBrushfire(int * * x0, int x1, int x2)
 {
-  pointToPointBrushfire(x0, x1, x2, x3);
+  pointToPointBrushfire(x0, x1, x2);
 }
 #ifndef PYPY_VERSION
 static PyObject *
@@ -1677,14 +1679,12 @@ _cffi_f_pointToPointBrushfire(PyObject *self, PyObject *args)
   int * * x0;
   int x1;
   int x2;
-  int x3;
   Py_ssize_t datasize;
   PyObject *arg0;
   PyObject *arg1;
   PyObject *arg2;
-  PyObject *arg3;
 
-  if (!PyArg_UnpackTuple(args, "pointToPointBrushfire", 4, 4, &arg0, &arg1, &arg2, &arg3))
+  if (!PyArg_UnpackTuple(args, "pointToPointBrushfire", 3, 3, &arg0, &arg1, &arg2))
     return NULL;
 
   datasize = _cffi_prepare_pointer_call_argument(
@@ -1706,13 +1706,9 @@ _cffi_f_pointToPointBrushfire(PyObject *self, PyObject *args)
   if (x2 == (int)-1 && PyErr_Occurred())
     return NULL;
 
-  x3 = _cffi_to_c_int(arg3, int);
-  if (x3 == (int)-1 && PyErr_Occurred())
-    return NULL;
-
   Py_BEGIN_ALLOW_THREADS
   _cffi_restore_errno();
-  { pointToPointBrushfire(x0, x1, x2, x3); }
+  { pointToPointBrushfire(x0, x1, x2); }
   _cffi_save_errno();
   Py_END_ALLOW_THREADS
 
@@ -1822,7 +1818,7 @@ static const struct _cffi_global_s _cffi_globals[] = {
   { "obstacleBrushfire", (void *)_cffi_f_obstacleBrushfire, _CFFI_OP(_CFFI_OP_CPYTHON_BLTN_V, 0), (void *)_cffi_d_obstacleBrushfire },
   { "pointBrushfire", (void *)_cffi_f_pointBrushfire, _CFFI_OP(_CFFI_OP_CPYTHON_BLTN_V, 6), (void *)_cffi_d_pointBrushfire },
   { "pointToGvdBrushfire", (void *)_cffi_f_pointToGvdBrushfire, _CFFI_OP(_CFFI_OP_CPYTHON_BLTN_V, 6), (void *)_cffi_d_pointToGvdBrushfire },
-  { "pointToPointBrushfire", (void *)_cffi_f_pointToPointBrushfire, _CFFI_OP(_CFFI_OP_CPYTHON_BLTN_V, 11), (void *)_cffi_d_pointToPointBrushfire },
+  { "pointToPointBrushfire", (void *)_cffi_f_pointToPointBrushfire, _CFFI_OP(_CFFI_OP_CPYTHON_BLTN_V, 6), (void *)_cffi_d_pointToPointBrushfire },
   { "rectangularBrushfireCoverage", (void *)_cffi_f_rectangularBrushfireCoverage, _CFFI_OP(_CFFI_OP_CPYTHON_BLTN_V, 17), (void *)_cffi_d_rectangularBrushfireCoverage },
 };
 
