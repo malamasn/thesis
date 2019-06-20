@@ -683,15 +683,15 @@ class Map_To_Graph:
                 k += 1
 
 
-            # Split route into straight segments
+            # Split route into straight segments ignoring first and last poses (doors)
             splited_node_route = []
-            n = 0
-            while n < len(found_nodes_with_yaw):
+            n = 1
+            while n < len(found_nodes_with_yaw) - 1:
                 segment = []
                 segment.append(found_nodes_with_yaw[n])
                 n += 1
                 flag = False
-                while n < len(found_nodes_with_yaw) and not flag:
+                while n < len(found_nodes_with_yaw) - 1 and not flag:
                     x, y = found_nodes_with_yaw[n]['position']
                     x_prev, y_prev = found_nodes_with_yaw[n-1]['position']
                     # If node is far from previous, a new segment is needed
