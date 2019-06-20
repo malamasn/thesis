@@ -749,9 +749,32 @@ class Map_To_Graph:
 
             # print(to_be_reversed)   # DEBUG:
 
+            # Reverse route where needed
+            final_pose_route = []
+            final_pose_route.append(found_nodes_with_yaw[0]) # Keep entering door as first pose
+            # Keep track of continuous segments that need to be reversed and reverse entire subroute
+            segments = []
+            for n in range(len(to_be_reversed)):
+                if to_be_reversed[n]:
+                    segments.extend(splited_node_route[n])
+                else:
+                    if len(segments) > 0:
+                        segments.reverse()
+                        final_pose_route.extend(segments)
+                        segments = []
+                    final_pose_route.extend(splited_node_route[n])
+            if len(segments) > 0:
+                segments.reverse()
+                final_pose_route.extend(segments)
+
+            # print('last', found_nodes_with_yaw[-1])
+            # print(found_nodes_with_yaw)
+            final_pose_route.extend([found_nodes_with_yaw[-1]])    # Keep exiting door as last pose
+            # print(final_pose_route)
+
             # print(found_nodes_with_yaw)
             self.wall_follow_nodes.append(found_nodes)
-            self.wall_follow_sequence.append(found_nodes_with_yaw)
+            self.wall_follow_sequence.append(final_pose_route)
 
             # for i in range(len(found_nodes)):
             #     node = found_nodes[node_route[i]]
