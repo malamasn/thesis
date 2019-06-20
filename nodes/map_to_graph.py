@@ -716,8 +716,38 @@ class Map_To_Graph:
                         n += 1
                 splited_node_route.append(segment)
 
-            
+            # Check each segment if needs reversing
+            to_be_reversed = []
+            for s in range(len(splited_node_route)):
+                segment = splited_node_route[s]
+                sum = 0
+                for n in range(len(segment)):
+                    node = segment[n]['position']
+                    yaw = segment[n]['yaw']
+                    # Find next node
+                    if n < len(segment)-1:
+                        next_node = segment[n]['position']
+                    else:
+                        next_node = splited_node_route[(s+1)%len(splited_node_route)][0]['position']
 
+                    yaw_between_nodes = math.degrees(math.atan2(next_node[1]-node[1], next_node[0]-node[0]))
+
+                    # Absolute yaw of current and next node in [0,180]
+                    next_rotation = np.abs(yaw - yaw_between_nodes)
+                    while next_rotation >= 360:
+                        next_rotation -= 360
+                    if next_rotation > 180:
+                        next_rotation = 360 - next_rotation
+
+                    sum += next_rotation
+
+                sum /= len(segment)
+                if sum > 90:
+                    to_be_reversed.append(1)
+                else:
+                    to_be_reversed.append(0)
+
+            # print(to_be_reversed)   # DEBUG:
 
             # print(found_nodes_with_yaw)
             self.wall_follow_nodes.append(found_nodes)
