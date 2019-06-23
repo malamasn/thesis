@@ -726,98 +726,99 @@ class Map_To_Graph:
                 k += 1
 
 
-            # Split route into straight segments ignoring first and last poses (doors)
-            splited_node_route = []
-            n = 1
-            while n < len(found_nodes_with_yaw) - 1:
-                segment = []
-                segment.append(found_nodes_with_yaw[n])
-                n += 1
-                flag = False
-                while n < len(found_nodes_with_yaw) - 1 and not flag:
-                    x, y = found_nodes_with_yaw[n]['position']
-                    x_prev, y_prev = found_nodes_with_yaw[n-1]['position']
-                    # If node is far from previous, a new segment is needed
-                    if np.linalg.norm(np.array((x,y))- np.array((x_prev,y_prev))) > step:
-                        break
-                    if len(segment) > 2:
-                        # If 3 nodes not in one line (straight segment) don't add it
-                        x_prev_2, y_prev_2 = found_nodes_with_yaw[n-2]['position']
-                        if x_prev_2 == x_prev and x != x_prev:
-                            flag = True
-                            break
-                        if y_prev_2 == y_prev and y != y_prev:
-                            flag = True
-                            break
-                        # Case 2 previous are the same position
-                        if y_prev_2 == y_prev and x_prev_2 == x_prev:
-                            flag = False
-                            break
-
-                    if not flag:
-                        segment.append(found_nodes_with_yaw[n])
-                        n += 1
-                splited_node_route.append(segment)
-
-            # Check each segment if needs reversing
-            to_be_reversed = []
-            for s in range(len(splited_node_route)):
-                segment = splited_node_route[s]
-                sum = 0
-                for n in range(len(segment)):
-                    node = segment[n]['position']
-                    yaw = segment[n]['yaw']
-                    # Find next node
-                    if n < len(segment)-1:
-                        next_node = segment[n]['position']
-                    else:
-                        next_node = splited_node_route[(s+1)%len(splited_node_route)][0]['position']
-
-                    yaw_between_nodes = math.degrees(math.atan2(next_node[1]-node[1], next_node[0]-node[0]))
-
-                    # Absolute yaw of current and next node in [0,180]
-                    next_rotation = np.abs(yaw - yaw_between_nodes)
-                    while next_rotation >= 360:
-                        next_rotation -= 360
-                    if next_rotation > 180:
-                        next_rotation = 360 - next_rotation
-
-                    sum += next_rotation
-
-                sum /= len(segment)
-                if sum > 90:
-                    to_be_reversed.append(1)
-                else:
-                    to_be_reversed.append(0)
-
-            # print(to_be_reversed)   # DEBUG:
-
-            # Reverse route where needed
-            final_pose_route = []
-            final_pose_route.append(found_nodes_with_yaw[0]) # Keep entering door as first pose
-            # Keep track of continuous segments that need to be reversed and reverse entire subroute
-            segments = []
-            for n in range(len(to_be_reversed)):
-                if to_be_reversed[n]:
-                    segments.extend(splited_node_route[n])
-                else:
-                    if len(segments) > 0:
-                        segments.reverse()
-                        final_pose_route.extend(segments)
-                        segments = []
-                    final_pose_route.extend(splited_node_route[n])
-            if len(segments) > 0:
-                segments.reverse()
-                final_pose_route.extend(segments)
-
-            # print('last', found_nodes_with_yaw[-1])
-            # print(found_nodes_with_yaw)
-            final_pose_route.extend([found_nodes_with_yaw[-1]])    # Keep exiting door as last pose
-            # print(final_pose_route)
-
-            # print(found_nodes_with_yaw)
+            # # Split route into straight segments ignoring first and last poses (doors)
+            # splited_node_route = []
+            # n = 1
+            # while n < len(found_nodes_with_yaw) - 1:
+            #     segment = []
+            #     segment.append(found_nodes_with_yaw[n])
+            #     n += 1
+            #     flag = False
+            #     while n < len(found_nodes_with_yaw) - 1 and not flag:
+            #         x, y = found_nodes_with_yaw[n]['position']
+            #         x_prev, y_prev = found_nodes_with_yaw[n-1]['position']
+            #         # If node is far from previous, a new segment is needed
+            #         if np.linalg.norm(np.array((x,y))- np.array((x_prev,y_prev))) > step:
+            #             break
+            #         if len(segment) > 2:
+            #             # If 3 nodes not in one line (straight segment) don't add it
+            #             x_prev_2, y_prev_2 = found_nodes_with_yaw[n-2]['position']
+            #             if x_prev_2 == x_prev and x != x_prev:
+            #                 flag = True
+            #                 break
+            #             if y_prev_2 == y_prev and y != y_prev:
+            #                 flag = True
+            #                 break
+            #             # Case 2 previous are the same position
+            #             if y_prev_2 == y_prev and x_prev_2 == x_prev:
+            #                 flag = False
+            #                 break
+            #
+            #         if not flag:
+            #             segment.append(found_nodes_with_yaw[n])
+            #             n += 1
+            #     splited_node_route.append(segment)
+            #
+            # # Check each segment if needs reversing
+            # to_be_reversed = []
+            # for s in range(len(splited_node_route)):
+            #     segment = splited_node_route[s]
+            #     sum = 0
+            #     for n in range(len(segment)):
+            #         node = segment[n]['position']
+            #         yaw = segment[n]['yaw']
+            #         # Find next node
+            #         if n < len(segment)-1:
+            #             next_node = segment[n]['position']
+            #         else:
+            #             next_node = splited_node_route[(s+1)%len(splited_node_route)][0]['position']
+            #
+            #         yaw_between_nodes = math.degrees(math.atan2(next_node[1]-node[1], next_node[0]-node[0]))
+            #
+            #         # Absolute yaw of current and next node in [0,180]
+            #         next_rotation = np.abs(yaw - yaw_between_nodes)
+            #         while next_rotation >= 360:
+            #             next_rotation -= 360
+            #         if next_rotation > 180:
+            #             next_rotation = 360 - next_rotation
+            #
+            #         sum += next_rotation
+            #
+            #     sum /= len(segment)
+            #     if sum > 90:
+            #         to_be_reversed.append(1)
+            #     else:
+            #         to_be_reversed.append(0)
+            #
+            # # print(to_be_reversed)   # DEBUG:
+            #
+            # # Reverse route where needed
+            # final_pose_route = []
+            # final_pose_route.append(found_nodes_with_yaw[0]) # Keep entering door as first pose
+            # # Keep track of continuous segments that need to be reversed and reverse entire subroute
+            # segments = []
+            # for n in range(len(to_be_reversed)):
+            #     if to_be_reversed[n]:
+            #         segments.extend(splited_node_route[n])
+            #     else:
+            #         if len(segments) > 0:
+            #             segments.reverse()
+            #             final_pose_route.extend(segments)
+            #             segments = []
+            #         final_pose_route.extend(splited_node_route[n])
+            # if len(segments) > 0:
+            #     segments.reverse()
+            #     final_pose_route.extend(segments)
+            #
+            # # print('last', found_nodes_with_yaw[-1])
+            # # print(found_nodes_with_yaw)
+            # final_pose_route.extend([found_nodes_with_yaw[-1]])    # Keep exiting door as last pose
+            # # print(final_pose_route)
+            #
+            # found_nodes_with_yaw = final_pose_route
+            
             self.wall_follow_nodes.append(found_nodes)
-            self.wall_follow_sequence.append(final_pose_route)
+            self.wall_follow_sequence.append(found_nodes_with_yaw)
 
             # for i in range(len(found_nodes)):
             #     node = found_nodes[node_route[i]]
