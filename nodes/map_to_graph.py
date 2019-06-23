@@ -159,8 +159,8 @@ class Map_To_Graph:
         # self.find_half_wall_nodes(True)
         # self.find_half_no_double_wall_nodes(True)
 
-        # self.visualise_node_sequence(self.wall_follow_sequence)
-        self.wall_follow_sequence = self.a_priori_coverage(self.wall_follow_sequence)
+        # # self.visualise_node_sequence(self.wall_follow_sequence)
+        self.wall_follow_sequence, self.wall_follow_nodes = self.a_priori_coverage(self.wall_follow_sequence)
 
         # Save wall nodes to json
         self.data['wall_follow_nodes'] = self.wall_follow_nodes
