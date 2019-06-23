@@ -152,7 +152,7 @@ class Coverage:
                 return
         if publish:
             self.coverage_pub.publish(self.coverage_ogm)
-        rospy.loginfo("Update coverage ogm!")
+            rospy.loginfo("Update coverage ogm!")
         return
 
     def checkAndUpdateCover(self, brushfire, pose = None, threshold = 1.):
