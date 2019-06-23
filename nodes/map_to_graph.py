@@ -48,11 +48,13 @@ class Map_To_Graph:
         self.sensor_shape = []
         self.sensor_reliability = []
         self.min_distance = 0
+        self.navigation_target = 0
 
         # Read sensor's specs
         self.min_distance = rospy.get_param('min_distance')
         self.sensor_names = rospy.get_param('sensor_names')
         self.sensor_number = len(self.sensor_names)
+        self.navigation_target = rospy.get_param('navigation_target')
         for name in self.sensor_names:
             self.sensor_direction.append(rospy.get_param(name + '/sensor_direction'))
             self.sensor_fov.append(rospy.get_param(name + '/fov'))
@@ -83,6 +85,7 @@ class Map_To_Graph:
         self.exiting_doors = {}
         self.wall_follow_nodes = []
         self.wall_follow_sequence = []
+
 
         # Load nodes from json file
         map_name = rospy.get_param('map_name')
@@ -408,6 +411,45 @@ class Map_To_Graph:
         yaw = list(set(yaw))
         return yaw
 
+    def find_weights(self):
+        if self.navigation_target == 'cover_first':
+            angles = []
+            for s in range(self.sensor_number):
+                theta = self.sensor_direction[s]
+                while theta < 0:
+                    theta += 360
+                while theta >= 360:
+                    theta -= 360
+                if theta > 180:
+                    theta = 360 - theta
+                if theta > 90:
+                    theta = 180 - theta
+                angles.append((90-theta)/90)
+            obstacle_weight = 1 + np.mean(angles)
+            rotation_weight = 2 - np.mean(angles)
+        elif self.navigation_target == 'fast_first':
+            angles = []
+            for s in range(len(self.sensor_number)):
+                theta = self.sensor_direction[s]
+                fov = self.sensor_fov[s]/2
+                while theta < 0:
+                    theta += 360
+                while theta >= 360:
+                    theta -= 360
+                if theta > 180:
+                    theta = 360 - theta
+                if theta > 90:
+                    theta = 180 - theta
+                theta = min(theta+fov, 90)
+                angles.append((90-theta)/90)
+            obstacle_weight = 1 + np.mean(angles)
+            rotation_weight = 2 - np.mean(angles)
+        else:
+            obstacle_weight = 1
+            rotation_weight = 1
+
+        return obstacle_weight, rotation_weight
+
     # Find nodes for wall following coverage
     def find_all_wall_nodes(self, save_result):
         rospy.loginfo("Finding wall follow nodes...")
@@ -490,7 +532,8 @@ class Map_To_Graph:
         self.wall_follow_nodes = []
         self.wall_follow_sequence = []
 
-        loop_threshold, obstacle_weight, rotation_weight = 0.6, 2, 1
+        loop_threshold = 0.6
+        obstacle_weight, rotation_weight = self.find_weights()
 
         # Uniform sampling on map
         nodes, step = self.uniform_sampling()
