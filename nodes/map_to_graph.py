@@ -155,7 +155,7 @@ class Map_To_Graph:
         # Find nodes for wall following coverage
         # if self.wall_follow_nodes == [] or self.wall_follow_sequence == []:
         # self.find_all_wall_nodes(True)
-        self.find_best_path_wall_nodes(True)
+        self.find_best_path_wall_nodes()
         # self.find_half_wall_nodes(True)
         # self.find_half_no_double_wall_nodes(True)
 
@@ -527,7 +527,7 @@ class Map_To_Graph:
         return
 
     # Find nodes for wall following coverage with optimal path
-    def find_best_path_wall_nodes(self, save_result):
+    def find_best_path_wall_nodes(self):
         rospy.loginfo("Finding wall follow nodes...")
         self.wall_follow_nodes = []
         self.wall_follow_sequence = []
@@ -602,16 +602,16 @@ class Map_To_Graph:
 
             # # Split route into straight segments
             # splited_node_route = []
-            # i = 0
+            # n = 0
             # threshold = int(len(node_route) / 10)
-            # while i < len(node_route):
+            # while n < len(node_route):
             #     segment = []
-            #     segment.append(found_nodes[node_route[i]])
-            #     i += 1
+            #     segment.append(found_nodes[node_route[n]])
+            #     n += 1
             #     flag = False
-            #     while i < len(node_route) and not flag:
-            #         x, y = found_nodes[node_route[i]]
-            #         x_prev, y_prev = found_nodes[node_route[i-1]]
+            #     while n < len(node_route) and not flag:
+            #         x, y = found_nodes[node_route[n]]
+            #         x_prev, y_prev = found_nodes[node_route[n-1]]
             #         # If node is far from previous, a new segment is needed
             #         if np.linalg.norm(np.array((x,y))- np.array((x_prev,y_prev))) > 3 * step:
             #             break
@@ -619,31 +619,31 @@ class Map_To_Graph:
             #         # Check in nearest neighbors if euclidean distance is far smaller than distance inside the route
             #         if (x+step, y) in found_nodes:
             #             num_in_seq = found_nodes.index((x+step,y))
-            #             if node_route[num_in_seq] > i+threshold:
+            #             if node_route[num_in_seq] > n+threshold:
             #                 flag = True
             #         if (x-step, y) in found_nodes:
             #             num_in_seq = found_nodes.index((x-step,y))
-            #             if node_route[num_in_seq] > i+threshold:
+            #             if node_route[num_in_seq] > n+threshold:
             #                 flag = True
             #         if (x, y+step) in found_nodes:
             #             num_in_seq = found_nodes.index((x,y+step))
-            #             if node_route[num_in_seq] > i+threshold:
+            #             if node_route[num_in_seq] > n+threshold:
             #                 flag = True
             #         if (x, y-step) in found_nodes:
             #             num_in_seq = found_nodes.index((x,y-step))
-            #             if node_route[num_in_seq] > i+threshold:
+            #             if node_route[num_in_seq] > n+threshold:
             #                 flag = True
-            #         i += 1
+            #         n += 1
             #     splited_node_route.append(segment)
             # # visualize results
             #
             # # Find segments with 1 or 2 points and insert them in closest segment
             # list_to_pop = []
-            # for i in range(len(splited_node_route)):
-            #     segment = splited_node_route[i]
+            # for k in range(len(splited_node_route)):
+            #     segment = splited_node_route[k]
             #     if len(segment) <= 2:
             #         point = segment[0]
-            #         list_to_pop.append(i)
+            #         list_to_pop.append(k)
             #         temp_nodes = found_nodes[:]
             #         for n in segment:
             #             temp_nodes.remove(n)
@@ -655,8 +655,8 @@ class Map_To_Graph:
             #                 break
             # # Delete these small segments
             # list_to_pop.reverse()
-            # for i in list_to_pop:
-            #     del splited_node_route[i]
+            # for k in list_to_pop:
+            #     del splited_node_route[k]
             #
             # # id = self.visualise_node_segments(splited_node_route, id)
             #
@@ -867,7 +867,7 @@ class Map_To_Graph:
         covered_obstacles = len(np.where(near_obstacles_cover >= 80)[0])
         rospy.loginfo("Estimated coverage percentage {}".format(covered_obstacles/len(near_obstacles_cover)))
 
-        return new_wall_follow
+        return new_wall_follow, new_wall_follow_nodes
 
     # Find nodes for wall following coverage and eliminate unnecessary (NN) onces
     def find_half_wall_nodes(self, save_result):
