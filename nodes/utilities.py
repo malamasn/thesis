@@ -332,5 +332,5 @@ class Cffi:
         if return_obstacles:
             indexes = zip(*np.where(brushfire == -2))
         else:
-            indexes = zip(*np.where(brushfire > 0))
+            indexes = zip(*np.where(brushfire > 1))
         return indexes
