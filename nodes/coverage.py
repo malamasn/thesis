@@ -61,11 +61,16 @@ class Coverage:
         # If a cell has the value of 0 it is uncovered
         # In the opposite case the cell's value will be 100
         self.coverage = []
+        self.coverage_number = []
         self.brush = 0
         # coverage_ogm will be published in the coverage_topic
         self.coverage_ogm = OccupancyGrid()
         self.coverage_ogm.header.frame_id = "map"
         self.coverage_topic = '/map/coverage'
+
+        self.coverage_number_ogm = OccupancyGrid()
+        self.coverage_number_ogm.header.frame_id = "map"
+        self.coverage_number_topic = '/map/coverage_number'
 
         self.current_pose = Pose()
         # robot_pose is current_pose in map's frame (aka in pixels)
@@ -80,6 +85,8 @@ class Coverage:
         self.previous_robot_pose['th'] = 0
 
         self.coverage_pub = rospy.Publisher(self.coverage_topic, \
+            OccupancyGrid, queue_size = 10)
+        self.coverage_number_pub = rospy.Publisher(self.coverage_number_topic, \
             OccupancyGrid, queue_size = 10)
 
 
@@ -108,6 +115,7 @@ class Coverage:
             self.updateCover(publish = False)
             if not iter % 500:
                 self.coverage_pub.publish(self.coverage_ogm)
+                self.coverage_number_pub.publish(self.coverage_number_ogm)
                 rospy.loginfo("Update coverage ogm!")
                 near_obstacles_cover = self.coverage[near_obstacles]
                 covered_obstacles = len(np.where(near_obstacles_cover >= 80)[0])
@@ -151,19 +159,24 @@ class Coverage:
                     indexes = Cffi.rectangularBrushfireCoverageCffi((xx,yy), self.ogm, cover_length, self.sensor_fov[s], th_deg, self.sensor_direction[s])
                     for x,y in indexes:
                         self.coverage[x, y] = 100 * self.sensor_reliability[s]
+                        self.coverage_number[x, y] += 1
                         i = int(x + self.ogm_width * y)
                         self.coverage_ogm.data[i] = 100
+                        self.coverage_number_ogm.data[i] += 1
                 elif self.sensor_shape[s] == 'circular':
                     indexes = Cffi.circularRayCastCoverageCffi((xx,yy), self.ogm, cover_length, self.sensor_fov[s], th_deg, self.sensor_direction[s])
                     for x,y in indexes:
                         self.coverage[x, y] = 100 * self.sensor_reliability[s]
+                        self.coverage_number[x, y] += 1
                         i = int(x + self.ogm_width * y)
                         self.coverage_ogm.data[i] = 100
+                        self.coverage_number_ogm.data[i] += 1
                 else:
                     rospy.loginfo("Error!Sensor's shape not found!")
                     return
             if publish:
                 self.coverage_pub.publish(self.coverage_ogm)
+                self.coverage_number_pub.publish(self.coverage_number_ogm)
                 rospy.loginfo("Update coverage ogm!")
 
         self.previous_robot_pose['x'] = xx
@@ -274,6 +287,11 @@ class Coverage:
         self.coverage = np.zeros((self.ogm_width, self.ogm_height))
         self.coverage_ogm.info = data.info
         self.coverage_ogm.data = np.zeros(self.ogm_width * self.ogm_height)
+
+        # Initilize coverage_number OGM with same size width x height
+        self.coverage_number = np.zeros((self.ogm_width, self.ogm_height))
+        self.coverage_number_ogm.info = data.info
+        self.coverage_number_ogm.data = np.zeros(self.ogm_width * self.ogm_height)
 
         rospy.loginfo("OGM read!")
         self.ogm_compute = False
