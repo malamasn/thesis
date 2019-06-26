@@ -74,6 +74,11 @@ class Coverage:
         self.robot_pose['y'] = 0
         self.robot_pose['th'] = 0
 
+        self.previous_robot_pose = {}
+        self.previous_robot_pose['x'] = 0
+        self.previous_robot_pose['y'] = 0
+        self.previous_robot_pose['th'] = 0
+
         self.coverage_pub = rospy.Publisher(self.coverage_topic, \
             OccupancyGrid, queue_size = 10)
 
@@ -133,26 +138,37 @@ class Coverage:
             yy = pose[1]
             th_deg = pose[2]
 
-        for s in range(self.sensor_number):
-            cover_length = int(self.sensor_range[s] / self.resolution)
-            if self.sensor_shape[s] == 'rectangular':
-                indexes = Cffi.rectangularBrushfireCoverageCffi((xx,yy), self.ogm, cover_length, self.sensor_fov[s], th_deg, self.sensor_direction[s])
-                for x,y in indexes:
-                    self.coverage[x, y] = 100 * self.sensor_reliability[s]
-                    i = int(x + self.ogm_width * y)
-                    self.coverage_ogm.data[i] = 100
-            elif self.sensor_shape[s] == 'circular':
-                indexes = Cffi.circularRayCastCoverageCffi((xx,yy), self.ogm, cover_length, self.sensor_fov[s], th_deg, self.sensor_direction[s])
-                for x,y in indexes:
-                    self.coverage[x, y] = 100 * self.sensor_reliability[s]
-                    i = int(x + self.ogm_width * y)
-                    self.coverage_ogm.data[i] = 100
-            else:
-                rospy.loginfo("Error!Sensor's shape not found!")
-                return
-        if publish:
-            self.coverage_pub.publish(self.coverage_ogm)
-            rospy.loginfo("Update coverage ogm!")
+        # Check if robot moved
+        move = ((xx - self.previous_robot_pose['x'])**2 + \
+                (yy - self.previous_robot_pose['y'])**2 + \
+                (th_deg - self.previous_robot_pose['th'])**2)**(1/2)
+
+        # Update coverage only if robot moved
+        if move > 1.0:
+            for s in range(self.sensor_number):
+                cover_length = int(self.sensor_range[s] / self.resolution)
+                if self.sensor_shape[s] == 'rectangular':
+                    indexes = Cffi.rectangularBrushfireCoverageCffi((xx,yy), self.ogm, cover_length, self.sensor_fov[s], th_deg, self.sensor_direction[s])
+                    for x,y in indexes:
+                        self.coverage[x, y] = 100 * self.sensor_reliability[s]
+                        i = int(x + self.ogm_width * y)
+                        self.coverage_ogm.data[i] = 100
+                elif self.sensor_shape[s] == 'circular':
+                    indexes = Cffi.circularRayCastCoverageCffi((xx,yy), self.ogm, cover_length, self.sensor_fov[s], th_deg, self.sensor_direction[s])
+                    for x,y in indexes:
+                        self.coverage[x, y] = 100 * self.sensor_reliability[s]
+                        i = int(x + self.ogm_width * y)
+                        self.coverage_ogm.data[i] = 100
+                else:
+                    rospy.loginfo("Error!Sensor's shape not found!")
+                    return
+            if publish:
+                self.coverage_pub.publish(self.coverage_ogm)
+                rospy.loginfo("Update coverage ogm!")
+
+        self.previous_robot_pose['x'] = xx
+        self.previous_robot_pose['y'] = yy
+        self.previous_robot_pose['th'] = th_deg
         return
 
     def checkAndUpdateCover(self, brushfire, pose = None, threshold = 1.):
