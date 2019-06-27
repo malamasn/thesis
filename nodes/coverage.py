@@ -82,12 +82,10 @@ class Coverage:
         self.coverage_number_ogm.header.frame_id = "map"
         self.coverage_number_topic = '/map/coverage_number'
 
+        self.coverage_angles_ogm = OccupancyGrid()
+        self.coverage_angles_ogm.header.frame_id = "map"
 
-        # self.coverage_angles_ogm = []
-        # for s in range(len(self.number_of_bins)):
-        #     temp_ogm = OccupancyGrid()
-        #     temp_ogm.header.frame_id = "map"
-        #     self.coverage_angles_ogm.append(temp_ogm)
+        self.coverage_angles_topic = '/map/coverage_angles'
 
         self.current_pose = Pose()
         # robot_pose is current_pose in map's frame (aka in pixels)
@@ -104,6 +102,8 @@ class Coverage:
         self.coverage_pub = rospy.Publisher(self.coverage_topic, \
             OccupancyGrid, queue_size = 10)
         self.coverage_number_pub = rospy.Publisher(self.coverage_number_topic, \
+            OccupancyGrid, queue_size = 10)
+        self.coverage_angles_pub = rospy.Publisher(self.coverage_angles_topic, \
             OccupancyGrid, queue_size = 10)
 
 
@@ -133,6 +133,7 @@ class Coverage:
             if not iter % 500:
                 self.coverage_pub.publish(self.coverage_ogm)
                 self.coverage_number_pub.publish(self.coverage_number_ogm)
+                self.coverage_angles_pub.publish(self.coverage_angles_ogm)
                 rospy.loginfo("Update coverage ogm!")
                 near_obstacles_cover = self.coverage[near_obstacles]
                 covered_obstacles = len(np.where(near_obstacles_cover >= 80)[0])
@@ -200,7 +201,8 @@ class Coverage:
                         for a in range(len(self.bins)):
                             if angle >= self.bins[a][0] and angle < self.bins[a][1]:
                                 self.coverage_angles[x][y][a] += 1
-                                # self.coverage_angles_ogm[a].data[i] += 1
+                                ii = int(x + self.ogm_width * y + self.ogm_height * self.ogm_width * a)
+                                self.coverage_angles_ogm.data[ii] += 1
                                 # print(self.bins[a], a, angle)
                                 break
                 else:
@@ -209,6 +211,7 @@ class Coverage:
             if publish:
                 self.coverage_pub.publish(self.coverage_ogm)
                 self.coverage_number_pub.publish(self.coverage_number_ogm)
+                self.coverage_angles_pub.publish(self.coverage_angles_ogm)
                 rospy.loginfo("Update coverage ogm!")
 
         self.previous_robot_pose['x'] = xx
@@ -326,9 +329,10 @@ class Coverage:
         self.coverage_number_ogm.data = np.zeros(self.ogm_width * self.ogm_height)
 
         self.coverage_angles = np.zeros((self.ogm_width, self.ogm_height, self.number_of_bins))
-        # for s in range(len(self.number_of_bins)):
-        #     self.coverage_angles_ogm[s].info = data.info
-        #     self.coverage_number_ogm[s].data = np.zeros(self.ogm_width * self.ogm_height)
+        self.coverage_angles_ogm.info.width = self.ogm_width
+        self.coverage_angles_ogm.info.height = self.ogm_height * self.number_of_bins
+        self.coverage_number_ogm.data = np.zeros(self.ogm_width * self.ogm_height * self.number_of_bins)
+
 
         rospy.loginfo("OGM read!")
         self.ogm_compute = False
