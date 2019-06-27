@@ -8,6 +8,8 @@ from nav_msgs.msg import OccupancyGrid
 class CoverageSubscriber:
 
     def __init__(self):
+        self.brushfire_cffi = Cffi()
+
         # Origin is the translation between the (0,0) of the robot pose and the
         # (0,0) of the map
         self.origin = {}
@@ -95,11 +97,28 @@ class CoverageSubscriber:
             while self.ogm_compute:
                 pass
 
-            # Create histogram!
+            # Calculate brushfire field
+            self.brush = self.brushfire_cffi.obstacleBrushfireCffi(self.ogm)
+            near_obstacles = np.where(self.brush == 2)
+
+            # Read coverage angles ogm
+            rospy.Subscriber(self.coverage_angles_pub, OccupancyGrid, self.cov_callback)
+            rospy.spin()
 
             return
 
+        def cov_callback(self, data):
 
+            # Reshape ogm to a 3D array
+            for a in range(self.number_of_bins):
+                for x in range(0, self.ogm_width):
+                    for y in range(0, self.ogm_height):
+                        self.coverage_angles[x][y][a] = data.data[x + self.ogm_width * y + self.ogm_width * self.ogm_height * a]
+
+
+
+
+            return
 
 
         def read_ogm(self, data):
@@ -129,9 +148,6 @@ class CoverageSubscriber:
             self.coverage_ogm.data = np.zeros(self.ogm_width * self.ogm_height)
 
             self.coverage_angles = np.zeros((self.ogm_width, self.ogm_height, self.number_of_bins))
-            self.coverage_angles_ogm.info.width = self.ogm_width
-            self.coverage_angles_ogm.info.height = self.ogm_height * self.number_of_bins
-            self.coverage_number_ogm.data = np.zeros(self.ogm_width * self.ogm_height * self.number_of_bins)
 
             rospy.loginfo("OGM read!")
             self.ogm_compute = False
