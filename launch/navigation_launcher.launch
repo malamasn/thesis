@@ -17,6 +17,7 @@
   <rosparam file="$(find topology_finder)/config/config.yaml" command="load"/>
 
   <!-- Load nodes -->
+  <node pkg="topology_finder" type="coverage_specs_subscriber.py" name="coverage_specs_subscriber" output="screen"/>
   <node pkg="topology_finder" type="navigation.py" name="navigation" output="screen"/>
   <node pkg="topology_finder" type="coverage.py" name="coverage" output="screen"/>
 
