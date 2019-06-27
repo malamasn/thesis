@@ -39,6 +39,15 @@ class Coverage:
             self.sensor_shape.append(rospy.get_param(name + '/shape'))
             self.sensor_reliability.append(rospy.get_param(name + '/reliability'))
 
+        # Compute bins to keep with which angle a sensor covers each point
+        max_fov = max(self.sensor_fov)/2    # compute for one half (symmetric with sensor_direction)
+        self.number_of_bins = 2 * int(math.ceil(max_fov/5))     # 5 degrees in each bin
+        self.bins = []
+        for i in range(self.number_of_bins):
+            down = - self.number_of_bins/2 * 5 + i*5
+            up = down + 5
+            self.bins.append((down,up))
+
         # Load map's translation
         translation = rospy.get_param('origin')
         self.origin['x'] = translation[0]
@@ -62,6 +71,7 @@ class Coverage:
         # In the opposite case the cell's value will be 100
         self.coverage = []
         self.coverage_number = []
+        self.coverage_angles = []
         self.brush = 0
         # coverage_ogm will be published in the coverage_topic
         self.coverage_ogm = OccupancyGrid()
@@ -71,6 +81,13 @@ class Coverage:
         self.coverage_number_ogm = OccupancyGrid()
         self.coverage_number_ogm.header.frame_id = "map"
         self.coverage_number_topic = '/map/coverage_number'
+
+
+        # self.coverage_angles_ogm = []
+        # for s in range(len(self.number_of_bins)):
+        #     temp_ogm = OccupancyGrid()
+        #     temp_ogm.header.frame_id = "map"
+        #     self.coverage_angles_ogm.append(temp_ogm)
 
         self.current_pose = Pose()
         # robot_pose is current_pose in map's frame (aka in pixels)
@@ -171,6 +188,21 @@ class Coverage:
                         i = int(x + self.ogm_width * y)
                         self.coverage_ogm.data[i] = 100
                         self.coverage_number_ogm.data[i] += 1
+
+                        yaw_between_nodes = math.degrees(math.atan2(yy-y, xx-x))
+                        angle = yaw_between_nodes + th_deg + self.sensor_direction[s]
+
+                        # print('th', th_deg, 'dir', self.sensor_direction[s], 'yaw', yaw_between_nodes, 'angle', angle)
+                        if angle > 180:
+                            angle -= 360
+                        if angle <= -180:
+                            angle += 360
+                        for a in range(len(self.bins)):
+                            if angle >= self.bins[a][0] and angle < self.bins[a][1]:
+                                self.coverage_angles[x][y][a] += 1
+                                # self.coverage_angles_ogm[a].data[i] += 1
+                                # print(self.bins[a], a, angle)
+                                break
                 else:
                     rospy.loginfo("Error!Sensor's shape not found!")
                     return
@@ -292,6 +324,11 @@ class Coverage:
         self.coverage_number = np.zeros((self.ogm_width, self.ogm_height))
         self.coverage_number_ogm.info = data.info
         self.coverage_number_ogm.data = np.zeros(self.ogm_width * self.ogm_height)
+
+        self.coverage_angles = np.zeros((self.ogm_width, self.ogm_height, self.number_of_bins))
+        # for s in range(len(self.number_of_bins)):
+        #     self.coverage_angles_ogm[s].info = data.info
+        #     self.coverage_number_ogm[s].data = np.zeros(self.ogm_width * self.ogm_height)
 
         rospy.loginfo("OGM read!")
         self.ogm_compute = False
