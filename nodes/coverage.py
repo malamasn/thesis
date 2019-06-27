@@ -331,8 +331,7 @@ class Coverage:
         self.coverage_angles = np.zeros((self.ogm_width, self.ogm_height, self.number_of_bins))
         self.coverage_angles_ogm.info.width = self.ogm_width
         self.coverage_angles_ogm.info.height = self.ogm_height * self.number_of_bins
-        self.coverage_number_ogm.data = np.zeros(self.ogm_width * self.ogm_height * self.number_of_bins)
-
+        self.coverage_angles_ogm.data = np.zeros(self.ogm_width * self.ogm_height * self.number_of_bins)
 
         rospy.loginfo("OGM read!")
         self.ogm_compute = False
