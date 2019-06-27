@@ -5,6 +5,8 @@ import numpy as np
 
 from nav_msgs.msg import OccupancyGrid
 
+from utilities import Cffi
+
 class CoverageSubscriber:
 
     def __init__(self):
@@ -76,79 +78,83 @@ class CoverageSubscriber:
 
         self.coverage_angles_ogm = OccupancyGrid()
         self.coverage_angles_ogm.header.frame_id = "map"
-        # self.coverage_angles_ogm.append(temp_ogm)
+
         self.coverage_angles_topic = '/map/coverage_angles'
 
 
-        self.coverage_pub = rospy.Publisher(self.coverage_topic, \
-            OccupancyGrid, queue_size = 10)
+    def server_start(self):
+        rospy.init_node('coverage_subscriber')
+        rospy.loginfo('Coverage Subscriber node initialized.')
 
-        self.coverage_angles_pub = rospy.Publisher(self.coverage_angles_topic, \
-            OccupancyGrid, queue_size = 10)
+        # Read ogm
+        rospy.Subscriber(self.ogm_topic, OccupancyGrid, self.read_ogm)
+        while self.ogm_compute:
+            pass
 
-
-
-        def server_start(self):
-            rospy.init_node('coverage_subscriber')
-            rospy.loginfo('Coverage Subscriber node initialized.')
-
-            # Read ogm
-            rospy.Subscriber(self.ogm_topic, OccupancyGrid, self.read_ogm)
-            while self.ogm_compute:
-                pass
-
-            # Calculate brushfire field
-            self.brush = self.brushfire_cffi.obstacleBrushfireCffi(self.ogm)
-            near_obstacles = np.where(self.brush == 2)
-
-            # Read coverage angles ogm
-            rospy.Subscriber(self.coverage_angles_pub, OccupancyGrid, self.cov_callback)
-            rospy.spin()
-
-            return
-
-        def cov_callback(self, data):
-
-            # Reshape ogm to a 3D array
-            for a in range(self.number_of_bins):
-                for x in range(0, self.ogm_width):
-                    for y in range(0, self.ogm_height):
-                        self.coverage_angles[x][y][a] = data.data[x + self.ogm_width * y + self.ogm_width * self.ogm_height * a]
+        # Calculate brushfire field
+        self.brush = self.brushfire_cffi.obstacleBrushfireCffi(self.ogm)
 
 
+        # Read coverage angles ogm
+        rospy.Subscriber(self.coverage_angles_topic, OccupancyGrid, self.cov_callback, queue_size = 1)
+        rospy.spin()
+
+        return
+
+    def cov_callback(self, data):
+        print('Inside cov cb')
+        # Reshape ogm to a 3D array
+        for a in range(self.number_of_bins):
+            for x in range(0, self.ogm_width):
+                for y in range(0, self.ogm_height):
+                    self.coverage_angles[x][y][a] = data.data[x + self.ogm_width * y + self.ogm_width * self.ogm_height * a]
+
+        near_obstacles = np.where(self.brush == 2)
+
+        for a in range(self.number_of_bins):
+            temp = self.coverage_angles[:,:,a].copy()
+            total_looks = sum(temp[near_obstacles])
+            string = `self.bins[a]` + ' : ' + `total_looks`
+            rospy.loginfo(string)
 
 
-            return
+        return
 
 
-        def read_ogm(self, data):
-            # OGM is a 2D array of size width x height
-            # The values are from 0 to 100
-            # 0 is an unoccupied pixel
-            # 100 is an occupied pixel
-            # 50 or -1 is the unknown
+    def read_ogm(self, data):
+        # OGM is a 2D array of size width x height
+        # The values are from 0 to 100
+        # 0 is an unoccupied pixel
+        # 100 is an occupied pixel
+        # 50 or -1 is the unknown
 
-            rospy.loginfo("Coverage Subscriber node reading ogm.")
+        rospy.loginfo("Coverage Subscriber node reading ogm.")
 
-            self.ogm_raw = np.array(data.data)
-            self.ogm_width = data.info.width
-            self.ogm_height = data.info.height
-            self.ogm_header = data.header
-            self.ogm = np.zeros((data.info.width, data.info.height), \
-                    dtype = np.int)
+        self.ogm_raw = np.array(data.data)
+        self.ogm_width = data.info.width
+        self.ogm_height = data.info.height
+        self.ogm_header = data.header
+        self.ogm = np.zeros((data.info.width, data.info.height), \
+                dtype = np.int)
 
-            # Reshape ogm to a 2D array
-            for x in range(0, data.info.width):
-                for y in range(0, data.info.height):
-                    self.ogm[x][y] = data.data[x + data.info.width * y]
+        # Reshape ogm to a 2D array
+        for x in range(0, data.info.width):
+            for y in range(0, data.info.height):
+                self.ogm[x][y] = data.data[x + data.info.width * y]
 
-            # Initilize coverage OGM with same size width x height
-            self.coverage = np.zeros((self.ogm_width, self.ogm_height))
-            self.coverage_ogm.info = data.info
-            self.coverage_ogm.data = np.zeros(self.ogm_width * self.ogm_height)
+        # Initilize coverage OGM with same size width x height
+        self.coverage = np.zeros((self.ogm_width, self.ogm_height))
+        self.coverage_ogm.info = data.info
+        self.coverage_ogm.data = np.zeros(self.ogm_width * self.ogm_height)
 
-            self.coverage_angles = np.zeros((self.ogm_width, self.ogm_height, self.number_of_bins))
+        self.coverage_angles = np.zeros((self.ogm_width, self.ogm_height, self.number_of_bins))
 
-            rospy.loginfo("OGM read!")
-            self.ogm_compute = False
-            return
+        rospy.loginfo("OGM read!")
+        self.ogm_compute = False
+        return
+
+
+
+if __name__ == '__main__':
+    node = CoverageSubscriber()
+    node.server_start()
