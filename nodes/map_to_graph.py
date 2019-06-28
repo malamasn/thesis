@@ -34,6 +34,8 @@ class Map_To_Graph:
         self.origin['y'] = 0
         self.resolution = 0
 
+        self.step = 0
+
         # Load map's translation
         translation = rospy.get_param('origin')
         self.origin['x'] = translation[0]
@@ -600,7 +602,7 @@ class Map_To_Graph:
         obstacle_weight, rotation_weight = self.find_weights()
 
         # Uniform sampling on map
-        nodes, step = self.uniform_sampling()
+        nodes, self.step = self.uniform_sampling()
 
         # self.print_markers(nodes, [1., 0., 0.], self.node_publisher)
         rospy.sleep(1)
@@ -631,7 +633,7 @@ class Map_To_Graph:
 
             # Call hill climb algorithm
             max_iterations = 150 * nodes_length
-            node_route, cost, iter = self.routing.step_hillclimb(distances, max_iterations, step)
+            node_route, cost, iter = self.routing.step_hillclimb(distances, max_iterations, self.step)
             print('Route of wall follow nodes found.')
             print('First step HC route length', cost)
 
@@ -677,24 +679,24 @@ class Map_To_Graph:
             #         x, y = found_nodes[node_route[n]]
             #         x_prev, y_prev = found_nodes[node_route[n-1]]
             #         # If node is far from previous, a new segment is needed
-            #         if np.linalg.norm(np.array((x,y))- np.array((x_prev,y_prev))) > 3 * step:
+            #         if np.linalg.norm(np.array((x,y))- np.array((x_prev,y_prev))) > 3 * self.step:
             #             break
             #         segment.append((x,y))
             #         # Check in nearest neighbors if euclidean distance is far smaller than distance inside the route
-            #         if (x+step, y) in found_nodes:
-            #             num_in_seq = found_nodes.index((x+step,y))
+            #         if (x+self.step, y) in found_nodes:
+            #             num_in_seq = found_nodes.index((x+self.step,y))
             #             if node_route[num_in_seq] > n+threshold:
             #                 flag = True
-            #         if (x-step, y) in found_nodes:
-            #             num_in_seq = found_nodes.index((x-step,y))
+            #         if (x-self.step, y) in found_nodes:
+            #             num_in_seq = found_nodes.index((x-self.step,y))
             #             if node_route[num_in_seq] > n+threshold:
             #                 flag = True
-            #         if (x, y+step) in found_nodes:
-            #             num_in_seq = found_nodes.index((x,y+step))
+            #         if (x, y+self.step) in found_nodes:
+            #             num_in_seq = found_nodes.index((x,y+self.step))
             #             if node_route[num_in_seq] > n+threshold:
             #                 flag = True
-            #         if (x, y-step) in found_nodes:
-            #             num_in_seq = found_nodes.index((x,y-step))
+            #         if (x, y-self.step) in found_nodes:
+            #             num_in_seq = found_nodes.index((x,y-self.step))
             #             if node_route[num_in_seq] > n+threshold:
             #                 flag = True
             #         n += 1
@@ -738,7 +740,7 @@ class Map_To_Graph:
             # max_iterations = 2000 * len(splited_node_route)
             # # # segment_route, cost, iter = self.routing.anneal(segment_dist, max_iterations, 1.0, 0.9)
             # segment_route, cost, iter = self.routing.random_restart_hillclimb(segment_dist, max_iterations)
-            # # segment_route, cost, iter = self.routing.step_hillclimb(segment_dist, max_iterations, step)
+            # # segment_route, cost, iter = self.routing.step_hillclimb(segment_dist, max_iterations, self.step)
             # # segment_route = range(len(splited_node_route))
             #
             # # Reverse segments if make route shorter
@@ -802,7 +804,7 @@ class Map_To_Graph:
             #         x, y = found_nodes_with_yaw[n]['position']
             #         x_prev, y_prev = found_nodes_with_yaw[n-1]['position']
             #         # If node is far from previous, a new segment is needed
-            #         if np.linalg.norm(np.array((x,y))- np.array((x_prev,y_prev))) > step:
+            #         if np.linalg.norm(np.array((x,y))- np.array((x_prev,y_prev))) > self.step:
             #             break
             #         if len(segment) > 2:
             #             # If 3 nodes not in one line (straight segment) don't add it
@@ -880,7 +882,7 @@ class Map_To_Graph:
             # # print(final_pose_route)
             #
             # found_nodes_with_yaw = final_pose_route
-            
+
             self.wall_follow_nodes.append(found_nodes)
             self.wall_follow_sequence.append(found_nodes_with_yaw)
 
@@ -941,7 +943,7 @@ class Map_To_Graph:
         self.wall_follow_sequence = []
 
         # Uniform sampling on map
-        nodes, step = self.uniform_sampling()
+        nodes, self.step = self.uniform_sampling()
 
         self.print_markers(nodes, [1., 0., 0.], self.node_publisher)
         rospy.sleep(2)
@@ -967,7 +969,7 @@ class Map_To_Graph:
             # Call hill climb algorithm
             max_iterations = 150 * nodes_length
             # node_route, cost, iter = self.routing.anneal(distances, max_iterations, 1.0, 0.95)
-            node_route, cost, iter = self.routing.step_hillclimb(distances, max_iterations, step)
+            node_route, cost, iter = self.routing.step_hillclimb(distances, max_iterations, self.step)
             print('Route of wall follow nodes found.')
 
             found_nodes_with_yaw = []
@@ -988,8 +990,8 @@ class Map_To_Graph:
                     else:
                         x_prev, y_prev = full_found_nodes[node_route[n-1]]
                         x_next, y_next = full_found_nodes[node_route[n+1]]
-                        if np.abs(x-x_prev) == step and np.abs(x-x_next) == step and y == y_prev and y == y_next \
-                                or np.abs(y-y_prev) == step and np.abs(y-y_next) == step and x == x_prev and x == x_next:
+                        if np.abs(x-x_prev) == self.step and np.abs(x-x_next) == self.step and y == y_prev and y == y_next \
+                                or np.abs(y-y_prev) == self.step and np.abs(y-y_next) == self.step and x == x_prev and x == x_next:
                             eliminate = False
                             continue
                 else:
