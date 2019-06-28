@@ -102,7 +102,6 @@ class CoverageSubscriber:
         return
 
     def cov_callback(self, data):
-        print('Inside cov cb')
         # Reshape ogm to a 3D array
         for a in range(self.number_of_bins):
             for x in range(0, self.ogm_width):
@@ -114,7 +113,7 @@ class CoverageSubscriber:
         for a in range(self.number_of_bins):
             temp = self.coverage_angles[:,:,a].copy()
             total_looks = sum(temp[near_obstacles])
-            string = `self.bins[a]` + ' : ' + `total_looks`
+            string = `Bin: self.bins[a]` + ' total: ' + `total_looks`
             rospy.loginfo(string)
 
 
