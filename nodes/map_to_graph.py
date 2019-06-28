@@ -914,8 +914,8 @@ class Map_To_Graph:
                 node = room[i]
                 x, y = node['position']
                 yaw = node['yaw']
-                if not i or i == len(room)-1:
-                    self.coverage.updateCover([x,y,yaw], publish = False)
+                if not i or i == len(room)-1 or not eliminate:
+                    self.coverage.updateCover([x,y,yaw], publish = False, track_specs = False)
                     updated = True
                 else:
                     updated = self.coverage.checkAndUpdateCover(self.brush, [x,y,yaw], 0.85)

@@ -149,7 +149,7 @@ class Coverage:
         return
 
 
-    def updateCover(self, pose = None, publish = True):
+    def updateCover(self, pose = None, publish = True, track_specs = True):
         if pose == None:
             self.readPose = True
             self.readRobotPose()
@@ -177,41 +177,45 @@ class Coverage:
                     indexes = Cffi.rectangularBrushfireCoverageCffi((xx,yy), self.ogm, cover_length, self.sensor_fov[s], th_deg, self.sensor_direction[s])
                     for x,y in indexes:
                         self.coverage[x, y] = 100 * self.sensor_reliability[s]
-                        self.coverage_number[x, y] += 1
                         i = int(x + self.ogm_width * y)
                         self.coverage_ogm.data[i] = 100
-                        self.coverage_number_ogm.data[i] += 1
+                        if track_specs:
+                            self.coverage_number_ogm.data[i] += 1
+                            self.coverage_number[x, y] += 1
+
                 elif self.sensor_shape[s] == 'circular':
                     indexes = Cffi.circularRayCastCoverageCffi((xx,yy), self.ogm, cover_length, self.sensor_fov[s], th_deg, self.sensor_direction[s])
                     for x,y in indexes:
                         self.coverage[x, y] = 100 * self.sensor_reliability[s]
-                        self.coverage_number[x, y] += 1
                         i = int(x + self.ogm_width * y)
                         self.coverage_ogm.data[i] = 100
-                        self.coverage_number_ogm.data[i] += 1
+                        if track_specs:
+                            self.coverage_number[x, y] += 1
+                            self.coverage_number_ogm.data[i] += 1
 
-                        yaw_between_nodes = math.degrees(math.atan2(yy-y, xx-x))
-                        angle = yaw_between_nodes + th_deg + self.sensor_direction[s]
+                            yaw_between_nodes = math.degrees(math.atan2(yy-y, xx-x))
+                            angle = yaw_between_nodes + th_deg + self.sensor_direction[s]
 
-                        # print('th', th_deg, 'dir', self.sensor_direction[s], 'yaw', yaw_between_nodes, 'angle', angle)
-                        if angle > 180:
-                            angle -= 360
-                        if angle <= -180:
-                            angle += 360
-                        for a in range(len(self.bins)):
-                            if angle >= self.bins[a][0] and angle < self.bins[a][1]:
-                                self.coverage_angles[x][y][a] += 1
-                                ii = int(x + self.ogm_width * y + self.ogm_height * self.ogm_width * a)
-                                self.coverage_angles_ogm.data[ii] += 1
-                                # print(self.bins[a], a, angle)
-                                break
+                            # print('th', th_deg, 'dir', self.sensor_direction[s], 'yaw', yaw_between_nodes, 'angle', angle)
+                            if angle > 180:
+                                angle -= 360
+                            if angle <= -180:
+                                angle += 360
+                            for a in range(len(self.bins)):
+                                if angle >= self.bins[a][0] and angle < self.bins[a][1]:
+                                    self.coverage_angles[x][y][a] += 1
+                                    ii = int(x + self.ogm_width * y + self.ogm_height * self.ogm_width * a)
+                                    self.coverage_angles_ogm.data[ii] += 1
+                                    # print(self.bins[a], a, angle)
+                                    break
                 else:
                     rospy.loginfo("Error!Sensor's shape not found!")
                     return
             if publish:
                 self.coverage_pub.publish(self.coverage_ogm)
-                self.coverage_number_pub.publish(self.coverage_number_ogm)
-                self.coverage_angles_pub.publish(self.coverage_angles_ogm)
+                if track_specs:
+                    self.coverage_number_pub.publish(self.coverage_number_ogm)
+                    self.coverage_angles_pub.publish(self.coverage_angles_ogm)
                 rospy.loginfo("Update coverage ogm!")
 
         self.previous_robot_pose['x'] = xx
