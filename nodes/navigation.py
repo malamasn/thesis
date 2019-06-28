@@ -81,6 +81,9 @@ class Navigation:
         self.room_sequence = []
         self.wall_follow_nodes = []
         self.wall_follow_sequence = []
+        self.zig_zag_nodes = []
+        self.zig_zag_sequence = []
+
 
         # Load nodes from json file
         map_name = rospy.get_param('map_name')
@@ -96,6 +99,8 @@ class Navigation:
         self.room_sequence = data['room_sequence']
         self.wall_follow_nodes = data['wall_follow_nodes']
         self.wall_follow_sequence = data['wall_follow_sequence']
+        self.zig_zag_nodes = data['zig_zag_nodes']
+        self.zig_zag_sequence = data['zig_zag_sequence']
 
         self.node_publisher = rospy.Publisher('/nodes', Marker, queue_size = 100)
         self.door_node_pub = rospy.Publisher('/nodes/doors', Marker, queue_size = 100)
@@ -195,6 +200,25 @@ class Navigation:
 
                 current_room_index = (current_room_index + 1) % len(self.room_sequence)
                 current_room = self.room_sequence[current_room_index]
+        elif self.navigation_pattern == 'zig_zag':
+            if self.zig_zag_sequence == []:
+                rospy.loginfo("This navigation pattern has not been calculated for this map!")
+                return
+
+            for i in range(len(self.room_sequence)):
+                # print nodes
+                nodes = self.zig_zag_nodes[current_room]
+                self.print_markers(nodes)
+                # find nodes of current room
+                nodes = self.zig_zag_sequence[current_room]
+                # navigate to all nodes
+                for node in nodes:
+                    result = self.goToGoal(node['position'], node['yaw'])
+                    rospy.sleep(0.1)
+
+                current_room_index = (current_room_index + 1) % len(self.room_sequence)
+                current_room = self.room_sequence[current_room_index]
+
         finish_time = rospy.get_time()
         print('Start time', start_time, 'Finish time', finish_time, 'Duration', finish_time-start_time)
         return

@@ -13,13 +13,13 @@ rfid2:
   # sensor_name: 'rfid_antenna'
   sensor_direction: -90
   fov: 60
-  range: 1.2
+  range: 1
   shape: 'circular'
   reliability: 1
 
 
-min_distance: 0.2
-navigation_pattern: 'wall_follow'
-# navigation_pattern: 'boustrophedon'
+min_distance: 0.3
+# navigation_pattern: 'wall_follow'
+navigation_pattern: 'zig_zag'
 navigation_target: 'cover_first'
 # navigation_target: 'fast_first'
