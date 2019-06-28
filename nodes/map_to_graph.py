@@ -903,7 +903,9 @@ class Map_To_Graph:
         return
 
     # Do an a priori coverage with found order of nodes to eliminate the not needed
-    def a_priori_coverage(self, nodes):
+    def a_priori_coverage(self, nodes, eliminate = True):
+        self.coverage.initCoverage()
+
         new_wall_follow = []
         new_wall_follow_nodes = []
         for room in nodes:

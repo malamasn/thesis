@@ -113,6 +113,10 @@ class Coverage:
     def getCoverageOgm(self):
         return self.coverage_ogm
 
+    def initCoverage(self):
+        self.coverage = np.zeros((self.ogm_width, self.ogm_height))
+        return
+
 
     def server_start(self):
         rospy.init_node('coverage')
