@@ -85,7 +85,8 @@ class Map_To_Graph:
         self.exiting_doors = {}
         self.wall_follow_nodes = []
         self.wall_follow_sequence = []
-
+        self.zig_zag_nodes = []
+        self.zig_zag_sequence = []
 
         # Load nodes from json file
         map_name = rospy.get_param('map_name')
@@ -166,13 +167,25 @@ class Map_To_Graph:
         self.data['wall_follow_nodes'] = self.wall_follow_nodes
         self.data['wall_follow_sequence'] = self.wall_follow_sequence
 
+        # rospy.loginfo("Visualize node sequence")
+        # self.visualise_node_sequence(self.wall_follow_sequence)
+
+        self.zig_zag_sequence, self.zig_zag_nodes = self.add_zig_zag_nodes(self.wall_follow_sequence)
+
+        self.wall_follow_sequence, self.wall_follow_nodes = self.a_priori_coverage(self.zig_zag_sequence, False)
+
+        # Save zig zag nodes to json
+        self.data['zig_zag_nodes'] = self.zig_zag_nodes
+        self.data['zig_zag_sequence'] = self.zig_zag_sequence
+
+        # rospy.loginfo("Visualize zig zag node sequence")
+        # self.visualise_node_sequence(self.zig_zag_sequence)
+
         map_name = rospy.get_param('map_name')
         filename = '/home/mal/catkin_ws/src/topology_finder/data/' + map_name +'.json'
         with open(filename, 'w') as outfile:
             data_to_json = json.dump(self.data, outfile)
 
-        rospy.loginfo("Visualize node sequence")
-        self.visualise_node_sequence(self.wall_follow_sequence)
 
         return
 
@@ -449,6 +462,57 @@ class Map_To_Graph:
             rotation_weight = 1
 
         return obstacle_weight, rotation_weight
+
+    # Add zig zag nodes inside already computed node sequence
+    def add_zig_zag_nodes(self, wall_follow_sequence):
+        zig_zag_nodes = []
+        zig_zag_sequence = []
+
+        for room in wall_follow_sequence:
+            temp_nodes = []
+            temp_sequence = []
+
+            for i in range(len(room)):
+                if not i:
+                    temp_nodes.append(room[i]['position'])
+                    temp_sequence.append(room[i])
+                    continue
+
+                node = room[i]['position']
+                previous_node = room[i-1]['position']
+                if previous_node[0] == node[0] and np.abs(previous_node[1]-node[1]) == self.step:
+                    x1 = int(node[0] - self.step/2)
+                    x2 = int(node[0] + self.step/2)
+                    y = int(np.min([previous_node[1],node[1]]) + self.step/2)
+                    if self.brush[x1,y] >= self.brush[x2,y]:
+                        temp_nodes.append((x1,y))
+                        yaw = math.degrees(math.atan2(y-node[1], x1-node[0]))
+                        temp_sequence.append({'position': (x1,y), 'yaw': yaw})
+                    else:
+                        temp_nodes.append((x2,y))
+                        yaw = math.degrees(math.atan2(y-node[1], x2-node[0]))
+                        temp_sequence.append({'position': (x2,y), 'yaw': yaw})
+
+                elif previous_node[1] == node[1] and np.abs(previous_node[0]-node[0]) == self.step:
+                    y1 = int(node[1] - self.step/2)
+                    y2 = int(node[1] + self.step/2)
+                    x = int(np.min([previous_node[0],node[0]]) + self.step/2)
+                    if self.brush[x,y1] >= self.brush[x,y2]:
+                        temp_nodes.append((x,y1))
+                        yaw = math.degrees(math.atan2(y1-node[1], x-node[0]))
+                        temp_sequence.append({'position': (x,y1), 'yaw': yaw})
+                    else:
+                        temp_nodes.append((x,y2))
+                        yaw = math.degrees(math.atan2(y2-node[1], x-node[0]))
+                        temp_sequence.append({'position': (x,y2), 'yaw': yaw})
+
+                temp_nodes.append(room[i]['position'])
+                temp_sequence.append(room[i])
+
+            zig_zag_nodes.append(temp_nodes)
+            zig_zag_sequence.append(temp_sequence)
+
+        return zig_zag_sequence, zig_zag_nodes
 
     # Find nodes for wall following coverage
     def find_all_wall_nodes(self, save_result):
