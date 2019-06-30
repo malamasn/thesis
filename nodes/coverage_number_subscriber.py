@@ -88,7 +88,7 @@ class CoverageNumberSubscriber:
 
 
         # Read coverage angles ogm
-        rospy.Subscriber(self.coverage__number_topic, OccupancyGrid, self.cov_callback, queue_size = 1)
+        rospy.Subscriber(self.coverage_number_topic, OccupancyGrid, self.cov_callback, queue_size = 1)
         rospy.spin()
 
         return
