@@ -113,7 +113,7 @@ class CoverageSubscriber:
         for a in range(self.number_of_bins):
             temp = self.coverage_angles[:,:,a].copy()
             total_looks = sum(temp[near_obstacles])
-            string = `Bin: self.bins[a]` + ' total: ' + `total_looks`
+            string = 'Bin: ' + `self.bins[a]` + ' total: ' + `total_looks`
             rospy.loginfo(string)
 
 
