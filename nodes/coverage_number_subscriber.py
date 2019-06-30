@@ -106,11 +106,16 @@ class CoverageNumberSubscriber:
         # Count values and save to a dictionary
         counted = Counter(number)
         print(counted)
+
+        plt.close()
+
         # Covert to dataframe
         df = pd.DataFrame(counted, index = counted.keys())
         df.drop(df.columns[1:], inplace = True)
         # Plot results
         df.plot(kind='bar')
+        plt.title('Number of each obstacle\'s coverage.')
+        print('Time of plot', rospy.get_time())
         plt.show()
         return
 
