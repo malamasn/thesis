@@ -18,5 +18,6 @@
 
   <!-- Load node -->
   <node pkg="topology_finder" type="coverage_specs_subscriber.py" name="coverage_specs_subscriber" output="screen"/>
+  <node pkg="topology_finder" type="coverage_number_subscriber.py" name="coverage_number_subscriber" output="screen"/>
   <node pkg="topology_finder" type="coverage.py" name="coverage" output="screen"/>
 </launch>
