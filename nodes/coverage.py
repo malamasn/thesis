@@ -41,12 +41,18 @@ class Coverage:
 
         # Compute bins to keep with which angle a sensor covers each point
         max_fov = max(self.sensor_fov)/2    # compute for one half (symmetric with sensor_direction)
-        self.number_of_bins = 2 * int(math.ceil(max_fov/5))     # 5 degrees in each bin
-        self.bins = []
-        for i in range(self.number_of_bins):
-            down = - self.number_of_bins/2 * 5 + i*5
-            up = down + 5
-            self.bins.append((down,up))
+        # self.number_of_bins = 2 * int(math.ceil(max_fov/5))     # 5 degrees in each bin
+        # self.bins = []
+        # for i in range(self.number_of_bins):
+        #     down = - self.number_of_bins/2 * 5 + i*5
+        #     up = down + 5
+        #     self.bins.append((down,up))
+        
+        # Compute bins of negative and positive only
+        self.number_of_bins = 2
+        self.bins.append((-max_fov, 0))
+        self.bins.append((0, max_fov))
+
 
         # Load map's translation
         translation = rospy.get_param('origin')
