@@ -159,6 +159,7 @@ class Map_To_Graph:
         # if self.wall_follow_nodes == [] or self.wall_follow_sequence == []:
         # self.find_all_wall_nodes(True)
         self.find_best_path_wall_nodes()
+
         # self.find_half_wall_nodes(True)
         # self.find_half_no_double_wall_nodes(True)
 
@@ -169,8 +170,11 @@ class Map_To_Graph:
         self.data['wall_follow_nodes'] = self.wall_follow_nodes
         self.data['wall_follow_sequence'] = self.wall_follow_sequence
 
-        # rospy.loginfo("Visualize node sequence")
-        # self.visualise_node_sequence(self.wall_follow_sequence)
+        rospy.loginfo("Visualize node sequence")
+        self.visualise_node_sequence(self.wall_follow_sequence)
+        print("5 secs sleep with wall_follow_sequence")
+
+        rospy.sleep(5)
 
         self.zig_zag_sequence, self.zig_zag_nodes = self.add_zig_zag_nodes(self.wall_follow_sequence)
 
@@ -180,14 +184,13 @@ class Map_To_Graph:
         self.data['zig_zag_nodes'] = self.zig_zag_nodes
         self.data['zig_zag_sequence'] = self.zig_zag_sequence
 
-        # rospy.loginfo("Visualize zig zag node sequence")
-        # self.visualise_node_sequence(self.zig_zag_sequence)
+        rospy.loginfo("Visualize zig zag node sequence")
+        self.visualise_node_sequence(self.zig_zag_sequence)
 
         map_name = rospy.get_param('map_name')
         filename = '/home/mal/catkin_ws/src/topology_finder/data/' + map_name +'.json'
         with open(filename, 'w') as outfile:
             data_to_json = json.dump(self.data, outfile)
-
 
         return
 
