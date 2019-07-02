@@ -53,7 +53,7 @@ class Map_To_Graph:
         self.navigation_target = 0
 
         # Read sensor's specs
-        self.min_distance = rospy.get_param('min_distance')
+        self.robot_radius = rospy.get_param('robot_radius')
         self.sensor_names = rospy.get_param('sensor_names')
         self.sensor_number = len(self.sensor_names)
         self.navigation_target = rospy.get_param('navigation_target')
@@ -229,23 +229,55 @@ class Map_To_Graph:
         nodes = []
         # Sampling step is half the sensor's range
         min_range = min(self.sensor_range)
-        min_range_res = min_range / (self.resolution * 2)
-        # max_range = max(self.sensor_range)
-        # max_range_res = max_range / (self.resolution * 2)
+        max_range = int(max(self.sensor_range)/self.resolution)
 
-        step = int(min_range /(self.resolution * 2))
-        # step = int(min_range /(self.resolution * 1))
 
-        if step < self.min_distance:
-            loginfo("Error. Uniform sampling step size too small!")
-            return
+        step = int(1.5 * self.robot_radius /(self.resolution * 2))
 
-        for x in range(0, self.ogm_width, step):
-            for y in range(0, self.ogm_height, step):
-                # Node should be close to obstacle, but not too close to avoid collision
-                if self.brush[x][y] > min_range_res and self.brush[x][y] <= 2*min_range_res:
-                    nodes.append((x,y))
-        return nodes, step
+        step_list = []
+        while step <= int(max(self.sensor_range)/ self.resolution):
+            temp_nodes = []
+            step_list.append(step)
+            for x in range(0, self.ogm_width, step):
+                for y in range(0, self.ogm_height, step):
+                    # Node should be close to obstacle, but not too close to avoid collision
+                    if self.brush[x][y] > step and self.brush[x][y] <= 2*step:
+                        temp_nodes.append((x,y))
+            step += int(min_range / (4 * self.resolution))
+            nodes.append(temp_nodes)
+
+        obstacles = []
+        final_nodes = []
+        i = len(nodes) - 1
+        while i >= 0:
+            temp_nodes = nodes[i]
+            # self.print_markers(temp_nodes, [1., 0., 0.], self.node_publisher)
+            # rospy.sleep(2)
+            temp_obstacles = []
+            # Check if new nodes override previous ones and delete them
+            for point in temp_nodes:
+                x,y = point
+                indexes = self.brushfire_cffi.circularRayCastCoverageCffi(point, self.ogm, max_range, 360, 0, 0, True)
+                if not len(indexes):
+                    continue
+
+                if i == len(nodes) - 1:
+                    temp_obstacles.extend(indexes)
+                    final_nodes.append(point)
+                else:
+                    p = 0
+                    for index in indexes:
+                        if index in obstacles:
+                            p += 1
+                    p /= len(indexes)
+                    if p < 0.9:
+                        final_nodes.append((x,y))
+                        temp_obstacles.extend(indexes)
+                        temp_obstacles = list(set(temp_obstacles))
+                        obstacles.extend(temp_obstacles)
+            obstacles = list(set(obstacles))
+            i -= 1
+        return final_nodes, step_list
 
     # Find sequence of rooms
     def find_room_sequence(self, save_result):
@@ -482,10 +514,11 @@ class Map_To_Graph:
 
                 node = room[i]['position']
                 previous_node = room[i-1]['position']
-                if previous_node[0] == node[0] and np.abs(previous_node[1]-node[1]) == self.step:
-                    x1 = int(node[0] - self.step/2)
-                    x2 = int(node[0] + self.step/2)
-                    y = int(np.min([previous_node[1],node[1]]) + self.step/2)
+                if previous_node[0] == node[0] and np.abs(previous_node[1]-node[1]) in self.step:
+                    dif = np.abs(previous_node[1]-node[1])
+                    x1 = int(node[0] - dif/2)
+                    x2 = int(node[0] + dif/2)
+                    y = int(np.min([previous_node[1],node[1]]) + dif/2)
                     if self.brush[x1,y] >= self.brush[x2,y]:
                         temp_nodes.append((x1,y))
                         yaw = math.degrees(math.atan2(y-node[1], x1-node[0]))
@@ -495,10 +528,11 @@ class Map_To_Graph:
                         yaw = math.degrees(math.atan2(y-node[1], x2-node[0]))
                         temp_sequence.append({'position': (x2,y), 'yaw': yaw})
 
-                elif previous_node[1] == node[1] and np.abs(previous_node[0]-node[0]) == self.step:
-                    y1 = int(node[1] - self.step/2)
-                    y2 = int(node[1] + self.step/2)
-                    x = int(np.min([previous_node[0],node[0]]) + self.step/2)
+                elif previous_node[1] == node[1] and np.abs(previous_node[0]-node[0]) in self.step:
+                    dif = np.abs(previous_node[0]-node[0])
+                    y1 = int(node[1] - dif/2)
+                    y2 = int(node[1] + dif/2)
+                    x = int(np.min([previous_node[0],node[0]]) + dif/2)
                     if self.brush[x,y1] >= self.brush[x,y2]:
                         temp_nodes.append((x,y1))
                         yaw = math.degrees(math.atan2(y1-node[1], x-node[0]))

@@ -161,7 +161,7 @@ class Routing:
 
     def step_hillclimb(self, distances, epochs, step):
         '''
-        keep distances equal to step and minimize all others
+        keep distances equal to min step and minimize all others
         until the sequence is found or epochs is reached
         '''
         length = distances.shape[0]
@@ -173,7 +173,7 @@ class Routing:
             if iter >= epochs:
                 break
             min = distances[best[i]][best[i+1]]
-            if min <= step:
+            if min <= np.min(step):
                 continue
             else:
                 index = i+1
@@ -183,7 +183,7 @@ class Routing:
                         min = dist
                         index = j
                         iter += 1
-                    if min <= step:
+                    if min <= np.min(step):
                         break
                 best[i+1], best[index] = best[index], best[i+1]
                 best_score = self.route_length(distances, best)
