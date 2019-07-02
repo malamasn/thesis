@@ -76,16 +76,24 @@ class CoverageSubscriber:
         self.coverage = []
         self.coverage_number = []
         self.coverage_angles = []
+        self.coverage_diverge = []
         self.brush = 0
         # coverage_ogm will be published in the coverage_topic
         self.coverage_ogm = OccupancyGrid()
         self.coverage_ogm.header.frame_id = "map"
         self.coverage_topic = '/map/coverage'
 
+        self.coverage_diverge_ogm = OccupancyGrid()
+        self.coverage_diverge_ogm.header.frame_id = "map"
+        self.coverage_diverge_topic = '/map/coverage_angles/diverge'
+
         self.coverage_angles_ogm = OccupancyGrid()
         self.coverage_angles_ogm.header.frame_id = "map"
 
         self.coverage_angles_topic = '/map/coverage_angles'
+
+        self.coverage_diverge_pub = rospy.Publisher(self.coverage_diverge_topic, \
+            OccupancyGrid, queue_size = 1)
 
 
     def server_start(self):
@@ -116,11 +124,28 @@ class CoverageSubscriber:
 
         near_obstacles = np.where(self.brush == 2)
 
-        for a in range(self.number_of_bins):
-            temp = self.coverage_angles[:,:,a].copy()
-            total_looks = sum(temp[near_obstacles])
-            string = 'Bin: ' + `self.bins[a]` + ' total: ' + `total_looks`
-            rospy.loginfo(string)
+        for x in range(0, self.ogm_width):
+            for y in range(0, self.ogm_height):
+                left = self.coverage_angles[x][y][0]
+                right = self.coverage_angles[x][y][1]
+                if left + right:
+                    self.coverage_diverge[x][y] = np.abs(left-right)/(left + right)
+
+        max_val = np.max(self.coverage_diverge)
+        if not max_val:
+            max_val = 1
+        for x in range(0, self.ogm_width):
+            for y in range(0, self.ogm_height):
+                self.coverage_diverge_ogm.data[x + self.ogm_width * y] = int(100 * self.coverage_diverge[x][y]/max_val)
+
+        self.coverage_diverge_pub.publish(self.coverage_diverge_ogm)
+        rospy.loginfo("Maximum value of divergence is {}".format(max_val))
+        #
+        # for a in range(self.number_of_bins):
+        #     temp = self.coverage_angles[:,:,a].copy()
+        #     total_looks = sum(temp[near_obstacles])
+        #     string = 'Bin: ' + `self.bins[a]` + ' total: ' + `total_looks`
+        #     rospy.loginfo(string)
 
 
         return
@@ -151,6 +176,10 @@ class CoverageSubscriber:
         self.coverage = np.zeros((self.ogm_width, self.ogm_height))
         self.coverage_ogm.info = data.info
         self.coverage_ogm.data = np.zeros(self.ogm_width * self.ogm_height)
+
+        self.coverage_diverge = np.zeros((self.ogm_width, self.ogm_height))
+        self.coverage_diverge_ogm.info = data.info
+        self.coverage_diverge_ogm.data = np.zeros(self.ogm_width * self.ogm_height)
 
         self.coverage_angles = np.zeros((self.ogm_width, self.ogm_height, self.number_of_bins))
 
