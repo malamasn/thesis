@@ -225,6 +225,8 @@ class Coverage:
                 self.coverage_pub.publish(self.coverage_ogm)
                 if track_specs:
                     self.coverage_number_pub.publish(self.coverage_number_ogm)
+                    max_val = np.max(self.coverage_number)
+                    rospy.loginfo("Maximum number of coverage look ups of points is {}.".format(max_val))
                     self.coverage_angles_pub.publish(self.coverage_angles_ogm)
                 rospy.loginfo("Update coverage ogm!")
 
