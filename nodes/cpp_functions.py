@@ -562,7 +562,7 @@ ffi.set_source("_cpp_functions",
         double angle;
         int step;
         cover_length += 2;
-        for(double theta = -fov/2; theta <= fov/2; theta += 1)
+        for(double theta = -fov/2; theta <= fov/2; theta += 0.5)
             {
             step = 2;
             angle = (th_deg + direction + theta) *  M_PI / 180.0;
