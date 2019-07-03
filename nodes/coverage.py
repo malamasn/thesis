@@ -201,7 +201,8 @@ class Coverage:
                         self.coverage_ogm.data[i] = 100
                         if track_specs:
                             self.coverage_number[x, y] += 1
-                            self.coverage_number_ogm.data[i] += 1
+                            if self.coverage_number[x, y] < 100:
+                                self.coverage_number_ogm.data[i] += 1
 
                             yaw_between_nodes = math.degrees(math.atan2(yy-y, xx-x))
                             angle = yaw_between_nodes + th_deg + self.sensor_direction[s]
