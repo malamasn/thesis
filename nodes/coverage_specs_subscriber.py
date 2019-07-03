@@ -123,23 +123,26 @@ class CoverageSubscriber:
                     self.coverage_angles[x][y][a] = data.data[x + self.ogm_width * y + self.ogm_width * self.ogm_height * a]
 
         near_obstacles = np.where(self.brush == 2)
+        near_obstacles_looked = []
 
         for x in range(0, self.ogm_width):
             for y in range(0, self.ogm_height):
-                left = self.coverage_angles[x][y][0]
-                right = self.coverage_angles[x][y][1]
-                if left + right:
-                    self.coverage_diverge[x][y] = np.abs(left-right)/(left + right)
+                if self.brush[x][y] == 2:
+                    left = self.coverage_angles[x][y][0]
+                    right = self.coverage_angles[x][y][1]
+                    if left + right:
+                        near_obstacles_looked.append((x,y))
+                        self.coverage_diverge[x][y] = np.abs(left-right)/(left + right)
+                        self.coverage_diverge_ogm.data[x + self.ogm_width * y] = int(100 * self.coverage_diverge[x][y])
 
-        max_val = np.max(self.coverage_diverge)
-        if not max_val:
-            max_val = 1
-        for x in range(0, self.ogm_width):
-            for y in range(0, self.ogm_height):
-                self.coverage_diverge_ogm.data[x + self.ogm_width * y] = int(100 * self.coverage_diverge[x][y]/max_val)
+        # Retrieve metrics
+        values = self.coverage_diverge[near_obstacles]
+        rospy.loginfo("Coverage Angle Divergence Mean: {}, Std: {}".format(np.mean(values), np.std(values)))
+
+        values = self.coverage_diverge[zip(*near_obstacles_looked)]
+        rospy.loginfo("Coverage Angle Divergence only of covered obstacles Mean: {}, Std: {}".format(np.mean(values), np.std(values)))
 
         self.coverage_diverge_pub.publish(self.coverage_diverge_ogm)
-        rospy.loginfo("Maximum value of divergence is {}".format(max_val))
         #
         # for a in range(self.number_of_bins):
         #     temp = self.coverage_angles[:,:,a].copy()
@@ -177,9 +180,9 @@ class CoverageSubscriber:
         self.coverage_ogm.info = data.info
         self.coverage_ogm.data = np.zeros(self.ogm_width * self.ogm_height)
 
-        self.coverage_diverge = np.zeros((self.ogm_width, self.ogm_height))
+        self.coverage_diverge = np.full((self.ogm_width, self.ogm_height), 100)
         self.coverage_diverge_ogm.info = data.info
-        self.coverage_diverge_ogm.data = np.zeros(self.ogm_width * self.ogm_height)
+        self.coverage_diverge_ogm.data = np.full(self.ogm_width * self.ogm_height, 100)
 
         self.coverage_angles = np.zeros((self.ogm_width, self.ogm_height, self.number_of_bins))
 

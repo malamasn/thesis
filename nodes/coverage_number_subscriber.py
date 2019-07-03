@@ -103,9 +103,12 @@ class CoverageNumberSubscriber:
 
         # Read coverage looks at obstacles
         number = self.coverage_number[near_obstacles]
+
+        rospy.loginfo('Coverage Number Mean: {}, Std: {}'.format(np.mean(number), np.std(number)))
         # Count values and save to a dictionary
         counted = Counter(number)
         print(counted)
+
 
         # plt.close()
         #
