@@ -517,33 +517,38 @@ class Map_To_Graph:
 
                 node = room[i]['position']
                 previous_node = room[i-1]['position']
-                if previous_node[0] == node[0] and np.abs(previous_node[1]-node[1]) in self.step:
+                x_final, y_final = 0, 0
+                if previous_node[0] == node[0] and np.abs(previous_node[1]-node[1]) and np.abs(previous_node[1]-node[1]) <= max(self.sensor_range)/self.resolution:
                     dif = np.abs(previous_node[1]-node[1])
                     x1 = int(node[0] - dif/2)
                     x2 = int(node[0] + dif/2)
                     y = int(np.min([previous_node[1],node[1]]) + dif/2)
                     if self.brush[x1,y] >= self.brush[x2,y]:
-                        temp_nodes.append((x1,y))
+                        x_final = x1
+                        y_final = y
                         yaw = math.degrees(math.atan2(y-node[1], x1-node[0]))
-                        temp_sequence.append({'position': (x1,y), 'yaw': yaw})
                     else:
-                        temp_nodes.append((x2,y))
+                        x_final = x2
+                        y_final = y
                         yaw = math.degrees(math.atan2(y-node[1], x2-node[0]))
-                        temp_sequence.append({'position': (x2,y), 'yaw': yaw})
 
-                elif previous_node[1] == node[1] and np.abs(previous_node[0]-node[0]) in self.step:
+                elif previous_node[1] == node[1] and np.abs(previous_node[0]-node[0]) and np.abs(previous_node[0]-node[0]) <= max(self.sensor_range)/self.resolution:
                     dif = np.abs(previous_node[0]-node[0])
                     y1 = int(node[1] - dif/2)
                     y2 = int(node[1] + dif/2)
                     x = int(np.min([previous_node[0],node[0]]) + dif/2)
                     if self.brush[x,y1] >= self.brush[x,y2]:
-                        temp_nodes.append((x,y1))
+                        x_final = x
+                        y_final = y1
                         yaw = math.degrees(math.atan2(y1-node[1], x-node[0]))
-                        temp_sequence.append({'position': (x,y1), 'yaw': yaw})
                     else:
-                        temp_nodes.append((x,y2))
+                        x_final = x
+                        y_final = y2
                         yaw = math.degrees(math.atan2(y2-node[1], x-node[0]))
-                        temp_sequence.append({'position': (x,y2), 'yaw': yaw})
+
+                if not self.ogm[x_final][y_final]:
+                    temp_nodes.append((x_final,y_final))
+                    temp_sequence.append({'position': (x_final,y_final), 'yaw': yaw})
 
                 temp_nodes.append(room[i]['position'])
                 temp_sequence.append(room[i])
