@@ -178,7 +178,7 @@ class Map_To_Graph:
 
         self.zig_zag_sequence, self.zig_zag_nodes = self.add_zig_zag_nodes(self.wall_follow_sequence)
 
-        self.wall_follow_sequence, self.wall_follow_nodes = self.a_priori_coverage(self.zig_zag_sequence, False)
+        self.zig_zag_sequence, self.zig_zag_nodes = self.a_priori_coverage(self.zig_zag_sequence, False)
 
         # Save zig zag nodes to json
         self.data['zig_zag_nodes'] = self.zig_zag_nodes
@@ -231,7 +231,7 @@ class Map_To_Graph:
         # Uniform sampling on map
         nodes = []
         # Sampling step is half the sensor's range
-        min_range = min(self.sensor_range)
+        min_range = int(min(self.sensor_range)/self.resolution)
         max_range = int(max(self.sensor_range)/self.resolution)
 
 
@@ -244,7 +244,7 @@ class Map_To_Graph:
             for x in range(0, self.ogm_width, step):
                 for y in range(0, self.ogm_height, step):
                     # Node should be close to obstacle, but not too close to avoid collision
-                    if self.brush[x][y] > step and self.brush[x][y] <= 2*step:
+                    if self.brush[x][y] > step and self.brush[x][y] <= max_range:
                         temp_nodes.append((x,y))
             step += int(min_range / (4 * self.resolution))
             nodes.append(temp_nodes)
@@ -695,7 +695,7 @@ class Map_To_Graph:
             first_route.append(self.exiting_doors[i])
 
             # Do another hillclimb to optimize path
-            max_iterations = 1000 * len(first_route)
+            max_iterations = 2000 * len(first_route)
             distances = cdist(np.array(first_route), np.array(first_route), 'euclidean')
             cost = self.routing.route_length(distances, range(len(first_route)))
             print('Route length after adding doors and rotating sequence', cost)

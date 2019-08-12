@@ -15,9 +15,9 @@ class Topology:
         self.brushfire = Brushfire()
 
     # Calculate GVD using brushfire
-    def gvd(self, ogm, brushfire):
+    def gvd(self, brushfire):
         # Set obstacles and first pixels around them as non gvd pixels
-        voronoi = np.zeros(ogm.shape)
+        voronoi = np.zeros(brushfire.shape)
         rospy.loginfo("GVD initialized.")
         # Set free space as starting gvd and skeletonize it to get one pixel diagram
         voronoi[brushfire >= 5] = 1
@@ -138,7 +138,7 @@ class Topology:
         return nodes
 
     # Discard nodes that don't represent a door
-    def findDoorNodes(self, nodes, allNodes, ogm, gvd, brushfire, brushfire_instance):
+    def findDoorNodes(self, nodes, ogm, gvd, brushfire_instance):
         doorNodes = []
         width = gvd.shape[0]
         height = gvd.shape[1]
@@ -442,6 +442,9 @@ class Topology:
                 x = np.zeros((1,6))
                 # Number of nodes
                 x[0][0] = len(rooms[i])
+                if not x[0][0]:
+                    roomType[i] = 0
+                    continue
                 indexes = zip(*rooms[i])
                 # Brushfire mean of nodes
                 x[0][1] = resolution * np.sum(brushfire[indexes])/len(rooms[i])

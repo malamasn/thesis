@@ -25,7 +25,7 @@ class Map_To_Topology:
         self.origin = {}
         self.origin['x'] = 0
         self.origin['y'] = 0
-        self.resolution = 0
+        self.resolution = 0.05
 
         self.ogm = 0
         self.ogm_raw = 0
@@ -45,10 +45,12 @@ class Map_To_Topology:
         rospy.init_node('map_to_topology')
         rospy.loginfo('map_to_topology node initialized.')
 
-        translation = rospy.get_param('origin')
-        self.origin['x'] = translation[0]
-        self.origin['y'] = translation[1]
-        self.resolution = rospy.get_param('resolution')
+        if rospy.has_param('origin'):
+            translation = rospy.get_param('origin')
+            self.origin['x'] = translation[0]
+            self.origin['y'] = translation[1]
+        if rospy.has_param('resolution'):
+            self.resolution = rospy.get_param('resolution')
 
         ogm_topic = '/map'
         rospy.Subscriber(ogm_topic, OccupancyGrid, self.read_ogm)
@@ -66,7 +68,7 @@ class Map_To_Topology:
         # img.save('indoors_with_rooms_brushfire.png')
 
         # Calculate gvd from brushfire and ogm
-        self.gvd = self.topology.gvd(self.ogm, self.brush)
+        self.gvd = self.topology.gvd(self.brush)
         # show and/or save gvd as image file
         # img2 = Image.fromarray(255*self.gvd)
         # img2.show()
@@ -108,40 +110,41 @@ class Map_To_Topology:
         #     print(self.brush[i])
         # Calculate door nodes
         door_nodes = self.topology.findDoorNodes(candidateDoors,\
-                        self.nodes, self.ogm, self.gvd, self.brush, self.brushfire_cffi)
+                        self.ogm, self.gvd, self.brushfire_cffi)
         # door_nodes = candidateDoors
         # print(door_nodes)
         # Send door nodes to rviz with different color
         self.print_markers(door_nodes, [0.,0.,1.], self.door_node_pub)
 
-        rooms, roomDoors, roomType = self.topology.findRooms(\
-                self.gvd, door_nodes, self.nodes, self.brush, \
-                self.ogm, self.resolution, self.brushfire_cffi)
-        # print('rooms',rooms,'roomDoors', roomDoors,'roomType', roomType)
-
-
-        # Keep as nodes only ones that correspond to a room
-        self.nodes = []
-        for room in rooms:
-            self.nodes.extend(room)
+        # rooms, roomDoors, roomType = self.topology.findRooms(\
+        #         self.gvd, door_nodes, self.nodes, self.brush, \
+        #         self.ogm, self.resolution, self.brushfire_cffi)
+        # # print('rooms',rooms,'roomDoors', roomDoors,'roomType', roomType)
+        #
+        #
+        # # Keep as nodes only ones that correspond to a room
+        # self.nodes = []
+        # for room in rooms:
+        #     self.nodes.extend(room)
         # self.print_markers(self.nodes, [1.,0.,0.], self.node_publisher)
 
-        # Save data to json file
-        data = {"nodes": self.nodes, "doors": door_nodes,
-                "rooms": rooms, "roomDoors": roomDoors, "roomType": roomType}
+        # # Save data to json file
+        # data = {"nodes": self.nodes, "doors": door_nodes,
+        #         "rooms": rooms, "roomDoors": roomDoors, "roomType": roomType}
+        data = {"nodes": self.nodes, "doors": door_nodes}
         map_name = rospy.get_param('map_name')
         filename = '/home/mal/catkin_ws/src/topology_finder/data/' + map_name +'.json'
-        with open(filename, 'w') as outfile:
-            data_to_json = json.dump(data, outfile)
+        # with open(filename, 'w') as outfile:
+        #     data_to_json = json.dump(data, outfile)
 
         # while not rospy.is_shutdown():
         # points = []
-        i = 0
-        for room in rooms:
-            self.print_markers(room, [1.,0.,1.], self.room_node_pub)
-            print('room type: ', roomType[i])
-            i += 1
-            time.sleep(3)
+        # i = 0
+        # for room in rooms:
+        #     self.print_markers(room, [1.,0.,1.], self.room_node_pub)
+        #     print('room type: ', roomType[i])
+        #     i += 1
+        #     time.sleep(3)
         return
 
 
