@@ -107,7 +107,9 @@ class Map_To_Graph:
 
         if 'room_sequence' in self.data:
             self.room_sequence = self.data['room_sequence']
+        if 'entering_doors' in self.data:
             self.entering_doors = { int(k):v for k,v in self.data['entering_doors'].items() }
+        if 'exiting_doors' in self.data:
             self.exiting_doors = { int(k):v for k,v in self.data['exiting_doors'].items() }
 
         if 'wall_follow_nodes' in self.data:
@@ -116,8 +118,6 @@ class Map_To_Graph:
         if 'wall_follow_sequence' in self.data:
             self.wall_follow_sequence = self.data['wall_follow_sequence']
 
-        # if 'boustrophedon_sequence' in self.data:
-        #     self.boustrophedon_sequence = self.data['boustrophedon_sequence']
 
         self.node_publisher = rospy.Publisher('/nodes', Marker, queue_size = 100)
         self.candidate_door_node_pub = rospy.Publisher('/nodes/candidateDoors', Marker, queue_size = 100)
