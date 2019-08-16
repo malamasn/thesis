@@ -59,7 +59,7 @@ class Routing:
                     yield copy
 
     def P(self, prev_score, next_score, temperature):
-        if next_score > prev_score:
+        if next_score < prev_score:
             return 1.0
         else:
             return math.exp(-abs(next_score - prev_score)/temperature)

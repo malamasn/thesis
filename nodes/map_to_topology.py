@@ -35,11 +35,22 @@ class Map_To_Topology:
         self.gvd = 0
         self.brush = 0
         self.nodes = []
+        self.door_nodes = []
         # self.brush_publisher = rospy.Publisher('/brushfire', OccupancyGrid, queue_size = 10)
         self.node_publisher = rospy.Publisher('/nodes', Marker, queue_size = 100)
         self.candidate_door_node_pub = rospy.Publisher('/nodes/candidateDoors', Marker, queue_size = 100)
         self.door_node_pub = rospy.Publisher('/nodes/doors', Marker, queue_size = 100)
         self.room_node_pub = rospy.Publisher('/nodes/rooms', Marker, queue_size = 100)
+
+        # Load nodes from json file
+        map_name = rospy.get_param('map_name')
+        filename = '/home/mal/catkin_ws/src/topology_finder/data/' + map_name +'.json'
+        with open(filename, 'r') as read_file:
+            self.data = json.load(read_file)
+
+        if 'nodes' in self.data:
+            self.nodes = self.data['nodes']
+
 
     def server_start(self):
         rospy.init_node('map_to_topology')
@@ -76,7 +87,8 @@ class Map_To_Topology:
         # img2.save("indoors_with_rooms_gvd.png")
 
         # Calculate topological nodes
-        self.nodes = self.topology.topologicalNodes(self.ogm, self.brush, self.gvd)
+        if self.nodes == []:
+            self.nodes = self.topology.topologicalNodes(self.ogm, self.brush, self.gvd)
         # show and/or save nodes as image file
         # temp = np.zeros(self.gvd.shape)
         # for x,y in self.nodes:
@@ -102,24 +114,25 @@ class Map_To_Topology:
             if count_neighbors == 3:
                 candidateDoors.append((x,y))
 
-        # Send candidateDoors to rviz as Point() values with different color
-        self.print_markers(candidateDoors, [0.,1.,0.], self.candidate_door_node_pub)
+        if self.door_nodes == []:
+            # Send candidateDoors to rviz as Point() values with different color
+            self.print_markers(candidateDoors, [0.,1.,0.], self.candidate_door_node_pub)
 
-        # print(candidateDoors)
-        # for i in candidateDoors:
-        #     print(self.brush[i])
-        # Calculate door nodes
-        door_nodes = self.topology.findDoorNodes(candidateDoors,\
-                        self.ogm, self.gvd, self.brushfire_cffi)
-        # door_nodes = candidateDoors
-        # print(door_nodes)
-        # Send door nodes to rviz with different color
-        self.print_markers(door_nodes, [0.,0.,1.], self.door_node_pub)
+            # print(candidateDoors)
+            # for i in candidateDoors:
+            #     print(self.brush[i])
+            # Calculate door nodes
+            self.door_nodes = self.topology.findDoorNodes(candidateDoors,\
+                            self.ogm, self.gvd, self.brushfire_cffi)
+            # door_nodes = candidateDoors
+            # print(door_nodes)
+            # Send door nodes to rviz with different color
+            self.print_markers(self.door_nodes, [0.,0.,1.], self.door_node_pub)
 
-        # rooms, roomDoors, roomType = self.topology.findRooms(\
-        #         self.gvd, door_nodes, self.nodes, self.brush, \
-        #         self.ogm, self.resolution, self.brushfire_cffi)
-        # # print('rooms',rooms,'roomDoors', roomDoors,'roomType', roomType)
+        rooms, roomDoors, roomType = self.topology.findRooms(\
+                self.gvd, self.door_nodes, self.nodes, self.brush, \
+                self.ogm, self.resolution, self.brushfire_cffi)
+        print('rooms',rooms,'roomDoors', roomDoors,'roomType', roomType)
         #
         #
         # # Keep as nodes only ones that correspond to a room
@@ -129,13 +142,13 @@ class Map_To_Topology:
         # self.print_markers(self.nodes, [1.,0.,0.], self.node_publisher)
 
         # # Save data to json file
-        # data = {"nodes": self.nodes, "doors": door_nodes,
-        #         "rooms": rooms, "roomDoors": roomDoors, "roomType": roomType}
-        data = {"nodes": self.nodes, "doors": door_nodes}
+        data = {"nodes": self.nodes, "doors": self.door_nodes,
+                "rooms": rooms, "roomDoors": roomDoors, "roomType": roomType}
+        # data = {"nodes": self.nodes, "doors": self.door_nodes}
         map_name = rospy.get_param('map_name')
         filename = '/home/mal/catkin_ws/src/topology_finder/data/' + map_name +'.json'
-        # with open(filename, 'w') as outfile:
-        #     data_to_json = json.dump(data, outfile)
+        with open(filename, 'w') as outfile:
+            data_to_json = json.dump(data, outfile)
 
         # while not rospy.is_shutdown():
         # points = []

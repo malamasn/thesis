@@ -32,15 +32,18 @@ class Map_To_Graph:
         self.origin = {}
         self.origin['x'] = 0
         self.origin['y'] = 0
-        self.resolution = 0
+        self.resolution = 0.05
 
         self.step = 0
 
         # Load map's translation
-        translation = rospy.get_param('origin')
-        self.origin['x'] = translation[0]
-        self.origin['y'] = translation[1]
-        self.resolution = rospy.get_param('resolution')
+        if rospy.has_param('origin'):
+            translation = rospy.get_param('origin')
+            self.origin['x'] = translation[0]
+            self.origin['y'] = translation[1]
+        if rospy.has_param('resolution'):
+            self.resolution = rospy.get_param('resolution')
+
 
         # Initilize sensor's specs
         self.sensor_names = []
@@ -135,7 +138,7 @@ class Map_To_Graph:
         # Calculate brushfire field
         self.brush = self.brushfire_cffi.obstacleBrushfireCffi(self.ogm)
         # Calculate gvd from brushfire and ogm
-        self.gvd = self.topology.gvd(self.ogm, self.brush)
+        self.gvd = self.topology.gvd(self.brush)
 
         time.sleep(1)
         # self.print_markers(self.nodes, [1., 0., 0.], self.node_publisher)
@@ -305,7 +308,7 @@ class Map_To_Graph:
 
         # Calculate graph's distances between all nodes
         doors_length = len(self.door_nodes)
-        if doors_length >= 2:
+        if doors_length > 2:
             distances = np.zeros((doors_length, doors_length), dtype=np.float64)
             for i in range(doors_length):
                 for j in range(i+1, doors_length):
@@ -314,14 +317,45 @@ class Map_To_Graph:
                     distances[j][i] = distances[i][j]
 
             # Call hill climb algorithm
-            max_iterations = 500
+            max_iterations = 500 * doors_length
             # door_route, cost, iter = self.routing.hillclimb(distances, max_iterations)
-            # door_route, cost, iter = self.routing.random_restart_hillclimb(distances, max_iterations)
+            door_route, cost, iter = self.routing.random_restart_hillclimb(distances, max_iterations)
+
+            print('Optimal RRHC room sequence', door_route, self.routing.route_length(distances, door_route))
             door_route, cost, iter = self.routing.anneal(distances, max_iterations, 1.0, 0.95)
-            # print(door_route, cost, iter)
+            print('Optimal ANEAL room sequence', door_route, self.routing.route_length(distances, door_route))
+
+            #Sub-optimal / greedy sequence
+            greedy_route = []
+            greedy_route.append(door_route[0])
+            for i in range(1, doors_length):
+                #find min
+                previous = greedy_route[i-1]
+
+
+                unvisited = []
+                for j in range(doors_length):
+                    if j not in greedy_route:
+                        unvisited.append(j)
+
+                minimum = distances[previous, unvisited[0]]
+                min_idx = unvisited[0]
+                for idx in unvisited:
+                    if distances[previous][idx] < minimum:
+                        minimum = distances[previous][idx]
+                        min_idx = idx
+                greedy_route.append(min_idx)
+
+            greedy_cost = self.routing.route_length(distances, greedy_route)
+            print('Greedy room sequence', greedy_route, greedy_cost)
+
+        elif doors_length == 2:
+            door_route = [0, 1]
+            _, _, _, dist = find_path(graph, 0, 1)
+            print('Only 2 doors with distance ', dist)
         else:
             door_route = [0]
-
+            print('One door found!')
         # Correspond door route to room route
         for door in door_route:
             for i in range(len(self.room_doors)):
@@ -948,8 +982,8 @@ class Map_To_Graph:
     def a_priori_coverage(self, nodes, eliminate = True):
         self.coverage.initCoverage()
 
-        new_wall_follow = []
-        new_wall_follow_nodes = []
+        new_sequence = []
+        new_nodes = []
         for room in nodes:
             # i = 0
             new_room = []
@@ -968,8 +1002,8 @@ class Map_To_Graph:
                     new_room_nodes.append(node['position'])
 
             self.coverage.coverage_pub.publish(self.coverage.coverage_ogm)
-            new_wall_follow.append(new_room)
-            new_wall_follow_nodes.append(new_room_nodes)
+            new_sequence.append(new_room)
+            new_nodes.append(new_room_nodes)
             rospy.loginfo("A-priori coverage done at room {0}, room nodes size changed from {1} to {2}".format(i, len(room), len(new_room)))
             i += 1
 
@@ -978,7 +1012,7 @@ class Map_To_Graph:
         covered_obstacles = len(np.where(near_obstacles_cover >= 80)[0])
         rospy.loginfo("Estimated coverage percentage {}".format(covered_obstacles/len(near_obstacles_cover)))
 
-        return new_wall_follow, new_wall_follow_nodes
+        return new_sequence, new_nodes
 
     # Find nodes for wall following coverage and eliminate unnecessary (NN) onces
     def find_half_wall_nodes(self, save_result):

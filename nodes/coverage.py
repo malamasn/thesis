@@ -19,7 +19,7 @@ class Coverage:
         self.origin = {}
         self.origin['x'] = 0
         self.origin['y'] = 0
-        self.resolution = 0
+        self.resolution = 0.05
 
         # Initilize sensor's specs
         self.sensor_names = []
@@ -55,10 +55,12 @@ class Coverage:
 
 
         # Load map's translation
-        translation = rospy.get_param('origin')
-        self.origin['x'] = translation[0]
-        self.origin['y'] = translation[1]
-        self.resolution = rospy.get_param('resolution')
+        if rospy.has_param('origin'):
+            translation = rospy.get_param('origin')
+            self.origin['x'] = translation[0]
+            self.origin['y'] = translation[1]
+        if rospy.has_param('resolution'):
+            self.resolution = rospy.get_param('resolution')
 
         # OGM related attributes
         self.ogm_topic = '/map'
@@ -268,8 +270,8 @@ class Coverage:
         if near_obstacles_len == 0:
             return False
         old_obstacles_len = len(np.where((brushfire_area == 2) & (covered_area > 80))[0])
-        th = old_obstacles_len / near_obstacles_len
-        if th < threshold:
+        perc = old_obstacles_len / near_obstacles_len
+        if perc < threshold:
             for x,y in indexes:
                 self.coverage[x, y] = 100 * self.sensor_reliability[0]
                 i = int(x + self.ogm_width * y)
