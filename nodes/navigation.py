@@ -133,7 +133,7 @@ class Navigation:
         self.brush = self.brushfire_cffi.obstacleBrushfireCffi(self.ogm)
 
         # Calculate gvd from brushfire and ogm
-        self.gvd = self.topology.gvd(self.ogm, self.brush)
+        self.gvd = self.topology.gvd(self.brush)
 
         # Find current room
         start = (int(current_x), int(current_y))
