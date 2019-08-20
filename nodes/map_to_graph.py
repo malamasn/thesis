@@ -346,8 +346,8 @@ class Map_To_Graph:
             door_route, cost, iter = self.routing.random_restart_hillclimb(distances, max_iterations)
 
             print('Optimal RRHC room sequence', door_route, self.routing.route_length(distances, door_route))
-            door_route, cost, iter = self.routing.anneal(distances, max_iterations, 1.0, 0.95)
-            print('Optimal ANEAL room sequence', door_route, self.routing.route_length(distances, door_route))
+            # door_route, cost, iter = self.routing.anneal(distances, max_iterations, 1.0, 0.95)
+            # print('Optimal ANNEAL room sequence', door_route, self.routing.route_length(distances, door_route))
 
             #Sub-optimal / greedy sequence
             greedy_route = []
@@ -377,9 +377,13 @@ class Map_To_Graph:
             door_route = [0, 1]
             _, _, _, dist = find_path(graph, 0, 1)
             print('Only 2 doors with distance ', dist)
-        else:
+        elif self.door_nodes != []:
             door_route = [0]
             print('One door found!')
+        else:
+            door_route = []
+            self.room_sequence = [0]
+            print('One room only!')
         # Correspond door route to room route
         for door in door_route:
             for i in range(len(self.room_doors)):
@@ -424,7 +428,7 @@ class Map_To_Graph:
                             # print('Room changed', room_idx)
                             ii -= 1     # To revisit this door
                     ii += 1
-        else:
+        elif self.door_nodes != []:
             for i in range(len(self.room_sequence)):
                 enter[i] = self.door_nodes[0]
                 leave[i] = self.door_nodes[0]
