@@ -241,16 +241,18 @@ class Map_To_Graph:
         step = int(1.5 * self.robot_radius /(self.resolution * 2))
 
         step_list = []
-        while step <= int(max(self.sensor_range)/ self.resolution):
+        while step <= max_range:
             temp_nodes = []
             step_list.append(step)
             for x in range(0, self.ogm_width, step):
                 for y in range(0, self.ogm_height, step):
                     # Node should be close to obstacle, but not too close to avoid collision
-                    if self.brush[x][y] > step and self.brush[x][y] <= max_range:
+                    if self.brush[x][y] > step and self.brush[x][y] <= 2*step and self.brush[x][y] <= max_range:
                         temp_nodes.append((x,y))
-            step += int(min_range / (4 * self.resolution))
+            # step += int(min_range / (4 * self.resolution))
+            step *= 2
             nodes.append(temp_nodes)
+
 
         obstacles = []
         final_nodes = []
