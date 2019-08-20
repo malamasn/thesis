@@ -118,6 +118,11 @@ class Map_To_Graph:
         if 'wall_follow_sequence' in self.data:
             self.wall_follow_sequence = self.data['wall_follow_sequence']
 
+        if 'zig_zag_nodes' in self.data:
+            self.zig_zag_nodes = self.data['zig_zag_nodes']
+
+        if 'zig_zag_sequence' in self.data:
+            self.zig_zag_sequence = self.data['zig_zag_sequence']
 
         self.node_publisher = rospy.Publisher('/nodes', Marker, queue_size = 100)
         self.candidate_door_node_pub = rospy.Publisher('/nodes/candidateDoors', Marker, queue_size = 100)
@@ -189,6 +194,23 @@ class Map_To_Graph:
 
         rospy.loginfo("Visualize zig zag node sequence")
         self.visualise_node_sequence(self.zig_zag_sequence)
+
+        # Compute length of two sequences
+        i = 0
+        for temp_nodes in self.wall_follow_nodes:
+            distances = cdist(np.array(temp_nodes), np.array(temp_nodes), 'euclidean')
+            cost = self.routing.route_length(distances, range(len(temp_nodes)))
+            string = 'Length of wall follow nodes at room ' + str(i) + ': ' + str(cost)
+            print(string)
+            i += 1
+
+        i = 0
+        for temp_nodes in self.zig_zag_nodes:
+            distances = cdist(np.array(temp_nodes), np.array(temp_nodes), 'euclidean')
+            cost = self.routing.route_length(distances, range(len(temp_nodes)))
+            string = 'Length of zig zag nodes at room ' + str(i) + ': ' + str(cost)
+            print(string)
+            i += 1
 
         map_name = rospy.get_param('map_name')
         filename = '/home/mal/catkin_ws/src/topology_finder/data/' + map_name +'.json'
