@@ -266,24 +266,22 @@ class Map_To_Graph:
         while step <= max_range:
             temp_nodes = []
             step_list.append(step)
-            for x in range(0, self.ogm_width, step):
-                for y in range(0, self.ogm_height, step):
-                    # Node should be close to obstacle, but not too close to avoid collision
-                    if self.brush[x][y] > step and self.brush[x][y] <= 2*step and self.brush[x][y] <= max_range:
-                        temp_nodes.append((x,y))
-            # step += int(min_range / (4 * self.resolution))
+            indx = np.where((self.brush > step) & (self.brush <= 2*step) & (self.brush <= max_range))
+            indx = zip(*indx)
+            for x,y in indx:
+                if not x % step and not y % step:
+                    temp_nodes.append((x,y))
             step *= 2
             nodes.append(temp_nodes)
 
-
-        obstacles = []
+        obstacles = np.zeros((self.ogm_width, self.ogm_height))
         final_nodes = []
         i = len(nodes) - 1
         while i >= 0:
             temp_nodes = nodes[i]
             # self.print_markers(temp_nodes, [1., 0., 0.], self.node_publisher)
             # rospy.sleep(2)
-            temp_obstacles = []
+
             # Check if new nodes override previous ones and delete them
             for point in temp_nodes:
                 x,y = point
@@ -292,20 +290,14 @@ class Map_To_Graph:
                     continue
 
                 if i == len(nodes) - 1:
-                    temp_obstacles.extend(indexes)
+                    obstacles[zip(*indexes)] = 1
                     final_nodes.append(point)
                 else:
-                    p = 0
-                    for index in indexes:
-                        if index in obstacles:
-                            p += 1
-                    p /= len(indexes)
+                    temp = obstacles[zip(*indexes)]
+                    p = len(np.where(temp > 0)[0])/len(indexes)
                     if p < 0.9:
                         final_nodes.append((x,y))
-                        temp_obstacles.extend(indexes)
-                        temp_obstacles = list(set(temp_obstacles))
-                        obstacles.extend(temp_obstacles)
-            obstacles = list(set(obstacles))
+                        obstacles[zip(*indexes)] = 1
             i -= 1
         return final_nodes, step_list
 
