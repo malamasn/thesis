@@ -463,7 +463,7 @@ class Map_To_Graph:
 
         # In case of many obstacles more poses are needed for full coverage
         found = 0
-        while found < loop_threshold * len(obstacles) or len(obstacles):
+        while found < loop_threshold * len(obstacles) and len(obstacles):
 
             best_evaluation = 0
             best_yaw = 0
