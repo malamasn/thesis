@@ -4,9 +4,10 @@
   <!-- <arg name='map' value='rooms_3'/> -->
   <!-- <arg name='map' value='indoor_with_rooms'/> -->
   <!-- <arg name='map' value='indoors_with_nothing'/> -->
-  <!-- <arg name='map' value='indoor_with_distance_features'/> -->
-  <arg name='map' value='warehouse_2'/>
+  <arg name='map' value='indoors_with_features'/>
+  <!-- <arg name='map' value='warehouse_2'/> -->
   <!-- <arg name='map' value='warehouse_4'/> -->
+  <!-- <arg name='map' value='map_a'/> -->
 
   <!-- Load map_server with rviz -->
   <include file="$(find my_navigation)/launch/my_map_launch.launch">
