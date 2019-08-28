@@ -636,10 +636,12 @@ class Map_To_Graph:
     def add_zig_zag_nodes(self, wall_follow_sequence):
         zig_zag_nodes = []
         zig_zag_sequence = []
-
+        filled_ogm = self.topology.doorClosure(self.door_nodes, self.ogm, self.brushfire_cffi)
+        j = 0
         for room in wall_follow_sequence:
             temp_nodes = []
             temp_sequence = []
+            room_brush = self.brushfire_cffi.pointBrushfireCffi(self.rooms[j], filled_ogm)
 
             for i in range(len(room)):
                 if not i:
@@ -678,7 +680,7 @@ class Map_To_Graph:
                         y_final = y2
                         yaw = math.degrees(math.atan2(y2-node[1], x-node[0]))
 
-                if not self.ogm[x_final][y_final]:
+                if room_brush[x_final][y_final] > 1:
                     temp_nodes.append((x_final,y_final))
                     temp_sequence.append({'position': (x_final,y_final), 'yaw': yaw})
 
