@@ -136,9 +136,6 @@ class CoverageSubscriber:
                         self.coverage_diverge_ogm.data[x + self.ogm_width * y] = int(100 * self.coverage_diverge[x][y])
 
         # Retrieve metrics
-        values = self.coverage_diverge[near_obstacles]
-        rospy.loginfo("Coverage Angle Divergence Mean: {}, Std: {}".format(np.mean(values), np.std(values)))
-
         values = self.coverage_diverge[zip(*near_obstacles_looked)]
         rospy.loginfo("Coverage Angle Divergence only of covered obstacles Mean: {}, Std: {}".format(np.mean(values), np.std(values)))
 

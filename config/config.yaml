@@ -20,6 +20,8 @@ rfid2:
 
 robot_radius: 0.5
 # navigation_pattern: 'wall_follow'
-navigation_pattern: 'zig_zag'
+# navigation_pattern: 'zig_zag'
+navigation_pattern: 'simple'
 navigation_target: 'cover_first'
 # navigation_target: 'fast_first'
+fixed_step: 0.5

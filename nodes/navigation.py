@@ -83,24 +83,41 @@ class Navigation:
         self.wall_follow_sequence = []
         self.zig_zag_nodes = []
         self.zig_zag_sequence = []
+        self.simple_nodes = []
+        self.simple_sequence = []
 
-
+        self.data = []
         # Load nodes from json file
         map_name = rospy.get_param('map_name')
         filename = '/home/mal/catkin_ws/src/topology_finder/data/' + map_name +'.json'
         with open(filename, 'r') as read_file:
-                data = json.load(read_file)
+                self.data = json.load(read_file)
 
-        self.nodes = data['nodes']
-        self.door_nodes = data['doors']
-        self.rooms = data['rooms']
-        self.room_doors = data['roomDoors']
-        self.room_type = data['roomType']
-        self.room_sequence = data['room_sequence']
-        self.wall_follow_nodes = data['wall_follow_nodes']
-        self.wall_follow_sequence = data['wall_follow_sequence']
-        self.zig_zag_nodes = data['zig_zag_nodes']
-        self.zig_zag_sequence = data['zig_zag_sequence']
+        self.nodes = self.data['nodes']
+        self.door_nodes = self.data['doors']
+        self.rooms = self.data['rooms']
+        self.room_doors = self.data['roomDoors']
+        self.room_type = self.data['roomType']
+        self.room_sequence = self.data['room_sequence']
+
+        if 'wall_follow_nodes' in self.data:
+            self.wall_follow_nodes = self.data['wall_follow_nodes']
+
+        if 'wall_follow_sequence' in self.data:
+            self.wall_follow_sequence = self.data['wall_follow_sequence']
+
+        if 'zig_zag_nodes' in self.data:
+            self.zig_zag_nodes = self.data['zig_zag_nodes']
+
+        if 'zig_zag_sequence' in self.data:
+            self.zig_zag_sequence = self.data['zig_zag_sequence']
+
+        if 'simple_nodes' in self.data:
+            self.simple_nodes = self.data['simple_nodes']
+
+        if 'simple_sequence' in self.data:
+            self.simple_sequence = self.data['simple_sequence']
+
 
         self.node_publisher = rospy.Publisher('/nodes', Marker, queue_size = 100)
         self.door_node_pub = rospy.Publisher('/nodes/doors', Marker, queue_size = 100)
@@ -164,21 +181,22 @@ class Navigation:
 
         current_room_index = self.room_sequence.index(current_room)
         start_time = rospy.get_time()
-        if self.navigation_pattern == 'random':
-            self.print_markers(self.nodes)
-            # Navigate in all rooms with given sequence
+        if self.navigation_pattern == 'simple':
+            if self.simple_sequence == []:
+                rospy.loginfo("This navigation pattern has not been calculated for this map!")
+                return
+
             for i in range(len(self.room_sequence)):
+                # print nodes
+                nodes = self.simple_nodes[current_room]
+                self.print_markers(nodes)
                 # find nodes of current room
-                # # TO DO: USE ENHANCED NODES
-                nodes = self.rooms[current_room]
-                # # TO DO: ADD SEQUENCE PATTERN
-                nodes.sort()    # for debugging to be faster
-                # # TODO: ADD ORIENATION
+                nodes = self.simple_sequence[current_room]
                 # navigate to all nodes
                 for node in nodes:
-                    result = self.goToGoal(node, 0)
+                    result = self.goToGoal(node['position'], node['yaw'])
                     rospy.sleep(0.1)
-                # TODO: KEEP TRACK OF VISITED NODES (should I?)
+
                 current_room_index = (current_room_index + 1) % len(self.room_sequence)
                 current_room = self.room_sequence[current_room_index]
 
