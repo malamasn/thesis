@@ -291,7 +291,7 @@ class Map_To_Graph:
         max_range = int(max(self.sensor_range)/self.resolution)
 
 
-        step = int(1.5 * self.robot_radius /(self.resolution * 2))
+        step = int(1.5 * self.robot_radius /self.resolution)
 
         step_list = []
         while step <= max_range:
