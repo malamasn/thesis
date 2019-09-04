@@ -196,8 +196,8 @@ class Map_To_Graph:
         else:
             self.find_best_path_wall_nodes()
 
-            # # self.visualise_node_sequence(self.wall_follow_sequence)
-            # self.wall_follow_sequence, self.wall_follow_nodes = self.a_priori_coverage(self.wall_follow_sequence)
+            self.visualise_node_sequence(self.wall_follow_sequence)
+            self.wall_follow_sequence, self.wall_follow_nodes = self.a_priori_coverage(self.wall_follow_sequence)
 
             # Save wall nodes to json
             self.data['wall_follow_nodes'] = self.wall_follow_nodes
