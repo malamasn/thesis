@@ -1,8 +1,8 @@
 <launch>
 
   <!-- Launch gazebo -->
-  <arg name="world" default="$(find maps_package)/worlds/rooms_3.world"/>
-  <arg name="gui" default="true"/>
+  <arg name="world" default="$(find maps_package)/worlds/map_a.world"/>
+  <arg name="gui" default="false"/>
   <!-- <arg name="verbose" default="true"/>
   <arg name="paused" default="false"/> -->
   <include file="$(find turtlebot_gazebo)/launch/turtlebot_world.launch">

@@ -1,6 +1,6 @@
 <launch>
 
-  <arg name='map_name' value='rooms_3'/>
+  <arg name='map_name' default='rooms_3'/>
   <!-- <arg name='map_name' value='indoor_with_rooms'/> -->
   <!-- <arg name='map_name' value='indoors_with_nothing'/> -->
   <!-- <arg name='map_name' value='indoor_with_distance_features'/> -->
