@@ -6,6 +6,7 @@
   <!-- <arg name='map_name' value='indoor_with_distance_features'/> -->
   <!-- Load map server -->
   <arg name="map" default="$(find maps_package)/maps/gmapping/$(arg map_name).yaml"/>
+  <!-- <arg name="map" default="$(find maps_package)/maps/floorMaps/$(arg map_name).png 0.05"/> -->
   <!-- <arg name="map" default="$(find maps_package)/maps/manos/hospital_section_90.png 0.05"/> -->
   <!-- <arg name="map" default="$(find maps_package)/maps/gmapping/willow.pgm 0.1"/> -->
   <!-- <arg name="map" default="$(find maps_package)/maps/karto/vergina_3.pgm 0.025"/> -->
