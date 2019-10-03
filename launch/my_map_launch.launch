@@ -1,0 +1,17 @@
+<launch>
+
+  <arg name='map_name' default='rooms_3'/>
+  <!-- <arg name='map_name' value='indoor_with_rooms'/> -->
+  <!-- <arg name='map_name' value='indoors_with_nothing'/> -->
+  <!-- <arg name='map_name' value='indoor_with_distance_features'/> -->
+  <!-- Load map server -->
+  <arg name="map" default="$(find maps_package)/maps/gmapping/$(arg map_name).yaml"/>
+  <!-- <arg name="map" default="$(find maps_package)/maps/floorMaps/$(arg map_name).png 0.05"/> -->
+  <!-- <arg name="map" default="$(find maps_package)/maps/manos/hospital_section_90.png 0.05"/> -->
+  <!-- <arg name="map" default="$(find maps_package)/maps/gmapping/willow.pgm 0.1"/> -->
+  <!-- <arg name="map" default="$(find maps_package)/maps/karto/vergina_3.pgm 0.025"/> -->
+  <node name="map_server" pkg="map_server" type="map_server" args="$(arg map)"/>
+  <!--  Used for visualising the turtlebot while building a map or navigating with the ros navistack. -->
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find my_navigation)/launch/includes/rviz/navigation.rviz"/>
+
+</launch>
