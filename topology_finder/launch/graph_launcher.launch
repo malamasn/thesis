@@ -1,0 +1,27 @@
+<launch>
+
+  <!-- <arg name='map' value='rooms_3'/> -->
+  <!-- <arg name='map' value='indoor_with_rooms'/> -->
+  <!-- <arg name='map' value='indoors_with_nothing'/> -->
+  <arg name='map' value='indoors_with_features'/>
+  <!-- <arg name='map' value='indoor_with_distance_features'/> -->
+  <!-- <arg name='map' value='warehouse_2'/> -->
+  <!-- <arg name='map' value='warehouse_4'/> -->
+  <!-- <arg name='map' value='map_a'/> -->
+
+  <!-- <arg name='map' value='ffec081024201642a90a1b7bb62ee5bd'/> -->
+
+  <!-- Load map_server with rviz -->
+  <include file="$(find my_navigation)/launch/my_map_launch.launch">
+    <arg name='map_name' value='$(arg map)'/>
+  </include>
+
+  <!-- Load node -->
+  <node pkg="topology_finder" type="map_to_graph.py" name="map_to_graph" output="screen"/>
+
+  <!-- Load parameters -->
+  <param name="map_name" type="str" value="$(arg map)" />
+  <rosparam file="$(find maps_package)/maps/gmapping/$(arg map).yaml" command="load"/>
+  <rosparam file="$(find topology_finder)/config/config.yaml" command="load"/>
+
+</launch>
