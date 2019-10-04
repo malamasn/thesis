@@ -1,0 +1,38 @@
+\section{Αλγόριθμός Dijkstra}
+\label{section:dijkstra}
+
+
+Ο αλγόριθμος \emph{Dijkstra} \cite{Dijkstra1959} είναι ένας αλγόριθμος εύρεσης του ελάχιστου μονοπατιού μεταξύ κόμβων ενός γράφου. Δέχεται ως είσοδο έναν γράφο, τον κόμβο αφετηρία και τον κόμβο στόχο και εκτελεί μια επαναληπτική διαδικασία εύρεσης της βέλτιστης διαδρομής από την αφετηρία μέχρι τον στόχο. Κριτήριο βελτιστοποίησης είναι η ελαχιστοποίηση του συνολικού κόστους του μονοπατιού, που αποτελείται από το άθροισμα των βαρών των ακμών της κάθε διαδρομής.
+
+Ένας γράφος, για παράδειγμα, μπορεί να αναπαριστά διάφορες πόλεις μιας χώρας, οι ακμές του τους δρόμους που ενώνουν πόλεις μεταξύ τους και τα βάρη των ακμών τις αποστάσεις τους. Ο αλγόριθμος αυτός μπορεί να βρει την κοντινότερη διαδρομή από μια πόλη προς όλες τις υπόλοιπες.
+
+
+Η πολυπλοκότητα του αλγορίθμου αυτόυ είναι $O$($|V|^2$), 
+όπου $|V|$ είναι ο αριθμός των κόμβων.
+
+
+\begin{algorithm}[!ht]
+\caption{Dijkstra}
+\label{alg:dijkstra}
+\begin{algorithmic}[1]
+    \Function{dijkstra}{Graph, source}
+        \For{each vertex $v$ in $Graph$}
+            \State $dist[v] = infinity$
+            \State $previous[v] = undefined$
+        \EndFor
+        \State $dist[source] = 0$
+        \State $Q = the\ set\ of\ all\ nodes\ in\ Graph$
+        \While{$Q$ is not empty}
+            \State $u = node\ in\ Q\ with\ smallest\ dist[]$
+            \State $remove\ u\ from\ Q$
+            \For{each neighbor $v$ of $u$}
+                \State $alt = dist[u] + dist\_between(u,v)$
+                \If{$alt < dist[v]$}
+                    \State $dist[v] = alt$
+                    \State $previous[v] = u$
+                \EndIf
+            \EndFor
+        \EndWhile
+        \State \Return $previous[]$
+\end{algorithmic}
+\end{algorithm}

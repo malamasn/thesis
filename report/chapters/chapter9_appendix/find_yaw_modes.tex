@@ -1,0 +1,43 @@
+\chapter{Δημιουργία Διαφορετικών Μεθόδων Κάλυψης}
+\label{section:room_classification}
+
+Στην εργασία αυτή κατά την επιλογή της βέλτιστης πόζας κάθε σημείου προσπέλασης \ref{subsection:find_pose} χρησιμοποιήθηκε ένα motor schema σχήμα συμπερασμού το οποίο λαμβάνει υπόψη τόσο την κάλυψη όσο το δυνατόν περισσότερης επιφάνειας εμποδίων τόσο και τη γωνιακή μετατόπιση ανάμεσα στον τρέχοντα προσανατολισμό και το επόμενο σημείο. Αυτά μας εξασφαλίζουν όσο το δυνατόν μεγαλύτερη κάλυψη του χώρου και ελαχιστοποίηση της χρονικής διάρκειας της διαδικασίας αντίστοιχα. Οι συναρτήσεις υπολογισμού των δύο αυτών βαρών είναι οι επόμενες:
+
+\[obstacle\_weight = 1 + \frac{90 - theta}{90}\]
+\[rotation\_weight = 2 - \frac{90 - theta}{90}\]
+
+
+Κάτι που δεν μελετήθηκε στον κορμό της εργασίας αυτής αλλά χρίζει αναφοράς είναι η δυνατότητα δημιουργίας δύο διαφορετικών μεθόδων κάλυψης του χώρου, την \emph{γρήγορη} και την \emph{αναλυτική}. 
+Ο διαχωρισμός επιτυγχάνεται με την μεταβολή μόνο της τιμής του $theta$.
+
+\begin{itemize}
+    \setlength\itemsep{-0.2em}
+    \item Γρήγορη: $theta = mean(min(sensor\_direction + fov/2,90))$ 
+    \item Αναλυτική: $theta = mean(sensor\_direction)$
+\end{itemize}
+
+Στην γρήγορη το ζητούμενο είναι τα πλάγια μέρη του οχήματος να καλύπτονται από τις κεραίες, ώστε η πλοήγηση να πραγματοποιηθεί με όσο το δυνατόν λιγότερες περιστροφικές κινήσεις. Αντίθετα, στην αναλυτική  ζητούμενο είναι η κεραία να κοιτάει όσο πιο κεντρικά γίνεται το κάθε εμπόδιο, εξασφαλίζοντας την καλύτερη δυνατή κάλυψη. Σημειώνεται ότι αρχικά η γωνία κατεύθυνσης κάθε αισθητήρα μετασχηματίζεται στο πεδίο $[0,90]$ για την ευκολότερη ανάλυση των δεδομένων. Είναι προφανές ότι στην διπλωματική αυτή χρησιμοποιείται αποκλειστικά η αναλυτική μέθοδος. Η προσαρμογή της συνάρτησης στις δύο διαφορετικές επιλογές παρουσιάζεται στη συνέχεια.
+
+
+\begin{algorithm}[!htb]
+\caption{Find Weights}
+\label{alg:find_weights_with_modes}
+\begin{algorithmic}[1]
+    \Function{findWeightsWithModes}{sensor\_number, sensor\_direction, sensor\_fov}
+        \State $angles = []$
+        \For{$s$ in $range(sensor\_number$}
+            \State $theta = sensor\_direction[s]$
+            \State $fov = sensor\_fov[s]/2$
+            \State Transform $theta$ to range $[0,90]$
+            \If{navigation mode is fast}
+                \State $angles.append((90-theta)/90)$
+            \ElsIf{navigation mode is cover}
+                \State $theta = min(theta+fov, 90)$
+                \State $angles.append((90-theta)/90)$
+            \EndIf
+        \EndFor
+        \State $obstacle\_weight = 1 + mean(angles)$
+        \State $rotation\_weight = 2 - mean(angles)$
+        \State \Return $obstacle\_weight, rotation\_weight$
+\end{algorithmic}
+\end{algorithm}
