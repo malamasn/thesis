@@ -15,8 +15,22 @@ A 2D occupancy grid map representing the environment has been used, in order to 
 Finally, a series of experiments were carried out at each stage of the implementations in order to thoroughly test each part. Maps with different topologies and sensors with different configurations were used to obtain robust results and test the developed process. As for the experiments, they were solely executed in simulation environments.
 
 ## Contents
+* **maps_package** : Contains all worlds, maps and models for Gazebo
+* **my_navigation** :  Autonomous navigation in a 2D map (Occupancy Grip Map)
+* **room_classification** : Node to train a room type classifier
+* **topology_finder** : Nodes for topological analysis, path planning, navigation and coverage
+* **experiments** : Contains images of room detection, coverage estimation and real coverage of maps
 * **report** : LateX source of thesis report (only in Greek)  
 
+
 ## Dependencies
+* **[ROS Kinetic](https://wiki.ros.org/kinetic)** : The whole implementation in based on ROS Kinetic and Ubuntu 16.04
+* **[Gazebo 7.x](https://wiki.ros.org/gazebo)** : Simulation environment
+
 
 ## Installation
+To build from source, clone the latest version from this repository into your catkin workspace and build the package.
+```
+cd ~/catkin_ws/src
+git clone git@github.com:malamasn/thesis.git
+```
