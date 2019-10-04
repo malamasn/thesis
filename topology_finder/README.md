@@ -21,7 +21,7 @@ The used graph structure was forked from https://github.com/wylee/Dijkstar. Trav
 * **coverage_specs_subscriber** node reads the coverage field and keeps the angles at which each obstacle has been covered. The FOV of the sensors has been splited in half, the positive and the negative bin. An angle metric has been created to check the uniformity of the distribution between the two bins.
 
 
-##Launchers
+## Launchers
 * **topology_launcher** : Executes topological analysis (map_to_topology node).
 * **graph_launcher** : Executes path planning of map for given sensors (map_to_graph node).
 * **navigation_launcher** : Executes autonomous coverage of a map.
